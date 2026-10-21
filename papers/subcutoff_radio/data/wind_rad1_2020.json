@@ -1,0 +1,391 @@
+{
+ "year": 2020,
+ "days": 365,
+ "minutes": 525600,
+ "channels": [
+  {
+   "khz": 20,
+   "occupancy": 0.004231354642313547,
+   "days": 0,
+   "modulation": 0.7661870503597122,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.24431808275741718
+  },
+  {
+   "khz": 24,
+   "occupancy": 0.004809741248097413,
+   "days": 0,
+   "modulation": 0.7215189873417722,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.23648758995030428
+  },
+  {
+   "khz": 28,
+   "occupancy": 0.009039193302891933,
+   "days": 11,
+   "modulation": 1.1517575247316354,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.2682670864807408
+  },
+  {
+   "khz": 32,
+   "occupancy": 0.01590753424657534,
+   "days": 32,
+   "modulation": 0.85827054180122,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.25638183834342176
+  },
+  {
+   "khz": 36,
+   "occupancy": 0.06629756468797565,
+   "days": 216,
+   "modulation": 0.38776330138322906,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.28663619741628343
+  },
+  {
+   "khz": 40,
+   "occupancy": 0.05080669710806697,
+   "days": 182,
+   "modulation": 0.6515877771120431,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.21619996654711504
+  },
+  {
+   "khz": 44,
+   "occupancy": 0.04709855403348554,
+   "days": 160,
+   "modulation": 0.5080185821046254,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.17387126913393214
+  },
+  {
+   "khz": 48,
+   "occupancy": 0.044573820395738206,
+   "days": 145,
+   "modulation": 0.4650845142564453,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.15561118059390378
+  },
+  {
+   "khz": 52,
+   "occupancy": 0.04097983257229833,
+   "days": 152,
+   "modulation": 0.336505873067459,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.1378854798886595
+  },
+  {
+   "khz": 60,
+   "occupancy": 0.024069634703196348,
+   "days": 55,
+   "modulation": 0.41356414512686746,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.13083686877127487
+  },
+  {
+   "khz": 72,
+   "occupancy": 0.029767884322678843,
+   "days": 81,
+   "modulation": 0.8942860795091397,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.130568488992985
+  },
+  {
+   "khz": 76,
+   "occupancy": 0.0014916286149162861,
+   "days": 6,
+   "modulation": 1.0714285714285714,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.10309835403148704
+  },
+  {
+   "khz": 80,
+   "occupancy": 0.03262366818873668,
+   "days": 89,
+   "modulation": 0.35691374584475416,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.14257050624218093
+  },
+  {
+   "khz": 92,
+   "occupancy": 0.05392694063926941,
+   "days": 194,
+   "modulation": 0.3141405588484335,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.16497913172134826
+  },
+  {
+   "khz": 96,
+   "occupancy": 0.0012005327245053273,
+   "days": 6,
+   "modulation": 1.5213946117274166,
+   "known": "solar wind plasma line",
+   "rel_dev": 0.10089378131726223
+  },
+  {
+   "khz": 104,
+   "occupancy": 0.04147831050228311,
+   "days": 126,
+   "modulation": 0.5636438695472685,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.1910526226219318
+  },
+  {
+   "khz": 116,
+   "occupancy": 0.03614916286149163,
+   "days": 108,
+   "modulation": 0.5469473684210526,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.23458590256548773
+  },
+  {
+   "khz": 124,
+   "occupancy": 0.001219558599695586,
+   "days": 7,
+   "modulation": 1.1981279251170047,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.1735531203427766
+  },
+  {
+   "khz": 136,
+   "occupancy": 0.03218987823439878,
+   "days": 107,
+   "modulation": 0.5901057982150245,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.26954461498882076
+  },
+  {
+   "khz": 148,
+   "occupancy": 0.013959284627092847,
+   "days": 46,
+   "modulation": 1.3934850756439963,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.2579681420257741
+  },
+  {
+   "khz": 152,
+   "occupancy": 0.02224695585996956,
+   "days": 70,
+   "modulation": 0.7306935773539724,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.2665965268565591
+  },
+  {
+   "khz": 164,
+   "occupancy": 0.0010616438356164384,
+   "days": 4,
+   "modulation": 1.7634408602150538,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.18387861639638337
+  },
+  {
+   "khz": 176,
+   "occupancy": 0.05726027397260274,
+   "days": 166,
+   "modulation": 0.6881977671451356,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.29388070638363706
+  },
+  {
+   "khz": 196,
+   "occupancy": 0.06417237442922374,
+   "days": 183,
+   "modulation": 0.7827092413057013,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.31249230717763443
+  },
+  {
+   "khz": 216,
+   "occupancy": 0.0019539573820395737,
+   "days": 6,
+   "modulation": 1.5657254138266798,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.21461875539159747
+  },
+  {
+   "khz": 224,
+   "occupancy": 0.07364345509893455,
+   "days": 219,
+   "modulation": 0.7273103056294726,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.34339386012593653
+  },
+  {
+   "khz": 256,
+   "occupancy": 0.0773458904109589,
+   "days": 243,
+   "modulation": 0.5531695077854033,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.3894488402427867
+  },
+  {
+   "khz": 276,
+   "occupancy": 0.05186453576864536,
+   "days": 152,
+   "modulation": 0.6585473220836391,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.39729252027936646
+  },
+  {
+   "khz": 280,
+   "occupancy": 0.00209855403348554,
+   "days": 9,
+   "modulation": 1.5448776065276517,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.25661813283364676
+  },
+  {
+   "khz": 292,
+   "occupancy": 0.07395167427701674,
+   "days": 261,
+   "modulation": 0.5026113355115902,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.43776695051178827
+  },
+  {
+   "khz": 332,
+   "occupancy": 0.06154109589041096,
+   "days": 238,
+   "modulation": 0.46521981079577074,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.44855128475113815
+  },
+  {
+   "khz": 364,
+   "occupancy": 0.0009265601217656012,
+   "days": 3,
+   "modulation": 2.217659137577002,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.2826755589339185
+  },
+  {
+   "khz": 376,
+   "occupancy": 0.047539954337899544,
+   "days": 185,
+   "modulation": 0.42454076119582185,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.4590800059781557
+  },
+  {
+   "khz": 404,
+   "occupancy": 0.032612252663622526,
+   "days": 117,
+   "modulation": 0.5348579429438188,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.3924330557297804
+  },
+  {
+   "khz": 428,
+   "occupancy": 0.032517123287671236,
+   "days": 108,
+   "modulation": 0.5181674565560821,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.42460474627720224
+  },
+  {
+   "khz": 472,
+   "occupancy": 0.0003843226788432268,
+   "days": 1,
+   "modulation": 3.445544554455446,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.26549901211554783
+  },
+  {
+   "khz": 484,
+   "occupancy": 0.017102359208523592,
+   "days": 35,
+   "modulation": 0.6968517076426743,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.38281120961067905
+  },
+  {
+   "khz": 532,
+   "occupancy": 0.005582191780821918,
+   "days": 2,
+   "modulation": 1.8732106339468302,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.31641809125781417
+  },
+  {
+   "khz": 548,
+   "occupancy": 0.012281202435312024,
+   "days": 14,
+   "modulation": 3.0934159566227732,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.34352749434063057
+  },
+  {
+   "khz": 616,
+   "occupancy": 0.0003614916286149163,
+   "days": 0,
+   "modulation": 3.789473684210526,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.2730890767612931
+  },
+  {
+   "khz": 624,
+   "occupancy": 0.007623668188736682,
+   "days": 8,
+   "modulation": 0.7427002745195906,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.3219713407117377
+  },
+  {
+   "khz": 660,
+   "occupancy": 0.00636986301369863,
+   "days": 10,
+   "modulation": 1.7921146953405018,
+   "known": "auroral kilometric radiation",
+   "rel_dev": 0.27294147655341594
+  },
+  {
+   "khz": 708,
+   "occupancy": 0.007473363774733638,
+   "days": 4,
+   "modulation": 0.8553971486761711,
+   "known": "",
+   "rel_dev": 0.30430610583300766
+  },
+  {
+   "khz": 788,
+   "occupancy": 0.0037766362252663623,
+   "days": 4,
+   "modulation": 1.6322418136020151,
+   "known": "",
+   "rel_dev": 0.27385461126356025
+  },
+  {
+   "khz": 796,
+   "occupancy": 0.0004299847792998478,
+   "days": 0,
+   "modulation": 3.504424778761062,
+   "known": "",
+   "rel_dev": 0.2781643524283115
+  },
+  {
+   "khz": 804,
+   "occupancy": 0.005253044140030441,
+   "days": 3,
+   "modulation": 0.8257877580586743,
+   "known": "",
+   "rel_dev": 0.2782265126881638
+  },
+  {
+   "khz": 916,
+   "occupancy": 0.004499619482496195,
+   "days": 1,
+   "modulation": 1.5120507399577165,
+   "known": "",
+   "rel_dev": 0.24803433624400317
+  },
+  {
+   "khz": 1040,
+   "occupancy": 0.0042465753424657535,
+   "days": 2,
+   "modulation": 0.9139784946236559,
+   "known": "",
+   "rel_dev": 0.204361357344641
+  }
+ ]
+}

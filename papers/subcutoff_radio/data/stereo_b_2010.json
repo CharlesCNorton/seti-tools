@@ -1,0 +1,15 @@
+{
+ "year": 2010,
+ "craft": "behind",
+ "days": null,
+ "persistent": 6,
+ "explained": {
+  "1975.0": "amateur band",
+  "10425.0": "local to STEREO (Wind 0.010 within 25 kHz in 2010)",
+  "6975.0": "local to STEREO (Wind 0.002 within 25 kHz in 2010)",
+  "4075.0": "maritime mobile band",
+  "10475.0": "local to STEREO (Wind 0.001 within 25 kHz in 2010)",
+  "5925.0": "shortwave broadcast band"
+ },
+ "left": []
+}

@@ -1,0 +1,765 @@
+[
+ {
+  "tag": "MLc1",
+  "star": "HIP13402",
+  "session": "AGBT16A_999_212",
+  "f0": 1188.539231,
+  "drift_tabulated": 1.11,
+  "mhz": 1188.537163,
+  "drift": -0.9737,
+  "t0": 57541.695924691834,
+  "on_snr": [
+   10.6,
+   9.8,
+   5.9
+  ],
+  "on_line": [
+   3.8,
+   7.1,
+   3.43
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57541_59890_HIP12402_0015.gpuspec.0002.h5",
+    "on_line": 2.16,
+    "null_mean": 0.27,
+    "null_std": 0.7,
+    "as_high": 1,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57541_60602_HIP12482_0017.gpuspec.0002.h5",
+    "on_line": 0.23,
+    "null_mean": 0.21,
+    "null_std": 0.7,
+    "as_high": 96,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57541_61313_HIP12549_0019.gpuspec.0002.h5",
+    "on_line": 0.07,
+    "null_mean": 0.21,
+    "null_std": 0.68,
+    "as_high": 109,
+    "null_n": 200
+   }
+  ],
+  "off_z": 1.5,
+  "other": [],
+  "scans": 27,
+  "failed": 0
+ },
+ {
+  "tag": "MLc2",
+  "star": "HIP118212",
+  "session": "AGBT16B_999_105",
+  "f0": 1347.862244,
+  "drift_tabulated": -0.44,
+  "mhz": 1347.862123,
+  "drift": 0.4255,
+  "t0": 57752.92167684734,
+  "on_snr": [
+   9.6,
+   34.6,
+   25.4
+  ],
+  "on_line": [
+   1.98,
+   10.65,
+   8.77
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57752_78958_HIP117207_0022.gpuspec.0002.h5",
+    "on_line": 2.42,
+    "null_mean": 0.18,
+    "null_std": 0.63,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57752_79709_HIP117286_0024.gpuspec.0002.h5",
+    "on_line": 2.19,
+    "null_mean": 0.21,
+    "null_std": 0.66,
+    "as_high": 1,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57752_80454_HIP117334_0026.gpuspec.0002.h5",
+    "on_line": 2.75,
+    "null_mean": 0.26,
+    "null_std": 0.64,
+    "as_high": 0,
+    "null_n": 200
+   }
+  ],
+  "off_z": 6.0,
+  "other": [],
+  "scans": 56,
+  "failed": 0
+ },
+ {
+  "tag": "MLc3",
+  "star": "HIP62207",
+  "session": "AGBT16A_999_213",
+  "f0": 1351.62541,
+  "drift_tabulated": -0.05,
+  "mhz": 1351.623687,
+  "drift": 0.0558,
+  "t0": 57543.110496409645,
+  "on_snr": [
+   55.2,
+   66.6,
+   31.9
+  ],
+  "on_line": [
+   27.9,
+   25.36,
+   12.17
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_09023_HIP61072_0034.gpuspec.0002.h5",
+    "on_line": 3.78,
+    "null_mean": 0.03,
+    "null_std": 0.38,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_09782_HIP61074_0036.gpuspec.0002.h5",
+    "on_line": 1.57,
+    "null_mean": 0.08,
+    "null_std": 0.41,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_10527_HIP61114_0038.gpuspec.0002.h5",
+    "on_line": 2.94,
+    "null_mean": 0.09,
+    "null_std": 0.44,
+    "as_high": 0,
+    "null_n": 200
+   }
+  ],
+  "off_z": 11.5,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57542_83841_DIAG_PSR_J0820-1350_0002.gpuspec.0002.h5",
+    "target": "DIAG_PSR_J0820-1350",
+    "on": null,
+    "hours": -3.32,
+    "snr": 30.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_01870_HIP45954_0014.gpuspec.0002.h5",
+    "target": "HIP45954",
+    "on": false,
+    "hours": -2.09,
+    "snr": 8.6
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_02240_HIP47080_0015.gpuspec.0002.h5",
+    "target": "HIP47080",
+    "on": true,
+    "hours": -1.99,
+    "snr": 27.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_02935_HIP47080_0017.gpuspec.0002.h5",
+    "target": "HIP47080",
+    "on": true,
+    "hours": -1.8,
+    "snr": 35.8
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_03276_HIP46174_0018.gpuspec.0002.h5",
+    "target": "HIP46174",
+    "on": false,
+    "hours": -1.7,
+    "snr": 30.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_03617_HIP47080_0019.gpuspec.0002.h5",
+    "target": "HIP47080",
+    "on": true,
+    "hours": -1.61,
+    "snr": 11.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_04666_HIP46100_0022.gpuspec.0002.h5",
+    "target": "HIP46100",
+    "on": false,
+    "hours": -1.32,
+    "snr": 9.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_05689_HIP47201_0025.gpuspec.0002.h5",
+    "target": "HIP47201",
+    "on": true,
+    "hours": -1.03,
+    "snr": 11.3
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_06028_HIP46304_0026.gpuspec.0002.h5",
+    "target": "HIP46304",
+    "on": false,
+    "hours": -0.94,
+    "snr": 12.9
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_06379_HIP47513_0027.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.84,
+    "snr": 34.6
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_06729_HIP46367_0028.gpuspec.0002.h5",
+    "target": "HIP46367",
+    "on": false,
+    "hours": -0.74,
+    "snr": 38.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07078_HIP47513_0029.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.65,
+    "snr": 48.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07425_HIP46447_0030.gpuspec.0002.h5",
+    "target": "HIP46447",
+    "on": false,
+    "hours": -0.55,
+    "snr": 64.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07772_HIP47513_0031.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.45,
+    "snr": 60.7
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_08116_HIP46454_0032.gpuspec.0002.h5",
+    "target": "HIP46454",
+    "on": false,
+    "hours": -0.36,
+    "snr": 176.7
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_09023_HIP61072_0034.gpuspec.0002.h5",
+    "target": "HIP61072",
+    "on": false,
+    "hours": -0.11,
+    "snr": 9.8
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_11629_HIP66459_0041.gpuspec.0002.h5",
+    "target": "HIP66459",
+    "on": true,
+    "hours": 0.62,
+    "snr": 9.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_12389_HIP66459_0043.gpuspec.0002.h5",
+    "target": "HIP66459",
+    "on": true,
+    "hours": 0.83,
+    "snr": 11.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_12765_HIP65451_0044.gpuspec.0002.h5",
+    "target": "HIP65451",
+    "on": false,
+    "hours": 0.93,
+    "snr": 8.3
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_15275_HIP68469_0051.gpuspec.0002.h5",
+    "target": "HIP68469",
+    "on": true,
+    "hours": 1.63,
+    "snr": 21.3
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_15628_HIP67315_0052.gpuspec.0002.h5",
+    "target": "HIP67315",
+    "on": false,
+    "hours": 1.73,
+    "snr": 25.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_15981_HIP68469_0053.gpuspec.0002.h5",
+    "target": "HIP68469",
+    "on": true,
+    "hours": 1.83,
+    "snr": 25.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_16336_HIP67344_0054.gpuspec.0002.h5",
+    "target": "HIP67344",
+    "on": false,
+    "hours": 1.93,
+    "snr": 13.0
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_16691_HIP68469_0055.gpuspec.0002.h5",
+    "target": "HIP68469",
+    "on": true,
+    "hours": 2.02,
+    "snr": 86.6
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_17047_HIP67369_0056.gpuspec.0002.h5",
+    "target": "HIP67369",
+    "on": false,
+    "hours": 2.12,
+    "snr": 41.6
+   }
+  ],
+  "scans": 56,
+  "failed": 0
+ },
+ {
+  "tag": "MLc4",
+  "star": "HIP54677",
+  "session": "AGBT16A_999_182",
+  "f0": 1372.987594,
+  "drift_tabulated": -0.11,
+  "mhz": 1372.984569,
+  "drift": 0.1239,
+  "t0": 57517.11259632844,
+  "on_snr": [
+   40.8,
+   22.4,
+   18.9
+  ],
+  "on_line": [
+   28.37,
+   15.21,
+   13.3
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_09209_HIP53759_0010.gpuspec.0002.h5",
+    "on_line": 2.5,
+    "null_mean": 0.1,
+    "null_std": 0.39,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_10032_HIP53820_0012.gpuspec.0002.h5",
+    "on_line": 1.64,
+    "null_mean": 0.15,
+    "null_std": 0.49,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_10836_HIP53839_0014.gpuspec.0002.h5",
+    "on_line": -0.05,
+    "null_mean": 0.1,
+    "null_std": 0.43,
+    "as_high": 126,
+    "null_n": 200
+   }
+  ],
+  "off_z": 5.1,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_15327_HIP55846_0027.gpuspec.0002.h5",
+    "target": "HIP55846",
+    "on": null,
+    "hours": 1.6,
+    "snr": 24.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_15666_HIP54998_0028.gpuspec.0002.h5",
+    "target": "HIP54998",
+    "on": null,
+    "hours": 1.69,
+    "snr": 94.9
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_16005_HIP55846_0029.gpuspec.0002.h5",
+    "target": "HIP55846",
+    "on": null,
+    "hours": 1.76,
+    "snr": 63.1
+   }
+  ],
+  "scans": 28,
+  "failed": 0
+ },
+ {
+  "tag": "MLc5",
+  "star": "HIP54677",
+  "session": "AGBT16A_999_182",
+  "f0": 1376.988694,
+  "drift_tabulated": -0.11,
+  "mhz": 1376.984528,
+  "drift": 0.1247,
+  "t0": 57517.112980977545,
+  "on_snr": [
+   59.5,
+   35.3,
+   28.3
+  ],
+  "on_line": [
+   38.26,
+   26.44,
+   16.79
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_09209_HIP53759_0010.gpuspec.0002.h5",
+    "on_line": 1.76,
+    "null_mean": 0.14,
+    "null_std": 0.43,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_10032_HIP53820_0012.gpuspec.0002.h5",
+    "on_line": 2.51,
+    "null_mean": 0.14,
+    "null_std": 0.46,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_10836_HIP53839_0014.gpuspec.0002.h5",
+    "on_line": 1.46,
+    "null_mean": 0.11,
+    "null_std": 0.47,
+    "as_high": 1,
+    "null_n": 200
+   }
+  ],
+  "off_z": 6.8,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_15327_HIP55846_0027.gpuspec.0002.h5",
+    "target": "HIP55846",
+    "on": null,
+    "hours": 1.59,
+    "snr": 41.9
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_15666_HIP54998_0028.gpuspec.0002.h5",
+    "target": "HIP54998",
+    "on": null,
+    "hours": 1.68,
+    "snr": 88.0
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57517_16005_HIP55846_0029.gpuspec.0002.h5",
+    "target": "HIP55846",
+    "on": null,
+    "hours": 1.75,
+    "snr": 53.3
+   }
+  ],
+  "scans": 28,
+  "failed": 0
+ },
+ {
+  "tag": "MLc6",
+  "star": "HIP56802",
+  "session": "AGBT16A_999_188",
+  "f0": 1435.940307,
+  "drift_tabulated": -0.18,
+  "mhz": 1435.943619,
+  "drift": 0.182,
+  "t0": 57522.16460576465,
+  "on_snr": [
+   14.7,
+   45.7,
+   53.3
+  ],
+  "on_line": [
+   0.48,
+   21.19,
+   25.9
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57522_13603_HIP55875_0010.gpuspec.0002.h5",
+    "on_line": 2.16,
+    "null_mean": 0.12,
+    "null_std": 0.47,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57522_14414_HIP55884_0012.gpuspec.0002.h5",
+    "on_line": 2.5,
+    "null_mean": 0.09,
+    "null_std": 0.42,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57522_15220_HIP55937_0014.gpuspec.0002.h5",
+    "on_line": 0.87,
+    "null_mean": 0.15,
+    "null_std": 0.39,
+    "as_high": 6,
+    "null_n": 200
+   }
+  ],
+  "off_z": 6.9,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57522_15953_HIP58843_0016.gpuspec.0002.h5",
+    "target": "HIP58843",
+    "on": null,
+    "hours": 0.52,
+    "snr": 14.0
+   }
+  ],
+  "scans": 27,
+  "failed": 0
+ },
+ {
+  "tag": "MLc7",
+  "star": "HIP13402",
+  "session": "AGBT16A_999_215",
+  "f0": 1487.482046,
+  "drift_tabulated": 0.1,
+  "mhz": 1487.476626,
+  "drift": -0.1003,
+  "t0": 57544.607417705934,
+  "on_snr": [
+   93.0,
+   109.0,
+   125.5
+  ],
+  "on_line": [
+   50.46,
+   44.42,
+   81.04
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_51992_HIP11915_0034.gpuspec.0002.h5",
+    "on_line": 2.14,
+    "null_mean": 0.19,
+    "null_std": 0.46,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_52683_HIP12005_0036.gpuspec.0002.h5",
+    "on_line": 1.99,
+    "null_mean": 0.13,
+    "null_std": 0.42,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_53376_HIP12038_0038.gpuspec.0002.h5",
+    "on_line": -0.0,
+    "null_mean": 0.13,
+    "null_std": 0.43,
+    "as_high": 120,
+    "null_n": 200
+   }
+  ],
+  "off_z": 4.8,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_54845_HIP11029_0042.gpuspec.0002.h5",
+    "target": "HIP11029",
+    "on": false,
+    "hours": 0.7,
+    "snr": 51.0
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_55579_HIP11124_0044.gpuspec.0002.h5",
+    "target": "HIP11124",
+    "on": false,
+    "hours": 0.9,
+    "snr": 72.3
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_56311_HIP11124_0046.gpuspec.0002.h5",
+    "target": "HIP11124",
+    "on": false,
+    "hours": 1.1,
+    "snr": 30.9
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_57034_HIP11136_0048.gpuspec.0002.h5",
+    "target": "HIP11136",
+    "on": false,
+    "hours": 1.3,
+    "snr": 46.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57544_57743_HIP11139_0050.gpuspec.0002.h5",
+    "target": "HIP11139",
+    "on": false,
+    "hours": 1.5,
+    "snr": 14.9
+   }
+  ],
+  "scans": 57,
+  "failed": 0
+ },
+ {
+  "tag": "MLc8",
+  "star": "HIP62207",
+  "session": "AGBT16A_999_213",
+  "f0": 1724.972561,
+  "drift_tabulated": -0.126,
+  "mhz": 1724.970767,
+  "drift": 0.1424,
+  "t0": 57543.111072803855,
+  "on_snr": [
+   19.5,
+   37.1,
+   40.4
+  ],
+  "on_line": [
+   11.58,
+   22.44,
+   25.87
+  ],
+  "off": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_09023_HIP61072_0034.gpuspec.0002.h5",
+    "on_line": 1.24,
+    "null_mean": 0.1,
+    "null_std": 0.43,
+    "as_high": 0,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_09782_HIP61074_0036.gpuspec.0002.h5",
+    "on_line": 1.19,
+    "null_mean": 0.05,
+    "null_std": 0.43,
+    "as_high": 3,
+    "null_n": 200
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_10527_HIP61114_0038.gpuspec.0002.h5",
+    "on_line": 1.77,
+    "null_mean": 0.09,
+    "null_std": 0.44,
+    "as_high": 0,
+    "null_n": 200
+   }
+  ],
+  "off_z": 5.3,
+  "other": [
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_02588_HIP46135_0016.gpuspec.0002.h5",
+    "target": "HIP46135",
+    "on": false,
+    "hours": -1.91,
+    "snr": 12.9
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_02935_HIP47080_0017.gpuspec.0002.h5",
+    "target": "HIP47080",
+    "on": true,
+    "hours": -1.81,
+    "snr": 10.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_03617_HIP47080_0019.gpuspec.0002.h5",
+    "target": "HIP47080",
+    "on": true,
+    "hours": -1.62,
+    "snr": 17.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_05689_HIP47201_0025.gpuspec.0002.h5",
+    "target": "HIP47201",
+    "on": true,
+    "hours": -1.05,
+    "snr": 11.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_06379_HIP47513_0027.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.85,
+    "snr": 8.1
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_06729_HIP46367_0028.gpuspec.0002.h5",
+    "target": "HIP46367",
+    "on": false,
+    "hours": -0.76,
+    "snr": 100.5
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07078_HIP47513_0029.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.66,
+    "snr": 19.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07425_HIP46447_0030.gpuspec.0002.h5",
+    "target": "HIP46447",
+    "on": false,
+    "hours": -0.56,
+    "snr": 157.8
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_07772_HIP47513_0031.gpuspec.0002.h5",
+    "target": "HIP47513",
+    "on": true,
+    "hours": -0.47,
+    "snr": 13.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_08116_HIP46454_0032.gpuspec.0002.h5",
+    "target": "HIP46454",
+    "on": false,
+    "hours": -0.37,
+    "snr": 110.8
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_15275_HIP68469_0051.gpuspec.0002.h5",
+    "target": "HIP68469",
+    "on": true,
+    "hours": 1.62,
+    "snr": 30.4
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_15981_HIP68469_0053.gpuspec.0002.h5",
+    "target": "HIP68469",
+    "on": true,
+    "hours": 1.81,
+    "snr": 28.2
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_16336_HIP67344_0054.gpuspec.0002.h5",
+    "target": "HIP67344",
+    "on": false,
+    "hours": 1.91,
+    "snr": 8.7
+   },
+   {
+    "file": "spliced_blc0001020304050607_guppi_57543_17047_HIP67369_0056.gpuspec.0002.h5",
+    "target": "HIP67369",
+    "on": false,
+    "hours": 2.11,
+    "snr": 13.2
+   }
+  ],
+  "scans": 56,
+  "failed": 0
+ }
+]

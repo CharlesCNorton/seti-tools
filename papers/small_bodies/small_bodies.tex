@@ -1,0 +1,452 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Surfaces, Shapes, Spins and Orbits:\\ Archival Tests for Artifacts Among the Small Bodies}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+An artifact among the asteroids, comets and meteoroids would most likely be found in the
+archives that already hold its brightness, colour, shape, spin and orbit. We apply
+thirteen tests to them. Of $315$ radar detections, every albedo above $0.3$ belongs to
+a metal-rich or enstatite body and none is the specular return of a flat reflector.
+Gaia DR3 reflectance spectra of $58208$ bodies hold no solar-cell surface, which
+injections recover at $10$ per cent of a body's light in $88$ per cent of cases. In
+$4723$ ALCDEF sessions no brightening recurs at a body's rotation period beyond chance.
+No ATLAS phase curve is flat at a high albedo, and no NEOWISE fit stays hotter than
+sunlight allows at every epoch. Reduced to zero phase, no lightcurve amplitude among
+$31008$ records exceeds the $2.5$\,mag of a $10:1$ plate. The longest straight limbs in
+$395$ stellar occultations lie on bodies whose shape models carry flat facets. No
+kilometre body spins faster than ten minutes or needs more than $100$\,kPa to hold
+together. The one triple of asteroids that share a period, magnitude and amplitude on
+unrelated orbits is three S-types at the spin barrier's pile-up, a one-in-$25$ chance.
+Among $301$ bodies with radial non-gravitational terms, three are lighter than a rubble
+pile, each with a published explanation. No near-Earth object occupies the cells the
+delivery model leaves empty in a way dynamics forbids. The densest hyperbolic meteor
+group of the Global Meteor Network's $3.58$ million orbits is matched by a $1.5$ per
+cent speed bias, and its focal line holds no stream. NELIOTA's $284$ lunar impact
+flashes are thermal and recur in place no more often than chance.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+The search for artifacts in the Solar System~\cite{Freitas1983,HaqqMisra2012} asks
+whether something made, a probe, a reflector, a habitat or a fragment, is among the
+bodies we already catalogue~\cite{Benford2019}. Surveys of the small bodies were not
+designed for that question, but they hold what it needs: radar echoes, reflectance
+spectra, lightcurves, phase curves, thermal fits, occultation chords, non-gravitational
+terms in the orbit solutions, and the orbits of meteoroids and of the near-Earth
+population. A made object can differ from a natural body in each: a flat, conducting or
+photovoltaic surface; a shape no collisional fragment has; a spin no rubble pile
+survives; an area too large for its mass; an orbit the natural sources do not reach.
+This paper puts each of these to the archive that measures it, with a null drawn from
+the same data, and states what each would have found.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item Tests of the surfaces of the small bodies: radar albedos, Gaia DR3 reflectance
+spectra against metal and photovoltaic templates with injected surfaces, glints in
+ALCDEF lightcurves, ATLAS phase curves and NEOWISE beaming parameters.
+\item Tests of their shapes and spins: lightcurve amplitudes at zero phase, straight
+limbs in occultation profiles, the strength that the fastest spins need, and bodies that
+share a period, size and amplitude on unrelated orbits.
+\item Tests of their orbits: area-to-mass ratios from non-gravitational terms, near-Earth
+objects where the delivery model has none, and coherent hyperbolic meteor streams.
+\item A test of NELIOTA's lunar impact flashes for non-thermal colours and recurrence.
+\end{enumerate}
+
+% =============================================================================
+\section{Surfaces}\label{sec:surfaces}
+% =============================================================================
+
+\emph{Radar.} A flat metal plate facing the radar returns its echo in the opposite
+circular sense with a radar albedo near one, where a rough natural surface returns some
+power in the same sense and a stony one has an albedo near $0.1$~\cite{Shepard2015}. The
+compilation of every published asteroid radar detection in the Small Bodies Node, $315$
+objects, holds nine albedos above $0.3$: M- and X-class bodies, the radar-metallic
+1986~DA~\cite{Ostro1991}, the E-types Nereus and 1998~WT24, and the Sq-type Bacchus at
+$0.33\pm0.25$. None combines an albedo near one with a same-sense to opposite-sense ratio
+near zero, the signature of a specular reflector.
+
+\emph{Reflectance spectra.} Gaia DR3 gives reflectance spectra of $60518$ Solar System
+objects in $16$ bands from $374$ to $1034$\,nm~\cite{Galluccio2023}, of which $58208$
+have twelve or more good bands from $418$ to $990$\,nm. Each is fitted by the first
+four principal components of the sample, with and without the reflectance of a
+photovoltaic cell and of gold, copper, silver and aluminium from their optical
+constants~\cite{Polyanskiy2024} as an additive component. No spectrum takes a
+photovoltaic component, and the drops in $\chi^2$ above $25$ that the metal templates
+give fall on V, A and S types whose deep absorption bands the four components fit
+poorly. Injected into $3000$ spectra, a photovoltaic surface is recovered in $41$, $88$
+and $100$ per cent of cases at $5$, $10$ and $20$ per cent of the light at $550$\,nm;
+gold and copper in $19$ and $9$ per cent at $50$ per cent of the light, and silver and
+aluminium, whose reflectance is nearly flat across the band, never.
+
+\emph{Glints.} A flat surface on a spinning body reflects the Sun toward us once a
+rotation, as a brief spike at a fixed rotational phase. In the ALCDEF photometry,
+$4723$ sessions of $20$ or more points at $15$\,min or less on bodies with an LCDB
+period~\cite{Warner2009} of quality $2$ or better, spikes above the rotational
+lightcurve that recur at the body's period are compared with the same statistic for
+fades. No body's spikes recur at $p<0.01$, where the fades, tested the same way, gather
+in ten groups. Injected spikes are recovered in $3$, $29$, $52$ and $63$ per cent of
+sessions at $0.05$, $0.1$, $0.2$ and $0.5$\,mag.
+
+\emph{Phase curves.} A surface that shines with its own light, or that reflects as a
+smooth specular body does, brightens little with decreasing phase angle. The ATLAS
+phase curves in two bands~\cite{Mahlke2021} give $39239$ fits of the $H$, $G_1$, $G_2$
+function~\cite{Muinonen2010} spanning phase angles below $7^\circ$ and above $25^\circ$,
+with a median slope of $0.0277$\,mag per degree from $5$ to $30^\circ$. The $221$ curves
+pinned at the flattest slope the function allows, $0.0179$\,mag per degree, have median
+residuals of $0.28$\,mag, rotation swamping the phase signal; the $107$ of them with
+measured albedos have $0.03$ to $0.74$, none above the $0.8$ that a flat curve on a bright
+surface would need to stand out.
+
+\emph{Beaming.} A body heated by more than the Sun shows a hotter dayside than a rough
+sunlit surface can, a NEATM~\cite{Harris1998} beaming parameter below about $0.6$. Of
+the $74609$ NEOWISE thermal fits with a free beaming parameter~\cite{Mainzer2011}, of
+$68500$ objects, eight fall below $0.6$ at $2\sigma$, each at a single epoch, and the
+lowest sits at the fit's floor of $0.3$; the population's first percentile is $0.68$,
+and no object stays below $0.6$ at every epoch it was fitted.
+
+% =============================================================================
+\section{Shapes and spins}\label{sec:shapes}
+% =============================================================================
+
+\emph{Plates.} A collisional fragment's lightcurve amplitude rarely exceeds $1.2$\,mag at
+low phase, while a plate of axis ratio $10$ reaches $2.5$\,mag. In the LCDB's detail
+records, $31008$ of quality $2$ or $3$ at phase angles up to $15^\circ$, with amplitudes
+reduced to zero phase at $0.03$\,mag per degree, five records exceed $1.6$\,mag, $0.02$
+per cent against the $0.11$ per cent of the quality-1 records, one exceeds $2.0$ and none
+$2.5$. All five are single TESS records~\cite{Pal2020} of slow rotators of $9$ to $627$\,h,
+three marked ambiguous; no body exceeds a $4:1$ axis ratio at low phase.
+
+\emph{Straight limbs.} A stellar occultation traces a body's limb chord by chord. The
+occultation bundle of the Small Bodies Node holds $395$ events of fit quality $3$ or $4$
+with five or more positive chords from distinct sites, of which $376$ are measured once
+$19$ whose chords disagree or whose fitted ellipse is far from the body's size are set
+aside. Each chord's ends are placed on the fundamental plane, and the longest run of
+four or more consecutive limb points that a
+line fits within the timing errors is measured against the diameter and against the
+fitted ellipse's points at the same angles and errors. The median run is $0.21$ of the
+diameter and the $90$th percentile $0.67$. Twenty-five runs exceed the ellipse's null at
+$p<0.01$, the longest on (3317)~Paris in 2020 ($0.97$ of the diameter over six sites),
+(134)~Sophrosyne in 1980 ($0.86$), (64)~Angelina in 2023 ($0.82$), (39)~Laetitia in 1998
+($0.79$) and (2)~Pallas in 1983 ($0.70$ over six of $120$ chords). Their shape
+models~\cite{Durech2010} carry the flat facets that an ellipse lacks, so the null that
+decides is the models projected at each event's geometry.
+
+\emph{Spin strength.} A gravitational aggregate of $2000$\,kg\,m$^{-3}$ flies apart
+faster than about $2.3$\,h~\cite{Pravec2000}, and a faster spin needs cohesion that grows
+with size~\cite{Holsapple2007}. Of the $8854$ asteroids with periods and diameters in the
+LCDB, no kilometre body spins faster than ten minutes or needs $100$\,kPa; the most
+demanding are 2019~MA2, $0.49$\,km across from its $H$ and spinning in $2.62$\,min at
+quality~$2$, which needs $97$\,kPa, within a monolith's strength, and 2008~RA106,
+$3.7$\,km and $54$\,min at quality $2-$, which needs $11$\,kPa. The secure fast rotators
+of the $31149$ periods of quality $2$ or $3$ are the cohesive ones already published.
+
+\emph{Replicated bodies.} Objects made to one design would share a period, a size and a
+lightcurve amplitude on orbits that collisions do not relate. Among $4315$ numbered
+asteroids with LCDB periods of quality~$3$ and the proper elements of the asteroid-family
+bundle~\cite{Nesvorny2015}, pairs that agree in period to $2\times10^{-4}$, in $H$ to
+$0.1$\,mag and in amplitude to $0.05$\,mag while more than $300$\,m\,s$^{-1}$ apart in
+the Zappal\`a metric~\cite{Zappala1990} number $14$, against $8.6\pm2.8$ with the periods
+shuffled within half-magnitude bins, and one group of three forms, against
+$0.04\pm0.18$, once in $25$ shuffles: (3305)~Ceadams, (5122)~Mucha and (2019)~van Albada,
+at $2.7290$ to $2.7294$\,h, $H=12.3$ to $12.4$ and amplitudes $0.20$ to $0.23$, in three
+families. Their Gaia reflectance spectra are all S-type, with red slopes to $1.21$ to
+$1.26$ at $770$\,nm and the $1\,\mu$m band, and their period lies in the pile-up of fast
+rotators near the spin barrier, where periods crowd.
+
+% =============================================================================
+\section{Orbits}\label{sec:orbits}
+% =============================================================================
+
+\emph{Area-to-mass ratios.} A radial non-gravitational term $A_1$ measures the push of
+sunlight or outgassing per unit mass, and for a body pushed by sunlight alone gives its
+area-to-mass ratio. Of the $301$ objects with $A_1$ in JPL's database, three are lighter
+than a rubble pile under the most favourable assumptions: the active asteroid
+362P/(2008~GO98), the interstellar object 1I/2017~U1 and the dark comet
+2016~NJ33~\cite{Seligman2023}, two of them with transverse or normal terms that mark
+activity.
+
+\emph{Unreachable orbits.} The delivery model of Granvik et al.~\cite{Granvik2018} gives
+the density of near-Earth objects from each natural source over orbital elements, and
+leaves cells empty that no source reaches. The JPL database holds $37$ near-Earth objects
+in those cells: $24$ retrograde, all at eccentricities of $0.74$ or more, the
+Halley-type comets and comet-like asteroids; none retrograde below $0.3$; one
+near-circular orbit inside $0.75$\,au above $25^\circ$, 2025~LP, within the Atira
+population; and $12$ above $60^\circ$ with eccentricities below $0.25$, which Kozai
+cycles~\cite{Kozai1962} reach from lower inclinations.
+
+\emph{Hyperbolic meteor streams.} Meteoroids from another star, or debris shed by
+something travelling between stars, would arrive on one incoming asymptote at one
+speed. The Global Meteor Network~\cite{Vida2021} holds $3.58$ million orbits from 2018
+to 2026, $40753$ sporadic meteors hyperbolic at $3\sigma$; each orbit gives its incoming
+asymptote and excess speed, and a meteor's neighbours within $1^\circ$ and
+$3$\,\kms\ are counted against the density within $10^\circ$. Thirty-five meteors fall
+below $p=10^{-4}$ in ten groups. Eight belong to IAU showers~\cite{Jopek2017} whose
+speeds are overestimated (Perseids, Orionids, $\eta$~Aquariids and the $\xi$~Perseids).
+The largest, $16$ meteors from 2022 to 2026 at solar longitudes $80$ to $214^\circ$ on
+one asymptote at ecliptic longitude $134.5^\circ$ and latitude $-1.6^\circ$ at
+$12$\,\kms, is matched by a $16$-member group in one of three realisations of a $1.5$ per
+cent speed overestimate shared by the elliptic sporadics, $74000$ simulated meteors, and
+fifteen realisations thinned to the observed number at $1.0$ to $2.0$ per cent give $3$
+to $31$ meteors below $p=10^{-4}$ and groups of up to $14$. SonotaCo's independent
+$353231$ orbits~\cite{SonotaCo2009} hold one meteor on that asymptote against $0.16$ from
+the local density and about $1.6$ that a real stream would give. A stream would also
+spread along the loci on which Earth's gravity focuses it, reaching $\pm52^\circ$ of
+latitude, half of them south, as Earth crosses the asymptote near solar longitude
+$134.5^\circ$: the August 3 to 11 loci hold $529$ meteors against a mean of $16$ on $11$
+control asymptotes, but $510$ of them lie north, where the Perseids ($204$ tagged) and
+the apex sporadics are, and $19$ south, against $10$ by chance. The group is the speed
+bias acting on the shower population, and no star within $100$\,pc shares its velocity
+on its line.
+
+% =============================================================================
+\section{Lunar flashes}\label{sec:moon}
+% =============================================================================
+
+Impacts on the Moon's night side flash thermally for tens of milliseconds; a flash from
+a surface source, a lamp or a laser, would be hotter or cooler than the impact plume,
+longer, or recur at one place. NELIOTA's flash lists~\cite{Liakos2020,Liakos2024} hold
+$284$ flashes from 2017 to 2023, $188$ of them validated and $192$ with $R$ and $I$
+photometry, located to $0.5^\circ$. Colour temperatures from $R-I$ through the Planck
+ratio, with Vega's colour as the zero point, have a median of $2935$\,K and a $5$th to
+$95$th percentile range of $2027$ to $5020$\,K; none is hotter than $8000$ or cooler than
+$1000$\,K at $3\sigma$, and none lasts longer than $0.5$\,s, the longest $429$\,ms. Pairs
+within $1.5^\circ$ number $21$ against $23.9\pm4.9$ with the longitudes permuted among the
+flashes ($p=0.75$); the closest, two validated flashes $0.10^\circ$ apart on consecutive
+Perseid nights of 2018 August at $(+26.7^\circ,+60.2^\circ)$, with temperatures of $4100$
+and $3000$\,K, is one that a tenth of a pair is expected to match.
+
+\begin{table}[t]
+\centering\small
+\caption{The thirteen tests, their samples and results.}
+\label{tab:tests}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.2\textwidth} >{\raggedright\arraybackslash}p{0.31\textwidth} >{\raggedright\arraybackslash}p{0.41\textwidth}}
+\toprule
+Test & Sample & Result \\
+\midrule
+Radar albedos & $315$ radar detections & albedos above $0.3$ are M, X, E and one Sq type; no specular reflector \\
+Reflectance spectra & $58208$ Gaia DR3 spectra & no photovoltaic or metal surface; $88$ per cent recovery at $10$ per cent of the light \\
+Glints & $4723$ ALCDEF sessions & no spikes recurring at the rotation period at $p<0.01$ \\
+Phase curves & $39239$ ATLAS curves & the flattest are rotation-dominated, albedos $0.03$ to $0.74$ \\
+Beaming & $74609$ NEOWISE fits & eight single-epoch fits below $\eta=0.6$; none at every epoch \\
+Plates & $31008$ LCDB records & none above $2.5$\,mag at zero phase \\
+Straight limbs & $395$ occultations & longest runs on bodies with faceted shape models \\
+Spin strength & $8854$ asteroids & no kilometre body under $10$\,min or above $100$\,kPa \\
+Replicated bodies & $4315$ asteroids & one S-type triple at the spin barrier, one in $25$ \\
+Area-to-mass & $301$ radial terms & three light bodies, each explained \\
+Unreachable orbits & $37$ near-Earth objects & comets, an Atira and Kozai-reachable orbits \\
+Hyperbolic streams & $40753$ hyperbolic meteors & groups matched by a $1.5$ per cent speed bias; no focal line \\
+Lunar flashes & $284$ NELIOTA flashes & thermal, $2000$ to $5000$\,K; recurrence at chance \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+Freitas~\cite{Freitas1983} set out the search for extraterrestrial artifacts in the
+Solar System, Papagiannis~\cite{Papagiannis1983} argued for exploring the asteroid belt
+for them, Haqq-Misra and Kopparapu~\cite{HaqqMisra2012} estimated how little of the
+Solar System has been searched at the sizes a probe would have, and
+Benford~\cite{Benford2019} proposed the co-orbital objects of the Earth as the likeliest
+places for one. The tests here rest on
+the archives' own studies: the radar survey of metal-rich asteroids~\cite{Shepard2015},
+the Gaia reflectance spectra~\cite{Galluccio2023}, the ATLAS phase
+curves~\cite{Mahlke2021}, the spin barrier and its cohesive
+exceptions~\cite{Pravec2000,Holsapple2007}, the dark comets~\cite{Seligman2023}, the
+debiased near-Earth population~\cite{Granvik2018} and the meteor networks' orbit
+catalogues~\cite{Vida2021,SonotaCo2009}, which this paper puts to the use those
+proposals describe.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No test finds an artifact among the small bodies. Every bright radar echo is a metallic
+or enstatite asteroid, no reflectance spectrum carries a photovoltaic surface, no
+lightcurve glints at its rotation period, no phase curve or thermal fit needs a source
+of light other than the Sun, no amplitude, limb or spin exceeds what natural shapes and
+strengths allow, the one coincidence of period, size and amplitude is the expected
+crowding at the spin barrier, every light body is explained, no near-Earth orbit lies
+beyond the natural sources' reach, the hyperbolic meteor groups are speed biases, and the
+lunar flashes are impacts.
+
+The reach differs from test to test. The spectra exclude photovoltaic cover of a tenth of
+a body's light among bodies Gaia measured, down to about $G=20$, and say nothing of
+silver or aluminium; the glint search reaches spikes of $0.1$\,mag in a third of the
+sessions; the radar sample is the $315$ bodies radar has reached; the occultation test
+needs the shape-model null to separate a made facet from a natural one; and an object
+smaller or fainter than these surveys' limits, or one that keeps its distance from the
+inner Solar System, is not constrained.
+
+\section*{Acknowledgements}
+
+This work uses the Planetary Data System Small Bodies Node (the asteroid radar
+compilation, the ALCDEF photometry, the Asteroid Lightcurve Database, the occultation
+bundle and the asteroid-family bundle), Gaia DR3 through CDS and ESA, the ATLAS phase
+curves through VizieR, the NEOWISE diameters and albedos from the NASA/IPAC Infrared
+Science Archive, JPL's Small-Body Database, the Global Meteor Network's trajectory
+summaries, SonotaCo's orbit catalogue, the IAU Meteor Data Center, the NELIOTA flash
+tables, the optical constants of refractiveindex.info, and the software NumPy, SciPy and
+astropy.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Freitas1983}
+R.~A. Freitas, The search for extraterrestrial artifacts (SETA), \emph{J. Br. Interplanet.
+Soc.} \textbf{36}, 501 (1983).
+
+\bibitem{Papagiannis1983}
+M.~D. Papagiannis, The importance of exploring the asteroid belt, \emph{Acta Astronaut.}
+\textbf{10}, 709 (1983).
+
+\bibitem{HaqqMisra2012}
+J.~Haqq-Misra and R.~K. Kopparapu, On the likelihood of non-terrestrial artifacts in the
+Solar System, \emph{Acta Astronaut.} \textbf{72}, 15 (2012).
+
+\bibitem{Benford2019}
+J.~Benford, Looking for lurkers: co-orbiters as SETI observables, \emph{Astron. J.}
+\textbf{158}, 150 (2019).
+
+\bibitem{Shepard2015}
+M.~K. Shepard, P.~A. Taylor, M.~C. Nolan, et al., A radar survey of M- and X-class
+asteroids. III. Insights into their composition, hydration state, and structure,
+\emph{Icarus} \textbf{245}, 38 (2015).
+
+\bibitem{Ostro1991}
+S.~J. Ostro, D.~B. Campbell, J.~F. Chandler, et al., Asteroid 1986 DA: radar evidence for
+a metallic composition, \emph{Science} \textbf{252}, 1399 (1991).
+
+\bibitem{Galluccio2023}
+Gaia Collaboration, L.~Galluccio, M.~Delbo, et al., Gaia Data Release 3: reflectance
+spectra of Solar System small bodies, \emph{Astron. Astrophys.} \textbf{674}, A35 (2023).
+
+\bibitem{Polyanskiy2024}
+M.~N. Polyanskiy, Refractiveindex.info database of optical constants, \emph{Sci. Data}
+\textbf{11}, 94 (2024).
+
+\bibitem{Warner2009}
+B.~D. Warner, A.~W. Harris and P.~Pravec, The asteroid lightcurve database,
+\emph{Icarus} \textbf{202}, 134 (2009).
+
+\bibitem{Mahlke2021}
+M.~Mahlke, B.~Carry and L.~Denneau, Asteroid phase curves from ATLAS dual-band
+photometry, \emph{Icarus} \textbf{354}, 114094 (2021).
+
+\bibitem{Muinonen2010}
+K.~Muinonen, I.~N. Belskaya, A.~Cellino, et al., A three-parameter magnitude phase
+function for asteroids, \emph{Icarus} \textbf{209}, 542 (2010).
+
+\bibitem{Harris1998}
+A.~W. Harris, A thermal model for near-Earth asteroids, \emph{Icarus} \textbf{131}, 291
+(1998).
+
+\bibitem{Mainzer2011}
+A.~Mainzer, T.~Grav, J.~Masiero, et al., Thermal model calibration for minor planets
+observed with Wide-field Infrared Survey Explorer/NEOWISE, \emph{Astrophys. J.}
+\textbf{736}, 100 (2011).
+
+\bibitem{Pal2020}
+A.~P\'al, R.~Szak\'ats, Cs.~Kiss, et al., Solar System objects observed with TESS: first
+data release, bright main-belt and Trojan asteroids from the southern survey,
+\emph{Astrophys. J. Suppl.} \textbf{247}, 26 (2020).
+
+\bibitem{Durech2010}
+J.~\v{D}urech, V.~Sidorin and M.~Kaasalainen, DAMIT: a database of asteroid models,
+\emph{Astron. Astrophys.} \textbf{513}, A46 (2010).
+
+\bibitem{Pravec2000}
+P.~Pravec and A.~W. Harris, Fast and slow rotation of asteroids, \emph{Icarus}
+\textbf{148}, 12 (2000).
+
+\bibitem{Holsapple2007}
+K.~A. Holsapple, Spin limits of Solar System bodies: from the small fast-rotators to
+2003 EL61, \emph{Icarus} \textbf{187}, 500 (2007).
+
+\bibitem{Nesvorny2015}
+D.~Nesvorn\'y, M.~Bro\v{z} and V.~Carruba, Identification and dynamical properties of
+asteroid families, in \emph{Asteroids IV}, ed. P.~Michel, F.~E. DeMeo and W.~F. Bottke
+(Univ. Arizona Press, 2015), p.~297.
+
+\bibitem{Zappala1990}
+V.~Zappal\`a, A.~Cellino, P.~Farinella and Z.~Kne\v{z}evi\'c, Asteroid families. I.
+Identification by hierarchical clustering and reliability assessment, \emph{Astron. J.}
+\textbf{100}, 2030 (1990).
+
+\bibitem{Seligman2023}
+D.~Z. Seligman, D.~Farnocchia, M.~Micheli, et al., Dark comets? Unexpectedly large
+nongravitational accelerations on a sample of small asteroids, \emph{Planet. Sci. J.}
+\textbf{4}, 35 (2023).
+
+\bibitem{Granvik2018}
+M.~Granvik, A.~Morbidelli, R.~Jedicke, et al., Debiased orbit and absolute-magnitude
+distributions for near-Earth objects, \emph{Icarus} \textbf{312}, 181 (2018).
+
+\bibitem{Kozai1962}
+Y.~Kozai, Secular perturbations of asteroids with high inclination and eccentricity,
+\emph{Astron. J.} \textbf{67}, 591 (1962).
+
+\bibitem{Vida2021}
+D.~Vida, D.~\v{S}egon, P.~S. Gural, et al., The Global Meteor Network: methodology and
+first results, \emph{Mon. Not. R. Astron. Soc.} \textbf{506}, 5046 (2021).
+
+\bibitem{Jopek2017}
+T.~J. Jopek and Z.~Ka\v{n}uchov\'a, IAU Meteor Data Center: the shower database, a status
+report, \emph{Planet. Space Sci.} \textbf{143}, 3 (2017).
+
+\bibitem{SonotaCo2009}
+SonotaCo, A meteor shower catalog based on video observations in 2007--2008,
+\emph{WGN} \textbf{37}, 55 (2009).
+
+\bibitem{Liakos2020}
+A.~Liakos, A.~Z. Bonanos, E.~M. Xilouris, et al., NELIOTA: methods, statistics, and
+results for meteoroids impacting the Moon, \emph{Astron. Astrophys.} \textbf{633}, A112
+(2020).
+
+\bibitem{Liakos2024}
+A.~Liakos, A.~Z. Bonanos, E.~M. Xilouris, et al., NELIOTA: new results and updated
+statistics after 6.5 years of lunar impact flashes monitoring, \emph{Astron. Astrophys.}
+\textbf{687}, A14 (2024).
+
+\end{thebibliography}
+
+\end{document}

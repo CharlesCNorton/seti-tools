@@ -1,0 +1,341 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Persistent Narrowband Radio Lines Below the Ionospheric Cutoff:\\ 27 Years of Wind and Five Years of STEREO}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Below about $10$\,MHz the ionosphere reflects radio waves, so a transmitter at those
+frequencies can be heard only from space. We search every one-minute spectrum of the
+Wind/WAVES receivers from 1995 to 2021, $20$\,kHz to $13.8$\,MHz, and every spectrum of
+STEREO-A in 2008, 2012 and 2020 and of STEREO-B in 2010 and 2012, $125$\,kHz to
+$16$\,MHz, for lines that persist: a channel five robust deviations above its
+neighbours in more than one per cent of the minutes on thirty days or more. Every
+persistent line has a known source. The solar wind's plasma line, Earth's auroral
+kilometric radiation and the terrestrial broadcast, maritime, aeronautical and amateur
+services account for most, and terrestrial leakage is recognised by its day-to-day
+correlation with the broadcast lines of the 41\,m band, which reaches the spacecraft
+only through a sunlit ionosphere. The rest are made on the spacecraft: Wind's lines at
+$8025$ and $1175$\,kHz, which do not follow the broadcast lines, and lines that one
+STEREO spacecraft holds five times as often as Wind or the other spacecraft, among them
+$10425$\,kHz in both STEREO receivers, whose occupancy in STEREO-A rose from $0.08$ per
+cent in 2008 to $4.7$ per cent in 2020. No persistent line remains outside the known
+sources in any of the $32$ spacecraft-years. The channels are $3$, $20$ and $50$\,kHz
+wide, so the search is for narrow lines only in the sense that a line fills one
+channel; a $5\sigma$ line in Wind's RAD2 carries $2\times10^{-16}$\,W\,m$^{-2}$, the
+output of a $6\times10^{7}$\,W isotropic source at $1$\,au or of $2\times10^{18}$\,W at
+$1$\,pc, so the search is one of the Solar System and of the strongest conceivable
+transmitters at the nearest stars; Wind's RAD1 measures only $32$ to $38$ of its $256$
+channels directly, which alone carry its search, and $64$ per cent of RAD2's band and
+$52$ per cent of STEREO's lie inside the terrestrial service bands, where a line is
+assigned to the service and not counted.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Radio searches for technosignatures listen from the ground, where the ionosphere
+reflects everything below its plasma frequency of a few to about ten megahertz, and
+searches at low frequencies, such as one with the Murchison Widefield Array near
+$100$\,MHz~\cite{Tingay2016}, observe well above it. The band from tens
+of kilohertz to ten megahertz is open only to receivers in space. The interstellar plasma
+frequency is a few kilohertz, but free-free absorption~\cite{RybickiLightman1979} in the
+warm, partly ionised clouds around the Sun, with $n_e \approx 0.1$\,cm$^{-3}$ at about
+$7000$\,K~\cite{RedfieldLinsky2008}, sets the reach: across $5$ to $10$\,pc of such gas
+the optical depth is about $0.1$ at $1$\,MHz, $1$ near $300$\,kHz and $10$ at $100$\,kHz,
+so nearby stars are heard through it above a few hundred kilohertz, depending on the
+sightline, and below about $100$\,kHz only sources within the heliosphere or across the
+shortest paths through warm gas. Spacecraft built to study the solar wind and the
+magnetosphere have recorded that band continuously for three decades: the WAVES
+receivers of Wind~\cite{Bougeret1995}, since 2004 at the Sun-Earth L1 point, and those of
+the twin STEREO spacecraft~\cite{Bougeret2008}, which drifted ahead of and behind Earth
+on its orbit from 2006.
+
+Their spectra are crowded with natural lines and with terrestrial ones. Earth's auroral
+kilometric radiation reaches far beyond the magnetosphere~\cite{Gurnett1974}, and
+terrestrial transmitters leak through the ionosphere where it is sunlit, as the Radio
+Astronomy Explorer found~\cite{Herman1973}. A narrowband transmitter elsewhere would
+add a line that persists in one channel, whose behaviour from minute to minute and day to
+day separates it from these. This paper searches the full Wind and STEREO records for
+such lines.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item A search of $27$ years of Wind/WAVES and $5$ years of STEREO/WAVES spectra for
+persistent narrowband lines below the ionospheric cutoff.
+\item Two tests that separate terrestrial and spacecraft lines from the rest: a line's
+day-to-day correlation with the broadcast lines, and its occupancy in the other
+spacecraft, which share the sky but not the receiver.
+\end{enumerate}
+
+% =============================================================================
+\section{Data and method}\label{sec:method}
+% =============================================================================
+
+\emph{Data.} Wind's RAD1 receiver covers $20$ to $1040$\,kHz in $256$ channels $4$\,kHz
+apart and $3$\,kHz wide, and RAD2 $1.075$ to $13.825$\,MHz in $256$ channels $50$\,kHz
+apart and $20$\,kHz wide~\cite{Bougeret1995}; CDAWeb's WI\_H1\_WAV files give one-minute
+averages of both for every day from 1995 to 2021, and no later year is in the archive.
+RAD2 measures every channel. RAD1 measures $32$ to $38$ of its channels in nearly every
+minute of every year, from $20$ to $1040$\,kHz at spacings that grow from $4$\,kHz at
+the bottom to about $100$\,kHz at the top, and the archive fills the other channels by
+interpolation between the measured ones, which the files mark through each day's minimum
+voltage. STEREO's high-frequency receiver
+covers $125$\,kHz to $16$\,MHz in $50$\,kHz channels about every $39$\,s, from CDAWeb's
+level-3 files, whose spectra are calibrated in W\,m$^{-2}$\,Hz$^{-1}$ after the
+subtraction of a daily background. We take every spectrum of STEREO-A in 2008, 2012 and
+2020 and of STEREO-B in 2010 and 2012, years spread over the spacecraft's drift from
+Earth and, for 2012, held by both.
+
+\emph{Lines.} In each spectrum a channel carries a line when it stands five robust
+deviations above the median of its eight neighbouring channels. A channel's occupancy is
+the fraction of a year's spectra in which it carries a line, and a line is persistent
+when its occupancy exceeds one per cent on thirty days or more. In RAD1 a measured
+channel stands above interpolated neighbours whenever the spectrum curves, so its lines
+are tested among the measured channels alone, each against the median of its eight
+nearest measured neighbours. A line narrower than a channel is diluted over the channel's
+width, so the statistic is a line's power against the background in the channel, and a
+line is narrowband here only in the sense of filling one channel of $3$, $20$ or
+$50$\,kHz.
+
+\emph{Known sources.} A persistent line is assigned, in order, to the spacecraft's own
+lines; to the shortwave broadcast bands within $25$\,kHz; to Earth's auroral kilometric
+radiation between $100$ and $700$\,kHz and the solar wind's plasma line below
+$100$\,kHz; to the maritime and aeronautical mobile bands within $25$\,kHz and the
+amateur bands; to broadcasting up to $200$\,kHz outside the broadcast bands; and to the
+terrestrial sources whose occupancy by hour of UT varies by more than its mean, since
+Earth's transmitters wax and wane as it turns. The service bands with their $25$\,kHz
+margins cover $64$ per cent of RAD2's range and $52$ per cent of STEREO's, and with the
+$200$\,kHz of out-of-band broadcasting $76$ and $62$ per cent; the auroral and
+plasma-line ranges cover $67$ per cent of RAD1's. A line inside those ranges is
+assigned to the service or the natural source and not counted, so the search for lines
+outside the known sources covers the remaining quarter of RAD2's band, $38$ per cent of
+STEREO's, and the third of RAD1's above $700$\,kHz.
+
+\emph{Sensitivity.} The channel-to-channel scatter of a one-minute spectrum sets what
+a line must carry. In RAD2 the robust deviation of a channel from the median of its
+eight neighbours is $2.4$ per cent of the background power, in every year sampled
+(1999 and 2020), so a $5\sigma$ line adds $12$ per cent of the background to a channel.
+Above $1$\,MHz the background is the Galaxy's, whose brightness is close to
+$10^{-20}$\,W\,m$^{-2}$\,Hz$^{-1}$\,sr$^{-1}$ from $2$ to $10$\,MHz~\cite{Cane1979},
+and a short dipole collects it from $8\pi/3$\,sr, so the background's equivalent flux
+density is $8\times10^{-20}$\,W\,m$^{-2}$\,Hz$^{-1}$ and the threshold for a line
+filling RAD2's $20$\,kHz is $F=5\times0.024\times8\times10^{-20}\times2\times10^{4}
+\approx2\times10^{-16}$\,W\,m$^{-2}$, for a source at the antenna's best direction.
+That is the flux of an isotropic source of $6\times10^{7}$\,W at $1$\,au,
+$2\times10^{18}$\,W at $1$\,pc and $2\times10^{20}$\,W at $10$\,pc, or of a transmitter
+of $5\times10^{7}$\,W behind a kilometre-wide aperture at $1$\,pc, whose beam at
+$5$\,MHz is $60$\,rad across and gains nothing. STEREO's calibrated spectra scatter by
+$6$ to $7$ per cent of a background of $1.4\times10^{-19}$\,W\,m$^{-2}$\,Hz$^{-1}$
+above $2$\,MHz in the raw receiver power and by $23$ per cent of the
+background-subtracted level, so its $50$\,kHz channels reach about
+$2\times10^{-15}$\,W\,m$^{-2}$. RAD1's measured channels scatter about the median of
+their measured neighbours by $3$ per cent of the background in 2020 and by $10$ per
+cent above $300$\,kHz and $29$ per cent below it in 1999, where the auroral emission
+varies from minute to minute, so a line must exceed its neighbours by $15$ per cent of
+the background in the one year and by half to one and a half times it in the other;
+with the galactic brightness absorbed to a few
+$10^{-21}$\,W\,m$^{-2}$\,Hz$^{-1}$ below $1$\,MHz the threshold in a $3$\,kHz channel
+is of order $10^{-17}$ to $10^{-16}$\,W\,m$^{-2}$, where the receiver's own noise,
+which dominates the lowest channels, raises it further.
+
+\emph{Day-to-day correlation.} Terrestrial leakage reaches the spacecraft only through a
+sunlit ionosphere, so every leaked line rises and falls from day to day with the
+broadcast lines of the $41$\,m band ($7225$ to $7375$\,kHz). The Spearman correlation of
+a line's daily occupancy with theirs separates leakage from a line made on the
+spacecraft or arriving from beyond Earth.
+
+\emph{Spacecraft lines.} A narrowband source beyond the spacecraft reaches Wind and both
+STEREO spacecraft, whose receivers are about equally sensitive, about equally often. A
+line that one spacecraft holds five times as often as Wind, or as the other STEREO
+spacecraft in the same year, is made on that spacecraft.
+
+\emph{Instrument changes.} Two intervals change Wind's spectra. During its spacecraft
+anomaly of 2014 October 26 to 2015 January 30 the $1175$\,kHz channel switched on and off,
+and in 2014 and 2015 RAD1's list of measured channels shrank to $15$; both are set aside.
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+\emph{Wind.} In every year from 1995 to 2021 the persistent lines all have known
+sources. In RAD2 there are $119$ persistent lines in 1995, $153$ in 1996, $112$ in 1998
+and $153$ in 1999: in 1999, $55$ in the broadcast bands, $36$ in the maritime and $13$ in
+the aeronautical bands, $14$ in out-of-band broadcasting, $2$ in the amateur bands, $31$
+with the diurnal modulation of a terrestrial source, and $2$ of Wind's own. One line
+outside the broadcast bands,
+$6975$\,kHz in 1997, follows the $41$\,m lines from day to day (Spearman $0.52$), as
+terrestrial leakage must, and so does $7175$\,kHz in 2020 ($0.53$). The steady line at
+$8025$\,kHz, present on $365$ and $330$ days of 2020 and 2021 with no daily modulation,
+does not ($-0.16$, against $0.74$ for the broadcast line at $9625$\,kHz), so it is made
+on Wind; so are the lines at $1175$\,kHz and, in 1995, at $1275$ and $1525$\,kHz. In
+RAD1 the test against all neighbouring channels marks $55$ to $96$ lines a year, every
+one a measured channel standing above its interpolated neighbours, which is the
+interpolation and not a line. Tested among the measured channels alone over 2020, the
+$48$ channels RAD1 measured hold $26$ persistent lines, all below $500$\,kHz: eight
+below $100$\,kHz, where the solar wind's plasma line wanders, and $18$ from $104$ to
+$484$\,kHz in the range of the auroral kilometric radiation, with occupancies of $1.4$
+to $7.7$ per cent and the day-to-day variation of that emission; the six measured
+channels above $700$\,kHz hold none.
+
+\emph{STEREO.} Table~\ref{tab:stereo} lists the STEREO years. STEREO-A holds $7$, $8$
+and $10$ persistent lines in 2008, 2012 and 2020 and STEREO-B $6$ in each of 2010 and
+2012, every one in a service band, in the range of auroral kilometric radiation, or made
+on the spacecraft. The spacecraft lines include
+$1275$, $1475$, $1675$ and $2075$\,kHz, which Wind holds less than a fifth as often,
+$725$\,kHz in STEREO-A in 2012, which STEREO-B holds $0.7$ per cent of the time against
+STEREO-A's $25$, and $10425$\,kHz, which STEREO-B holds $87$ to $90$ per cent of the time
+in 2010 and 2012 and STEREO-A $0.08$, $0.4$ and $4.7$ per cent in 2008, 2012 and 2020,
+while Wind's occupancy there stays near $0.7$ per cent: a line of the receiver design
+that grew in STEREO-A.
+
+\begin{table}[t]
+\centering\small
+\caption{The STEREO years. Persistent lines exceed one per cent occupancy on thirty days
+or more; left are those outside the known sources. Spacecraft lines are held five times
+as often as by Wind or the other STEREO spacecraft in the same year; the others lie in
+service bands or in the range of auroral kilometric radiation.}
+\label{tab:stereo}
+\begin{tabular}{l c r r >{\raggedright\arraybackslash}p{0.45\textwidth}}
+\toprule
+Spacecraft & Year & Persistent & Left & Spacecraft lines (kHz) \\
+\midrule
+STEREO-A & 2008 & $7$ & $0$ & $1375$, $1675$ \\
+STEREO-A & 2012 & $8$ & $0$ & $725$, $1275$, $1475$, $1675$, $2075$ \\
+STEREO-A & 2020 & $10$ & $0$ & $725$, $1275$, $1475$, $1675$, $6925$, $10425$ \\
+STEREO-B & 2010 & $6$ & $0$ & $6975$, $10425$, $10475$ \\
+STEREO-B & 2012 & $6$ & $0$ & $6975$, $10425$, $10475$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+\emph{Low-frequency searches.} Searches for narrowband technosignatures at the lowest
+frequencies observed from the ground, near $100$\,MHz, have used wide-field arrays such
+as the Murchison Widefield Array~\cite{Tingay2016}, whose channels of tens of kilohertz
+and sensitivity of tens of janskys over hours make them, like this one, searches for
+powerful broadband-channel emitters rather than for hertz-wide lines; we find no search
+below the ionospheric cutoff.
+
+\emph{Spacecraft radio receivers.} The receivers of Wind and STEREO were built for solar
+radio bursts, interplanetary plasma waves and Earth's radio emissions, and their
+calibration against the Galaxy's background~\cite{Dulk2001} makes them sensitive
+monitors of the whole low-frequency sky. The Radio Astronomy Explorer first showed how
+much terrestrial noise leaks to space~\cite{Herman1973}.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No persistent narrowband line below the ionospheric cutoff, from $20$\,kHz to $16$\,MHz,
+lies outside the known natural, terrestrial and spacecraft sources in $27$ years of Wind
+spectra and five years of STEREO spectra. Terrestrial leakage betrays itself by
+following the broadcast bands from day to day, and lines made on a spacecraft by being
+missing from the others.
+
+The search covers lines present in more than one per cent of the minutes on a month of
+days, five robust deviations above the neighbouring channels in a minute's average,
+which in RAD2 is $2\times10^{-16}$\,W\,m$^{-2}$ in a $20$\,kHz channel: a transmitter
+of $6\times10^{7}$\,W radiating isotropically anywhere within $1$\,au, or of
+$2\times10^{18}$\,W at $1$\,pc, so the result bounds emitters in the Solar System and
+only the most powerful conceivable ones at the nearest stars, where a beam gains
+nothing at these wavelengths. A
+transmitter that is brief, drifting or broader than a channel is not constrained, nor is
+one inside the bands of terrestrial services, which are set aside whole and cover two
+thirds of the band above $1$\,MHz; RAD1 constrains only its $32$ to $38$ measured
+channels. Below a few
+hundred kilohertz the warm interstellar clouds absorb, so that part of the band bounds
+transmitters within the heliosphere and along the shortest paths through warm gas. The STEREO
+spacecraft's direction finding would give the arrival direction of any line the
+spacecraft share, and the years of STEREO not yet searched would extend the comparison
+across the spacecraft's whole drift.
+
+\section*{Acknowledgements}
+
+This work uses Wind/WAVES and STEREO/WAVES data from NASA's Coordinated Data Analysis Web
+(CDAWeb) at the Space Physics Data Facility, and the software NumPy, SciPy and cdflib.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Tingay2016}
+S.~J. Tingay, C.~Tremblay, A.~Walsh and R.~Urquhart, An opportunistic search for
+extraterrestrial intelligence (SETI) with the Murchison Widefield Array,
+\emph{Astrophys. J. Lett.} \textbf{827}, L22 (2016).
+
+\bibitem{RybickiLightman1979}
+G.~B. Rybicki and A.~P. Lightman, \emph{Radiative Processes in Astrophysics} (Wiley, New
+York, 1979).
+
+\bibitem{RedfieldLinsky2008}
+S.~Redfield and J.~L. Linsky, The structure of the local interstellar medium. IV.
+Dynamics, morphology, physical properties, and implications of cloud-cloud
+interactions, \emph{Astrophys. J.} \textbf{673}, 283 (2008).
+
+\bibitem{Bougeret1995}
+J.-L. Bougeret, M.~L. Kaiser, P.~J. Kellogg, et al., WAVES: the radio and plasma wave
+investigation on the Wind spacecraft, \emph{Space Sci. Rev.} \textbf{71}, 231 (1995).
+
+\bibitem{Bougeret2008}
+J.-L. Bougeret, K.~Goetz, M.~L. Kaiser, et al., S/WAVES: the radio and plasma wave
+investigation on the STEREO mission, \emph{Space Sci. Rev.} \textbf{136}, 487 (2008).
+
+\bibitem{Gurnett1974}
+D.~A. Gurnett, The Earth as a radio source: terrestrial kilometric radiation, \emph{J.
+Geophys. Res.} \textbf{79}, 4227 (1974).
+
+\bibitem{Herman1973}
+J.~R. Herman, J.~A. Caruso and R.~G. Stone, Radio Astronomy Explorer (RAE)-I
+observations of terrestrial radio noise, \emph{Planet. Space Sci.} \textbf{21}, 443
+(1973).
+
+\bibitem{Dulk2001}
+G.~A. Dulk, W.~C. Erickson, R.~Manning and J.-L. Bougeret, Calibration of low-frequency
+radio telescopes using the galactic background radiation, \emph{Astron. Astrophys.}
+\textbf{365}, 294 (2001).
+
+\bibitem{Cane1979}
+H.~V. Cane, Spectra of the non-thermal radio radiation from the galactic polar regions,
+\emph{Mon. Not. R. Astron. Soc.} \textbf{189}, 465 (1979).
+
+\end{thebibliography}
+
+\end{document}

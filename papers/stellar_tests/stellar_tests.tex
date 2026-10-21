@@ -1,0 +1,442 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Dimming, Orbits, Clocks and Abundances:\\ Archival Tests for Technosignatures Among the Stars}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A technology at a star could change the star's light, the motions of the bodies around
+it, the timing of its variations or the composition of its surface, in ways that its
+astrophysics does not. We test each kind of change against the archive that measures
+it. In light, no star dims over a century, between Hipparcos and Gaia or within Gaia's
+epochs without a natural cause, no transit deepens from Kepler to TESS in the light curves
+themselves, the Kepler giants lack flux as often as they gain it,
+no variable changes colour while holding its brightness or holds its brightness at
+discrete levels, and no hot body is smaller than a white dwarf. In motion, no orbit is
+too light for the light it shows, no eclipsing binary too
+light for its eclipses, no transit faster than escape velocity, no planet pair in exact
+commensurability, no orbit synchronised with its star beyond the tidal range, no
+planet aimed at the Earth, and no planetary system or co-moving group arranged beyond
+chance. In timing, no two stars share a clock beyond the period distribution, and
+no star in the Earth's transit zone or on the ellipsoid of a nova flashes at the moment
+it would see us or the nova. In composition, no dwarf carries fission products
+or processed carbon and nitrogen without a natural cause. The one result that remains
+open, a $5.5$ per cent polarisation assigned to an unreddened star in 1977, is the
+subject of its own note.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Most technosignature searches look for a signal; a technology also leaves the star it
+occupies changed. Material in orbit dims and reddens the starlight it intercepts and
+re-radiates it in the infrared~\cite{Dyson1960,Wright2014}, a structure placed to be seen
+transits in a way a planet does not~\cite{Arnold2005}, and material deposited in a star
+changes its surface composition~\cite{WhitmireWright1980}. The large surveys of the last
+three decades measure every star near the Sun in brightness, colour, position, motion
+and composition, at many epochs, and each of these changes has a limit the star's own
+physics sets. This paper puts the limits to the surveys, with a null drawn from the same
+data for each, and states what remains.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item Tests of starlight: dimming over a century, between Hipparcos and Gaia and within
+Gaia's epochs, transit depths from Kepler to TESS, missing flux in asteroseismic giants, colour without brightness and
+brightness at discrete levels, hot bodies smaller than white dwarfs, and dust at white
+dwarfs.
+\item Tests of motion: orbits too light for their light, eclipsers too light for their
+eclipses, transits faster than escape velocity, exact commensurabilities, synchronous
+orbits, aimed transits, the orientation of orbits and the clustering of co-moving stars.
+\item Tests of timing and geometry: shared clocks, the Earth's transit zone at
+opposition, the ellipsoids of novae and the stars in the beams of planetary radar.
+\item Tests of composition: fission products and processed carbon and nitrogen in dwarfs.
+\end{enumerate}
+
+% =============================================================================
+\section{Light}\label{sec:light}
+% =============================================================================
+
+\emph{Dimming over a century.} A structure built over a century would dim its star by a
+measurable amount. In the Harvard plates of DASCH~\cite{Tang2013}, the $300$ nearest
+sun-like stars of $G=8$ to $11$ have differential trends against comparison stars on the
+same plates with a spread of $0.12$\,mag per century, and the two above $3.5\sigma$ have
+slopes in their plate series that disagree with one common slope; injected fadings are
+recovered in $7$, $60$ and $83$ per cent of cases at $0.4$, $0.6$ and $1.0$\,mag per
+century.
+
+\emph{Dimming between Hipparcos and Gaia.} For $15{,}189$ Hipparcos stars within
+$100$\,pc fainter than $G=6$, Gaia's $G$ against the Hipparcos magnitude~\cite{Perryman1997}
+after a colour term spreads by $0.0034$\,mag for constant single stars; $218$ stars are
+fainter in Gaia by five robust deviations, every one with a natural cause: a Hipparcos
+variability flag, a neighbour Hipparcos summed, a close companion that Gaia's $G$ misses,
+a spotted rotator or an astrometric binary. Of the $531$ brighter in Gaia, $19$ have
+none.
+
+\emph{Dips within Gaia and Hipparcos epochs.} Of $130$ variables within $100$\,pc whose
+Gaia epoch photometry dips with a skewness above $1.5$ outside the classifier's natural
+classes, every dipper is a single epoch, a single transit with its neighbours undimmed,
+a close binary measured differently at each scan angle, a periodic eclipse, reddening or
+a dip in $G$ alone. Of $17{,}285$ Hipparcos stars, $23$ keep a dip seen in both fields of
+view, the rate beyond $100$\,pc, and the deepest is an eclipsing binary in TESS. The
+$28$ Gaia alerts within $2''$ of a star within $100$\,pc are flares on red and brown
+dwarfs, two dwarf-nova outbursts, a young star's flare, a flare star's slow rise and a
+distant dwarf nova behind a spurious parallax. Of the stars with both a Hipparcos-to-Gaia
+deviation and a NEOWISE W2 trend, $671$, the highest combined value of optical dimming
+and mid-infrared brightening arises by chance at its rank $99$ per cent of the time
+against the W2 trends re-paired among stars of like brightness.
+
+\emph{Transit depths from Kepler to TESS.} A structure under construction, or a swarm
+filling in, deepens its transit at the same period and duration. Of $102$ Kepler objects
+of interest that are TESS objects of interest within $6''$ and $0.2$ per cent in period,
+three are deeper in TESS at $5\sigma$ with the duration held, and two shallower, the
+null. Measured the same way in both missions' light curves, each transit's centre against
+a line fitted to its sides, two of the deeper transits are deeper only in the
+crowding-corrected flux, the pipeline's estimate of the neighbours' light in TESS's
+$21''$ pixels, and one is deeper only in the TOI table; of the shallower, one is diluted
+by light in the aperture beyond the crowding model and one is shallower only in the
+table.
+
+\emph{Missing bolometric flux.} A star's seismic radius and temperature give its
+luminosity; a structure intercepting its light leaves Gaia's luminosity short of it.
+Among $14{,}959$ single Kepler giants with seismic radii~\cite{Yu2018} and Gaia
+luminosities~\cite{Berger2020}, deficits are as common as excesses at every threshold,
+$31$ against $35$ beyond $4\sigma$, and the extreme deficits have a dwarf's luminosity
+and a giant's oscillations: background giants in foreground dwarfs' apertures.
+
+\emph{Colour without brightness, and brightness in levels.} A filter that changes a
+star's colour while holding its brightness would be no spot or companion. Of $1073$ Gaia
+variables brighter than $G=16$ whose $G$ scatter is below $0.003$\,mag while BP and RP
+scatter by $0.02$ or more, $899$ exceed the quiet sources' tail; the $60$ highest, read
+epoch by epoch, move BP and RP together, a neighbour entering both windows, or scatter in
+one band alone, and none moves BP against RP. Conversely, of $1845$ ZTF spotted
+variables~\cite{Chen2020}, nine have an amplitude ratio that is grey at $3\sigma$: eight
+RS~CVn and BY~Dra systems above the main sequence, where the companion dilutes the spots'
+colour, and a pre-main-sequence star in NGC~2264 occulted by its disk. In the TESS $20$\,s light curves
+of the stars within $30$\,pc, $2096$ steps at $7\sigma$ with transitions of two minutes or
+less are, $149$ of them, common to three or more stars of a sector, and the rest split
+$1484$ up and $460$ down, flare rises; no light curve holds three levels each revisited.
+
+\emph{Bodies too small or too blue.} A body hot by colour and smaller than a white dwarf
+would need a source other than a star. Among $5278$ sources within $100$\,pc with
+black-body colour temperatures above $7000$\,K, $22$ with clean astrometry and photometry
+lie below $0.003\,R_\odot$, all of them catalogued white dwarfs, four in the list of
+infrared-faint white dwarfs of Bergeron et al.~\cite{Bergeron2022}, whose collision-induced
+absorption makes a $3000$\,K photosphere read hot by colour, and none with an ultraviolet
+detection. In the Euclid Q1 catalogue, none of the $14$ point sources bluer than the
+Rayleigh-Jeans slope in $I_E-H_E$ is so at $3\sigma$ with clean flags, unblended and
+steady.
+
+\emph{White dwarfs.} Dust at a white dwarf pollutes its atmosphere with the metals it
+accretes, and warm material without pollution would be no disc of rock. Of $1434$ DESI
+DR1 white dwarfs with unWISE W1 and W2 and parallaxes at $5\sigma$, $13$ exceed the
+photosphere in both bands, five of them unblended with excesses of $900$ to $1500$\,K
+and $1.6$ to $3.3$\,mag in W1, the excess of an unresolved brown dwarf rather than the
+$0.3$ to $1$\,mag of a dust disc. Of $16{,}676$ white dwarfs within $100$\,pc~\cite{GentileFusillo2021},
+$25$ have W3 or W4 above the photosphere with W1 and W2 photospheric; the strongest are an
+extended source in the Galactic plane, an optical ghost, single-exposure detections and
+cirrus.
+
+% =============================================================================
+\section{Motion}\label{sec:motion}
+% =============================================================================
+
+\emph{Light without mass.} A luminous object that weighs nothing moves its star's
+photocentre and not its spectrum. Of $42$ Gaia DR3 astrometric orbits within $100$\,pc
+with HARPS or HIRES velocities, nine have photocentre orbits the velocities exclude:
+close and long-period companions, a period beside Gaia's scanning law, and blended
+double-lined stars, two of which Gaia itself resolves on part of its transits.
+
+\emph{Eclipsers too light for their eclipses.} An opaque screen eclipses without moving
+its star. Among $956$ Gaia eclipsing binaries deeper than $0.75$\,mag with ten or more RVS
+transits, the observed velocity amplitude over the least a main-sequence eclipser of the
+depth's size demands has a median of $0.73$, and the ten below $0.1$ are a saturated
+giant, an unphysical model depth, two binaries whose blended lines read low, a Kepler
+system whose true period and depth differ from Gaia's, and five stars flat at Gaia's
+period in ZTF and TESS: Gaia's depths and periods, not the velocities, fail.
+
+\emph{Transits faster than escape velocity.} A bound body crosses its star no faster than
+the star's surface escape speed, which sets a floor on a full transit's duration. Of the
+Kepler threshold-crossing events with characterised hosts~\cite{Berger2020}, $281$ fall
+below $0.8$ of the floor at their fitted geometry: $253$ on giants, $26$ pulsators, an
+eclipsing binary, a KOI with centroid flags and a single cadence flagged for cosmic rays.
+Of the TESS objects of interest, $242$ fall below the floor at zero impact parameter:
+giants, contact binaries and pulsators, published false positives, and $42$ candidates
+without an impact parameter in the catalogue. Their TESS light curves, folded at the
+catalogue ephemeris and fitted with a trapezoid whose flat-bottom fraction bounds the
+impact parameter, give $20$ a duration that a bound orbit reaches at some impact
+parameter, four a V shape that leaves a grazing chord, and three a flat bottom whose
+largest allowed impact parameter keeps the crossing within the escape speed; five show
+no transit at the catalogue ephemeris, and ten have no TESS light curve in the public
+archives.
+
+\emph{Commensurability and synchrony.} An engineered system could hold its planets in
+exact resonance or its orbits in step with its star. Of $2393$ planet pairs, none lies
+within $10^{-5}$ of a small-integer ratio, and five within $10^{-4}$ against $3.4$, in the
+librating chains of TOI-1136, Kepler-223 and HD~110067. Of $541$ Kepler planets at
+periods of $10$\,d or more around hosts with rotation periods~\cite{McQuillan2013,Mazeh2015},
+$25$ orbit within $2$ per cent of the rotation period, its double or its half, against
+$23.4\pm4.6$ with the periods shuffled, and the four $1{:}1$ matches drift in rotational
+phase by $0.17$ to $0.25$ of a cycle over four years, as spots do.
+
+\emph{Aimed transits.} A structure placed to be seen from the Earth transits at a small
+impact parameter. The fitted impact parameters of $2294$ Kepler candidates and planets
+pile up at zero where the fits of injected planets do too, through poorly constrained
+fits at the parameter's lower bound, and the $153$ planets with impact parameters
+measured to $0.1$ hold $7$ below $0.05$ against $11.3$ expected.
+
+\emph{Orbits and groups.} Of $1361$ Gaia astrometric companions that may be
+substellar~\cite{Gaia2023nss}, $6.2$ per cent have an orbital pole within $15^\circ$ of a
+Galactic pole against $6.3$ per cent of the stellar companions at the same latitudes;
+the $74$ whose upper mass bound lies below $0.2\,M_\odot$ hold nine against $4.7\pm2.1$
+($p=0.04$), one reading of a small set among several. Of
+$6044$ APOGEE dwarfs within $100$\,pc with velocities, the $31$ groups within $10$\,pc and
+$1$\,\kms\ are the Hyades and co-natal pairs, with metallicity spreads only at the
+pipeline's temperature edge; and the $2977$ wide binaries of the coverage store share no
+anomaly between their members beyond the permutations.
+
+\emph{Imaging candidates.} Of the candidate companions of the Gemini/NICI and NaCo direct
+imaging surveys with two or more epochs, the few off both the co-moving and the
+background track are known brown dwarfs in orbital motion, a background star on its
+track in Gaia DR3, and a faint source moving $200$\,mas\,yr$^{-1}$ of its own, as a field
+brown dwarf would.
+
+% =============================================================================
+\section{Timing and geometry}\label{sec:timing}
+% =============================================================================
+
+\emph{Shared clocks.} Beacons built by one civilization could share a period. Among
+$770{,}043$ ZTF periodic variables~\cite{Chen2020}, pairs more than $10''$ apart that agree
+in period scale linearly with the tolerance, as a smooth period distribution gives, and
+those that agree in phase as well number $42{,}112$ against $41{,}384$ to $42{,}020$ with
+the phases shuffled; the largest groups sit on periods the catalogue repeats exactly.
+
+\emph{The Earth's transit zone at opposition.} A star in the Earth's transit zone sees the
+Earth transit the Sun at our opposition, the moment a signal timed to that event would
+leave. Of the stars within $100$\,pc and $0.27^\circ$ of the ecliptic with TESS two-minute
+data at opposition, $27$ windows of sectors $42$ to $46$ hold no lone flash against $0.37$
+expected and no brightening against $1.12$, and $12$ windows of sectors $70$ to $72$ hold
+one lone flash against $0.53$.
+
+\emph{Nova ellipsoids.} A civilization that saw a nova could signal when its light reached
+them, and stars on the ellipsoid with the nova and the Earth at its foci would be seen to
+do so now~\cite{Davenport2022,Cabrales2024}. Of the stars within $100$\,pc on the ellipsoids of T~CrB's
+1866 and 1946 eruptions, GK~Per, V603~Aql, RR~Pic, DQ~Her, CP~Pup, V1500~Cyg and the
+supernovae of 1572 and 1604, observed by TESS at their arrival, the flashes and light
+curves with flashes match the same stars' other sectors, the one excess carried by
+active binaries whose flares follow the sectors.
+
+\emph{Radar beams and beams between stars.} A star in the beam of a planetary radar
+would reply after twice its light-travel time. The $813$ stars within $100$\,pc in the
+beams of every published radar measurement from 1968 to 2025 are no closer than
+$48.9$ light years, so no reply is due before 2117. And of the $2705$ stars within
+$20$\,pc, $37$ pairs lie on opposite sides of the Earth within a $0.25^\circ$ beam, as many
+as random directions give.
+
+% =============================================================================
+\section{Composition}\label{sec:composition}
+% =============================================================================
+
+\emph{Fission products.} Fission waste deposited in a star raises zirconium, molybdenum,
+ruthenium, barium, neodymium and europium together in a pattern no nucleosynthesis
+makes~\cite{WhitmireWright1980}. Among $50{,}742$ GALAH DR4 stars~\cite{Buder2025} with clean
+abundances of the six, fission-like patterns are rarer than the mirror pattern at every
+threshold, $71$ against $230$ above $5\sigma$, and the $23$ FGK dwarfs with molybdenum and
+ruthenium all lie within $2.5\sigma$ of solar.
+
+\emph{Processed carbon and nitrogen.} A dwarf whose surface carries the products of the
+CNO cycle has gained them from a companion. Of $31{,}351$ APOGEE dwarfs, $91$ are
+nitrogen-rich at $5\sigma$ against the locus in temperature and metallicity and none
+carbon-rich; $57$ of the $91$ are Gaia binaries against $28$ per cent of random dwarfs, the
+mark of transfer from an evolved companion, $78$ carry binary, s-process, sodium,
+rotation, evolution or temperature-edge flags, and the $13$ that carry none all carry
+the pipeline's microturbulence grid-edge warning, which biases carbon and nitrogen in
+dwarfs.
+
+\begin{table}[t]
+\centering\small
+\caption{The tests, their samples and results.}
+\label{tab:tests}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.24\textwidth} >{\raggedright\arraybackslash}p{0.3\textwidth} >{\raggedright\arraybackslash}p{0.38\textwidth}}
+\toprule
+Test & Sample & Result \\
+\midrule
+Century dimming & $300$ DASCH stars & no consistent trend \\
+Hipparcos to Gaia & $15{,}189$ stars & every dimming natural \\
+Gaia and Hipparcos dips & $130$; $17{,}285$ stars & natural, at the background rate \\
+Transit depths & $102$ KOI-TOI pairs & crowding corrections, catalogue depths \\
+Missing flux & $14{,}959$ giants & deficits as common as excesses \\
+Colour without brightness & $1073$ Gaia variables & neighbours in the windows \\
+Discrete levels & $1806$ TESS sectors & flare rises and shared steps \\
+Too small or too blue & $5278$; $14$ sources & infrared-faint white dwarfs; flags \\
+White-dwarf dust & $1434$; $16{,}676$ white dwarfs & brown dwarfs, artefacts \\
+Light without mass & $42$ orbits & companions and blends \\
+Light eclipsers & $956$ binaries & Gaia's depths and periods \\
+Escape velocity & Kepler, TESS events & giants, pulsators, false positives, chords \\
+Commensurability & $2393$ pairs & librating chains \\
+Synchrony & $541$ planets & at the chance rate \\
+Aimed transits & $2294$ planets & the fits' pile-up \\
+Orbit poles, groups & $1361$ orbits; $6044$ dwarfs & at chance; co-natal \\
+Shared clocks & $770{,}043$ variables & at the period distribution \\
+Transit zone at opposition & $39$ windows & at the background rate \\
+Nova ellipsoids & ten eruptions & at the background rate \\
+Fission products & $50{,}742$ stars & rarer than the mirror \\
+Processed CNO & $31{,}351$ dwarfs & binaries and pipeline flags \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+Dyson~\cite{Dyson1960} proposed the infrared signature of a star's surroundings
+reprocessed, and Wright et al.~\cite{Wright2014} set out the search for it; Arnold~\cite{Arnold2005}
+proposed artificial transits, Whitmire and Wright~\cite{WhitmireWright1980} fission waste in
+a star, and Davenport et al.~\cite{Davenport2022,Cabrales2024} searched the ellipsoid of
+SN~1987A for signals timed to it. The tests here rest on the surveys' own catalogues: Hipparcos and
+Gaia~\cite{Perryman1997,Gaia2023nss}, DASCH~\cite{Tang2013}, the Kepler giants'
+asteroseismology~\cite{Yu2018} and luminosities~\cite{Berger2020}, ZTF's periodic
+variables~\cite{Chen2020}, the Kepler rotation periods~\cite{McQuillan2013,Mazeh2015}, the
+Gaia white dwarfs~\cite{GentileFusillo2021,Bergeron2022} and GALAH~\cite{Buder2025}.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No test finds a star changed in light, motion, timing or composition beyond what its
+astrophysics and the surveys' own systematics give. Dimming is variability, blending or
+an epoch's error; deepened transits are crowding corrections and catalogue depths; missing
+flux is a background giant; colour without brightness is a
+neighbour; the hot small bodies are infrared-faint white dwarfs; light orbits are blends
+and companions; light eclipsers are Gaia's depths; fast transits are giants, pulsators
+and chords away from the centre; commensurabilities are librating chains; aimed transits are the fits'
+degeneracy; shared clocks are the period distribution; the transit zone and the nova
+ellipsoids hold flashes at the background rate; and the abundance outliers are binaries
+and pipeline flags. The reach of each test is its survey's: the century test reaches
+fadings of about $0.6$\,mag per century, the Hipparcos-to-Gaia test $0.02$\,mag over
+$25$ years, the missing-flux test deficits of $45$ per cent, and the motion tests the
+precision of Gaia's astrometry and the archives' velocities.
+
+\section*{Acknowledgements}
+
+This work uses Gaia DR3 and Hipparcos (ESA; Gaia DPAC), DASCH (Harvard College
+Observatory), Kepler and TESS through MAST, ZTF through IRSA, NEOWISE and AllWISE (IRSA),
+APOGEE (SDSS-IV), GALAH DR4, DESI DR1 through the Astro Data Lab, Euclid Q1 (ESA), the
+NASA Exoplanet Archive and ExoFOP, the Gemini/NICI and VLT/NaCo survey tables, JPL's radar
+astrometry, and SIMBAD and VizieR at CDS, Strasbourg.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Dyson1960}
+F.~J. Dyson, Search for artificial stellar sources of infrared radiation, \emph{Science}
+\textbf{131}, 1667 (1960).
+
+\bibitem{Wright2014}
+J.~T. Wright, B.~Mullan, S.~Sigurdsson and M.~S. Povich, The $\hat{G}$ infrared search for
+extraterrestrial civilizations with large energy supplies. I. Background and
+justification, \emph{Astrophys. J.} \textbf{792}, 26 (2014).
+
+\bibitem{Arnold2005}
+L.~F.~A. Arnold, Transit light-curve signatures of artificial objects, \emph{Astrophys.
+J.} \textbf{627}, 534 (2005).
+
+\bibitem{WhitmireWright1980}
+D.~P. Whitmire and D.~P. Wright, Nuclear waste spectrum as evidence of technological
+extraterrestrial civilizations, \emph{Icarus} \textbf{42}, 149 (1980).
+
+\bibitem{Tang2013}
+S.~Tang, J.~Grindlay, E.~Los and M.~Servillat, Improved photometry for the DASCH pipeline,
+\emph{Publ. Astron. Soc. Pac.} \textbf{125}, 857 (2013).
+
+\bibitem{Perryman1997}
+M.~A.~C. Perryman, L.~Lindegren, J.~Kovalevsky, et al., The HIPPARCOS catalogue,
+\emph{Astron. Astrophys.} \textbf{323}, L49 (1997).
+
+\bibitem{Yu2018}
+J.~Yu, D.~Huber, T.~R. Bedding, et al., Asteroseismology of 16,000 Kepler red giants:
+global oscillation parameters, masses, and radii, \emph{Astrophys. J. Suppl.}
+\textbf{236}, 42 (2018).
+
+\bibitem{Berger2020}
+T.~A. Berger, D.~Huber, J.~L. van Saders, et al., The Gaia-Kepler stellar properties
+catalog. I. Homogeneous fundamental properties for 186,301 Kepler stars, \emph{Astron.
+J.} \textbf{159}, 280 (2020).
+
+\bibitem{Chen2020}
+X.~Chen, S.~Wang, L.~Deng, R.~de~Grijs, M.~Yang and H.~Tian, The Zwicky Transient Facility
+catalog of periodic variable stars, \emph{Astrophys. J. Suppl.} \textbf{249}, 18 (2020).
+
+\bibitem{Bergeron2022}
+P.~Bergeron, P.~Dufour, G.~Fontaine, et al., On the nature of ultracool white dwarfs:
+not so cool after all, \emph{Astrophys. J.} \textbf{934}, 36 (2022).
+
+\bibitem{GentileFusillo2021}
+N.~P. Gentile Fusillo, P.-E. Tremblay, E.~Cukanovaite, et al., A catalogue of white dwarfs
+in Gaia EDR3, \emph{Mon. Not. R. Astron. Soc.} \textbf{508}, 3877 (2021).
+
+\bibitem{McQuillan2013}
+A.~McQuillan, T.~Mazeh and S.~Aigrain, Stellar rotation periods of the Kepler objects of
+interest: a dearth of close-in planets around fast rotators, \emph{Astrophys. J. Lett.}
+\textbf{775}, L11 (2013).
+
+\bibitem{Mazeh2015}
+T.~Mazeh, H.~B. Perets, A.~McQuillan and E.~S. Goldstein, Photometric amplitude
+distribution of stellar rotation of KOIs: indication for spin-orbit alignment of cool
+stars and high obliquity for hot stars, \emph{Astrophys. J.} \textbf{801}, 3 (2015).
+
+\bibitem{Gaia2023nss}
+Gaia Collaboration, F.~Arenou, C.~Babusiaux, et al., Gaia Data Release 3: stellar
+multiplicity, a teaser for the hidden treasure, \emph{Astron. Astrophys.} \textbf{674},
+A34 (2023).
+
+\bibitem{Davenport2022}
+J.~R.~A. Davenport, B.~Cabrales, S.~Sheikh, et al., Searching the SETI ellipsoid with
+Gaia, \emph{Astron. J.} \textbf{164}, 117 (2022).
+
+\bibitem{Cabrales2024}
+B.~Cabrales, J.~R.~A. Davenport, S.~Z. Sheikh, et al., Searching the SN 1987A SETI
+ellipsoid with TESS, arXiv:2402.11037 (2024).
+
+\bibitem{Buder2025}
+S.~Buder, J.~Kos, E.~X. Wang, et al., The GALAH survey: data release 4,
+arXiv:2409.19858 (2024).
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,19 @@
+{
+ "year": 2020,
+ "craft": "ahead",
+ "days": null,
+ "persistent": 10,
+ "explained": {
+  "1675.0": "local to STEREO (Wind 0.000 within 25 kHz in 2020)",
+  "1275.0": "local to STEREO (Wind 0.001 within 25 kHz in 2020)",
+  "725.0": "local to STEREO (Wind 0.010 within 25 kHz in 2020)",
+  "3025.0": "aeronautical mobile band",
+  "1975.0": "amateur band",
+  "1475.0": "local to STEREO (Wind 0.001 within 25 kHz in 2020)",
+  "6925.0": "local to STEREO (Wind 0.000 within 25 kHz in 2020)",
+  "1875.0": "amateur band",
+  "10425.0": "local to STEREO (Wind 0.006 within 25 kHz in 2020)",
+  "3225.0": "shortwave broadcast band"
+ },
+ "left": []
+}

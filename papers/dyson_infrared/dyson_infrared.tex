@@ -1,0 +1,476 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{A Search for Waste Heat from Dyson Spheres\\ Around Nearby Stars in Archival Infrared Surveys}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A structure that intercepts a star's light re-radiates it as heat, so a Dyson sphere
+shows as infrared emission beyond what the star alone gives. We test nearby stars for
+that emission in ten ways with archival surveys. None of the $279$ optically dark Gaia
+DR3 astrometric companions of $0.5\,M_\odot$ or more within $200$\,pc re-radiates more
+than $6$ per cent of a main-sequence star's light at $300$\,K (median bound $0.3$ per
+cent), nor do the $191$ companions of $0.3\,M_\odot$ or more at $3$ to $30$\,au implied by
+Hipparcos-Gaia proper-motion anomalies within $50$\,pc (median bound $0.39$ per cent).
+Stacked against matched field stars, the WISE colours of habitable-zone planet hosts
+within $100$\,pc limit the mean fraction of their light intercepted by $300$\,K swarms to
+$\sci{1.5}{-5}$. No bright, cold, moving AllWISE source without a Gaia star is an
+enclosed star, no star within $50$\,pc has a $30$ to $100$\,K shell in the AKARI
+far-infrared survey, none of $203$ stars within $15$\,pc brightened at $4.6$\um\ over the
+decade of NEOWISE by more than about $9$ per cent, and no star that vanished from the
+Palomar plates reappears with the $12$\um\ emission an enclosure requires. SPHEREx
+spectra trace the excess of earlier Dyson-sphere candidates to background galaxies and a
+radio source, and put the excesses of $37$ extreme mid-infrared stars at $486$ to
+$2133$\,K, the temperatures of warm dust and cool companions, none below $400$\,K within
+the $5$\um\ reach of the spectra. Each test's reach is stated: the enclosed-star search
+finds a $300$\,K shell around a star of $0.01\,L_\odot$ to $210$\,pc, the AKARI match
+finds a $30$ to $100$\,K shell holding $0.2$ per cent of a solar luminosity at $50$\,pc,
+and a vanished source of $R=19$ enclosed at $200$ to $600$\,K would have been detected
+by WISE.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Dyson proposed that a civilization using much of its star's output would surround the
+star with collectors and re-radiate the energy as waste heat, and that the heat, at a
+few hundred kelvin, would make the system a source of infrared emission that its
+starlight does not explain~\cite{Dyson1960}. Searches have since used each infrared
+survey in turn: IRAS for whole-sky limits on spheres at $100$ to $600$\,K~\cite{Carrigan2009},
+WISE for galaxies whose stellar light is converted to mid-infrared
+emission~\cite{Wright2014,Griffith2015}, and Gaia with 2MASS and WISE for partial spheres
+around individual Milky Way stars~\cite{Suazo2022,Suazo2024,Contardo2024}. A detected
+excess has natural rivals: debris discs, red companions, background galaxies and
+young stars embedded in their clouds.
+
+The nearest stars allow tests that need a known distance, mass or history. A companion
+whose mass Gaia's astrometry measures but whose light it does not see is either a dim
+remnant or a star enclosed; a structure built within a decade brightens its star in the
+infrared from one epoch to the next; a star enclosed during the twentieth century would
+vanish from the Palomar plates and reappear in the mid-infrared. This paper applies
+these tests and the stacking and spectroscopic ones to archival surveys, and states each
+result as a fraction of a star's light re-radiated at the temperature tested.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item Limits on the fraction of light re-radiated at $300$\,K by $279$ Gaia DR3 dark
+companions and by $191$ companions inferred from proper-motion anomalies.
+\item A stacked limit on warm swarms around habitable-zone planet hosts, and searches
+for fully enclosed moving stars, cold far-infrared shells, decade-long brightening and
+stars that vanished from the optical sky into the infrared.
+\item SPHEREx $0.75$ to $5$\um\ spectra of published Dyson-sphere candidates against
+matched controls, which place every excess in a natural class.
+\end{enumerate}
+
+% =============================================================================
+\section{Tests}\label{sec:tests}
+% =============================================================================
+
+Table~\ref{tab:tests} lists the ten tests, their samples and results. Each compares a
+measured infrared flux with what the star or its catalogued companions would give, and
+expresses the difference as the fraction of the star's light that a black body at the
+tested temperature would need to re-radiate.
+
+\emph{Dark astrometric companions.} Gaia DR3's orbital solutions~\cite{Arenou2023} give
+the mass of each companion and the flux ratio its orbit allows in the $G$ band. Within
+$200$\,pc, $279$ companions of $0.5\,M_\odot$ or more are dark, contributing less than a
+third of the light of a main-sequence star of their mass. Inside a complete sphere such
+a star would re-radiate its main-sequence luminosity as a $300$\,K black body, whose
+$12$ and $22$\um\ flux at the Gaia distance we compare with the AllWISE~\cite{Wright2010}
+counterpart within $3''$.
+
+\emph{Companions from proper-motion anomalies.} The difference between a star's
+Hipparcos-Gaia long-term proper motion and its Gaia proper motion gives the least mass
+of a companion anywhere between $3$ and $30$\,au~\cite{Kervella2022}. For the $191$
+Hipparcos stars within $50$\,pc whose anomaly, at a signal-to-noise ratio of $5$,
+requires a companion of $0.3\,M_\odot$ or more, a star of that mass inside a shell at
+$200$, $300$ or $600$\,K would add predictable $12$ and $22$\um\ flux; the star's
+$K_s-W3$ and $K_s-W4$ colours, against the $15$ sample stars nearest in $G-K_s$, bound
+the fraction re-radiated. An excess is read again from the WISE All-Sky release, which
+processed the same cryogenic $12$ and $22$\um\ exposures apart from AllWISE, against the
+same neighbours.
+
+\emph{Stacking at habitable-zone hosts.} A swarm intercepting a fraction $f$ of the
+starlight at $300$\,K adds $12$ and $22$\um\ flux in proportion to $f$, so a population
+of modest swarms shows as a mean colour excess. Hosts of planets receiving $0.32$ to
+$1.78$ times the Earth's insolation~\cite{Kopparapu2013} within $100$\,pc in the NASA
+Exoplanet Archive~\cite{Akeson2013}, and the other hosts as comparison, each receive up
+to $25$ field stars matched in Gaia colour, magnitude and parallax. The inverse-variance
+mean of the hosts' $W1-W3$ and $W1-W4$ excesses over their controls, against the same
+statistic with a control standing for its host, limits the mean $f$.
+
+\emph{Fully enclosed stars.} A shell that absorbs all of a star's light re-radiates it
+at the shell's temperature: at $300$\,K around an M dwarf of $0.01\,L_\odot$ at $100$\,pc
+it gives $W3\approx6.4$ with $W2-W3\approx5.7$, and Gaia sees nothing. Of the $36603$
+AllWISE point sources with $W3<8$ at a signal-to-noise ratio above $10$ and
+$W2-W3>1.5$, we keep those that CatWISE2020~\cite{Marocco2021} finds moving faster than
+$40$\,mas\,yr$^{-1}$ at $5\sigma$, as a star within $100$\,pc would, with no Gaia DR3
+source within $3''$, clean flags and unsaturated $W1$ and $W2$, and check each against
+SIMBAD and for young stars, cores and clouds within $30'$. The $W3<8$ cut reaches a
+$300$\,K shell around a star of $0.001$, $0.01$ and $0.1\,L_\odot$ to $67$, $210$ and
+$670$\,pc, and shells at $200$ and $500$\,K to within $20$ per cent of those distances;
+the motion cut keeps stars whose tangential velocity exceeds $19$\,km\,s$^{-1}$ at
+$100$\,pc and $40$\,km\,s$^{-1}$ at $210$\,pc, about three quarters of the disc
+population at the first and a third at the second.
+
+\emph{Cold shells.} A structure at $30$ to $100$\,K peaks beyond the WISE bands, and a
+main-sequence photosphere at $65$ to $160$\um\ lies far below the AKARI Far-Infrared
+Surveyor's bright source catalogue~\cite{Murakami2007}. We match the $27394$ Gaia DR3
+main-sequence stars within $50$\,pc to that catalogue within $20''$, and take the chance
+count from the same match with every position moved by $3'$. The catalogue's $0.55$\,Jy
+limit at $90$\um\ corresponds, for a shell at $30$ to $100$\,K, to $0.2$ to $0.6$ per
+cent of a solar luminosity at $50$\,pc and $0.03$ to $0.09$ per cent at $20$\,pc; for
+the M dwarfs that make up most of the sample, of $0.01\,L_\odot$ at $10$\,pc, it needs
+$1$ to $2$ per cent of the star's light, so the test bounds complete or nearly complete
+cold shells around the M dwarfs and partial ones around the solar-type stars.
+
+\emph{Decade trends.} A structure assembled during 2014 to 2024 at $600$ to $1000$\,K
+brightens its star year by year, more at $4.6$ than at $3.4$\um. For the $298$ Gaia DR3
+stars within $15$\,pc with $W1$ of $8$ to $12.5$, the NEOWISE-R single
+exposures~\cite{Mainzer2014} from December 2013 to August 2024 give $W1$ and $W2$ light
+curves differential against field stars on the same frames, and a linear trend per
+decade is judged against stars of similar brightness, since the photometry drifts with
+brightness.
+
+\emph{Vanished in the optical, present in the infrared.} A star enclosed after the 1950s
+leaves the first Palomar survey's plates and returns at its enclosure's temperature: at
+$300$\,K a star of $R=19$ appears near $W2=16.8$ and $W3=11.1$, at $200$\,K near
+$W3=11.6$ and $W4=9.0$, and at $600$\,K near $W2=14.1$, against AllWISE's $5\sigma$
+limits of about $17.5$, $11.6$ and $8.0$ in $W2$, $W3$ and $W4$, so an enclosure at any
+of those temperatures of a source brighter than $R\approx19$, which is most of the
+catalogue, would be detected in at least one band. The archive of
+vanishing objects~\cite{Solano2022} built for the VASCO project~\cite{Villarroel2020}
+lists Palomar sources absent from Pan-STARRS and Gaia; we keep those whose only
+counterpart is infrared and red in $W1-W2$, away from the ecliptic, with a fixed
+CatWISE2020 counterpart and no Legacy Surveys source~\cite{Dey2019} to $r=24$.
+
+\emph{Breakthrough Listen targets.} The FGK stars of Breakthrough Listen's nearby-star
+sample~\cite{Isaacson2017} observed in a set of 2016 L-band sessions, $170$ in all, are
+tested for $K_s-W3$ or $K_s-W4$ above $0.25$\,mag at $5\sigma$ with clean photometry.
+
+\emph{SPHEREx spectra.} SPHEREx images the sky in $102$ bands from $0.75$ to
+$5$\um~\cite{Dore2014}. We measure each target, carried by proper motion to the epoch
+of the images, by a point-spread fit after the zodiacal model in every image covering
+it, and the same for two Gaia stars of matching colour, magnitude and distance that WISE
+does not detect at $12$\um. Normalised at $1.0$ to $1.6$\um, a target's excess over its
+controls at $2$ to $3$, $3$ to $4$ and $4$ to $5$\um\ is judged against one control
+measured against the other. The targets are candidates of Project
+Hephaistos~\cite{Suazo2024} and the $53$ FGK stars with the most extreme Gaia-predicted
+$W2$ excesses of Contardo and Hogg~\cite{Contardo2024}, of which $51$ have controls. A black body
+fitted from $1.6$ to $5$\um\ gives the temperature of each excess and the fraction of
+the star's light it holds. The Hephaistos targets are ten candidates of that search and
+one M dwarf with a warm excess, eleven in all.
+
+\begin{table}[t]
+\centering\small
+\caption{The ten tests. $f$ is the fraction of a star's light intercepted and re-radiated
+at the temperature tested.}
+\label{tab:tests}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.2\textwidth} >{\raggedright\arraybackslash}p{0.3\textwidth} >{\raggedright\arraybackslash}p{0.42\textwidth}}
+\toprule
+Test & Sample & Result \\
+\midrule
+Dark companions & $279$ Gaia DR3 orbital companions $\geq0.5\,M_\odot$, $<200$\,pc & none above $6$ per cent of its light at $300$\,K; median bound $0.3$ per cent \\
+Proper-motion companions & $191$ stars $<50$\,pc, companion $\geq0.3\,M_\odot$ at $3$--$30$\,au & median bound $0.39$ per cent at $300$\,K; four $3\sigma$ excesses, all explained \\
+Habitable-zone stacking & $69$ hosts ($W3$), $63$ ($W4$), $<100$\,pc, $25$ controls each & mean $f<\sci{1.5}{-5}$ ($12$\um) and $\sci{8.6}{-6}$ ($22$\um) at $300$\,K \\
+Fully enclosed stars & $36603$ cold AllWISE sources & $72$ clean movers without Gaia stars, all among young stars, cores and clouds \\
+Cold shells & $27394$ stars $<50$\,pc, AKARI FIS & $35$ matches against $26$ by chance; clouds and known young discs \\
+Decade trends & $203$ stars $<15$\,pc, NEOWISE 2013--2024 & none brightens at $4.6$\um\ at $5\sigma$; bound about $9$ per cent \\
+Vanished stars & $5893$ red infrared-only counterparts of vanishing Palomar sources & four red CatWISE sources left, none detected at $12$\um \\
+Breakthrough Listen targets & $170$ FGK stars & three excesses: a debris disc, a blend, a catalogued $22$\um\ excess \\
+SPHEREx, Hephaistos & $11$ candidates, $2$ controls each & background galaxies and a radio source \\
+SPHEREx, Contardo and Hogg & $51$ stars, $2$ controls each & $37$ excesses at $486$--$2133$\,K, none below $400$\,K \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+\emph{Companions.} No dark astrometric companion shows the $12$ or $22$\um\ flux that a
+star of its mass inside a $300$\,K sphere would give: the measured flux bounds the
+re-radiated fraction below $6$ per cent for every one of the $279$ and below $0.3$ per
+cent for half of them. The proper-motion companions give a median bound of $0.39$ per
+cent at $300$\,K, and $154$ of $189$ with both bands are bounded below $1$ per cent.
+Three of their four $3\sigma$ colour excesses are a diffraction spike from a neighbour,
+the photosphere of an M0 star and the white-dwarf companion of 56~Per. The fourth,
+$0.14$\,mag at $12$\um\ ($3.3\sigma$) in the F6~V star HD~59099, whose astrometry
+(RUWE $11.9$) marks the companion, belongs to the AllWISE measurement: the All-Sky
+release puts the star $0.11$\,mag fainter at $12$\um\ and $0.07$\,mag fainter at
+$22$\um, where the two releases agree for the sample's stars to a median of
+$0.002$\,mag with a scatter of $0.007$\,mag, and against the same neighbours its
+All-Sky excess is $+0.02$\,mag at $12$\um\ and nothing at $22$\um.
+
+\emph{Habitable-zone hosts.} The $69$ habitable-zone hosts with clean $12$\um\
+photometry and controls show a mean $W1-W3$ excess of $+0.0004\pm0.0045$\,mag over their
+controls, the $124$ other hosts $-0.0011\pm0.0036$\,mag, and controls standing for their
+hosts $+0.0018\pm0.0006$\,mag; at $22$\um\ the $63$ habitable-zone hosts give
+$-0.0005\pm0.0094$\,mag, the $88$ other hosts $-0.0060\pm0.0106$\,mag, and controls
+standing for their hosts $+0.0123\pm0.0017$\,mag. The control null is offset from zero
+in both bands, by $0.0018$\,mag at $12$\um\ and $0.012$\,mag at $22$\um: a control
+measured against the mean of the others is systematically redder than that mean, which
+the hosts share, so the hosts' excesses are read against the null and fall below it by
+$0.3\sigma$ and $1.3\sigma$. A $300$\,K swarm therefore intercepts on average less than
+$\sci{1.5}{-5}$ of a habitable-zone host's light ($\sci{8.6}{-6}$ at $22$\um). The one
+host above $3\sigma$, TOI-2257, has a galaxy $7.3''$ away.
+
+\emph{Enclosed stars and cold shells.} Of the $36603$ cold AllWISE sources, $7817$ move
+at $5\sigma$, $1491$ of these have no Gaia source, and $72$ have clean flags below
+saturation; every one of the $72$ lies among young stars, dense cores or clouds, where
+variability and nebulosity bias CatWISE motions. Within $50$\,pc, $35$ stars have an
+AKARI $90$\um\ source within $20''$ against $26$ when the positions are moved; the
+matches within $8''$ are alignments with clouds in fields of $43$ to $349$ sources per
+square degree (V854~Ori, V1497~Cyg, HD~324218) or known young discs (HD~98800 in the TW
+Hya association, and HD~164249~A in the $\beta$~Pictoris group at $\sci{7}{-4}$ of its
+light).
+
+\emph{Decade trends and vanished stars.} Of the $203$ stars within $15$\,pc with both
+NEOWISE light curves, none brightens at $4.6$\um\ at $5\sigma$, the most extreme trend
+being $-2.8\sigma$, and the median slope error of $0.018$\,mag per decade bounds any gain
+at about $9$ per cent of the $4.6$\um\ flux. Of the $5893$ red infrared-only
+counterparts of vanished Palomar sources, those near the ecliptic are asteroids caught
+in single NEOWISE exposures and those detected in one exposure without a CatWISE source
+are transients; four red CatWISE counterparts remain, and none is detected at $12$\um,
+where an enclosure's energy would appear, consistent with brown dwarfs and obscured
+quasars aligned by chance.
+
+\emph{Breakthrough Listen targets.} Three of the $170$ stars exceed the colour criterion:
+HR~8799, whose debris disc is known, a blended binary, and a star with a catalogued
+$22$\um\ excess.
+
+\emph{SPHEREx spectra.} The SPHEREx spectra of the Project Hephaistos candidates show
+excesses only where a background galaxy (candidates D and E) or a radio source
+(candidate G) lies within the WISE beam. JWST imaging of candidates D and E has since
+resolved the galaxies, within about $1''$ of each star, as the source of their
+mid-infrared excess~\cite{Zackrisson2026}, which SPHEREx's $6''$ pixels could attribute
+only by the spectral shape. For the Contardo and Hogg stars, the ratio to
+the controls shows a $4$ to $5$\um\ excess above $3\sigma$, with a systematic floor of
+$0.063$ from $50$ control pairs, in $37$ of $51$ and a $3$ to $4$\um\ excess in $36$,
+against $1$ and $0$ control pairs. A black body puts every excess between $486$ and
+$2133$\,K holding $0.6$ to $7$ per cent of the star's light: $22$ at $400$ to $1000$\,K,
+as warm dust, and nine above $1700$\,K, as cool companions or blends; none lies below
+$400$\,K, and no $3.3$\um\ aromatic band reaches $2\sigma$. The absence of cooler
+components is a property of the spectra's reach as much as of the stars: a $300$\,K
+body emits at $5$\um\ a hundredth of what it emits at its $10$\um\ peak, so the fit from
+$1.6$ to $5$\um\ is sensitive to components above about $400$\,K, and a cooler
+component that the $12$ and $22$\um\ WISE excesses of these stars might hold is not
+excluded. In the $41$ stars that the
+Legacy Surveys cover, the excess sits in the star's own deblended source, whose $W2/W1$
+ratio exceeds its controls' by up to $0.85$, and no source within $8''$ carries more than
+$6$ per cent of it; the unWISE $W2$ centroid of every star lies within $3\sigma$ of its
+$W1$ centroid against the controls' $0.12''$ scatter, which leaves only a red source
+within about $0.5''$. The eleven with the largest excesses keep them at every NEOWISE
+visit from 2014 to 2024, with a visit-to-visit scatter of $0.02$ to $0.06$\,mag in
+$W1-W2$.
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+\emph{Waste-heat searches.} Carrigan's IRAS search set whole-sky limits on spheres at
+$100$ to $600$\,K~\cite{Carrigan2009}, and the $\hat{G}$ search found no galaxy
+re-radiating most of its starlight~\cite{Wright2014,Griffith2015}. Project Hephaistos
+selected partial-sphere candidates among Milky Way stars with Gaia, 2MASS and
+WISE~\cite{Suazo2022,Suazo2024}, and radio and optical images later showed background
+sources near several of them~\cite{Ren2024}, as the SPHEREx spectra here do. Three
+further studies of those candidates have appeared: archival diagnostics find
+background contamination in candidates B and C and suggestive signs in five
+more~\cite{Ren2026}, their stellar parameters are those of ordinary M dwarfs whose
+infrared colours resemble transitional discs without the signs of
+youth~\cite{Korn2026}, and JWST resolves background galaxies within about $1''$ of
+candidates D and E~\cite{Zackrisson2026}, the two whose SPHEREx spectra attribute the
+excess to a galaxy here. Contardo and
+Hogg modelled the mid-infrared colours of five million FGK stars from their Gaia spectra
+and published the most extreme excesses~\cite{Contardo2024}.
+
+\emph{Companions and vanishing sources.} Kervella et al.\ derived companion masses from
+the Hipparcos-Gaia proper-motion anomaly~\cite{Kervella2022}, and the VASCO project
+catalogued Palomar sources missing from modern surveys~\cite{Villarroel2020,Solano2022};
+we find no earlier use of either as a test for enclosed stars.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No nearby star shows the infrared emission of a Dyson sphere in these tests. Optically
+dark companions of known mass re-radiate at most a few tenths of a per cent of a star's
+light at $300$\,K, habitable-zone hosts carry no mean warm excess at the level of
+$10^{-5}$ of their light, no star within $15$\,pc brightened over a decade, and no star
+that vanished from the Palomar sky reappears in the mid-infrared. The candidate
+excesses that SPHEREx resolves are background sources, warm dust and cool companions.
+The last of the companions' excesses, $3.3\sigma$ at $12$\um\ in HD~59099, is absent
+from the WISE All-Sky release of the same exposures.
+
+The limits apply to structures re-radiating as black bodies at the temperatures tested,
+and to the epochs and sensitivities of the surveys: a $300$\,K enclosure of a star of
+$0.01\,L_\odot$ within $210$\,pc moving faster than $19$ to $40$\,km\,s$^{-1}$ across
+the line of sight, a $30$ to $100$\,K shell holding more than $0.2$ per cent of a solar
+luminosity at $50$\,pc, and an enclosure at $200$ to $600$\,K of a vanished source
+brighter than $R\approx19$. A sphere at a few tens of kelvin
+around a star beyond $50$\,pc, one that emits mostly outside the WISE and AKARI bands,
+a slow-moving enclosed star, or one whose waste heat is directed away from the Sun is
+not constrained, and the SPHEREx fits do not reach components below $400$\,K. SPHEREx's
+spectra of the dark companions and of the habitable-zone hosts would extend the
+stacked test to $5$\um\ with resolved spectral shapes.
+
+\section*{Acknowledgements}
+
+This work has made use of data from the European Space Agency mission Gaia, processed by
+the Gaia Data Processing and Analysis Consortium (DPAC), funded by national institutions,
+in particular those participating in the Gaia Multilateral Agreement; of the Wide-field
+Infrared Survey Explorer and NEOWISE, projects of the Jet Propulsion Laboratory,
+California Institute of Technology, funded by NASA; of SPHEREx data from the NASA/IPAC
+Infrared Science Archive; of AKARI, a JAXA project with the participation of ESA; of
+the NASA Exoplanet Archive; of the Legacy Surveys; of the Spanish Virtual Observatory's
+archive of vanishing objects; and of the SIMBAD and VizieR services at CDS, Strasbourg.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Dyson1960}
+F.~J. Dyson, Search for artificial stellar sources of infrared radiation, \emph{Science}
+\textbf{131}, 1667 (1960).
+
+\bibitem{Carrigan2009}
+R.~A. Carrigan, IRAS-based whole-sky upper limit on Dyson spheres, \emph{Astrophys. J.}
+\textbf{698}, 2075 (2009).
+
+\bibitem{Wright2014}
+J.~T. Wright, B.~Mullan, S.~Sigurdsson and M.~S. Povich, The $\hat{G}$ infrared search
+for extraterrestrial civilizations with large energy supplies. I. Background and
+justification, \emph{Astrophys. J.} \textbf{792}, 26 (2014).
+
+\bibitem{Griffith2015}
+R.~L. Griffith, J.~T. Wright, J.~Maldonado, M.~S. Povich, S.~Sigurdsson and B.~Mullan,
+The $\hat{G}$ infrared search for extraterrestrial civilizations with large energy
+supplies. III. The reddest extended sources in WISE, \emph{Astrophys. J. Suppl.}
+\textbf{217}, 25 (2015).
+
+\bibitem{Suazo2022}
+M.~Suazo, E.~Zackrisson, J.~T. Wright, et al., Project Hephaistos -- I. Upper limits on
+partial Dyson spheres in the Milky Way, \emph{Mon. Not. R. Astron. Soc.} \textbf{512},
+2988 (2022).
+
+\bibitem{Suazo2024}
+M.~Suazo, E.~Zackrisson, P.~K. Mahto, et al., Project Hephaistos -- II. Dyson sphere
+candidates from Gaia DR3, 2MASS, and WISE, \emph{Mon. Not. R. Astron. Soc.}
+\textbf{531}, 695 (2024).
+
+\bibitem{Ren2024}
+T.~Ren, M.~A. Garrett and A.~P.~V. Siemion, Background contamination of the Project
+Hephaistos Dyson sphere candidates, \emph{Res. Notes AAS} \textbf{8}, 145 (2024).
+
+\bibitem{Ren2026}
+T.~Ren, M.~A. Garrett, E.~Zackrisson, et al., Archival diagnostics for potential
+background contaminants of Project Hephaistos Dyson sphere candidates, \emph{Mon. Not.
+R. Astron. Soc.}, in press, arXiv:2607.03619 (2026).
+
+\bibitem{Korn2026}
+A.~J. Korn, M.~Suazo, E.~Zackrisson, et al., Project Hephaistos -- III. Characterizing
+anomalous infrared sources identified as Dyson-sphere candidates, arXiv:2607.25701
+(2026).
+
+\bibitem{Zackrisson2026}
+E.~Zackrisson, A.~Bik, A.~Ali Asgar, et al., Project Hephaistos -- IV. James Webb Space
+Telescope observations of two Dyson sphere candidates, arXiv:2607.09460 (2026).
+
+\bibitem{Contardo2024}
+G.~Contardo and D.~W. Hogg, A data-driven search for mid-infrared excesses among five
+million main-sequence FGK stars, \emph{Astron. J.} \textbf{168}, 157 (2024).
+
+\bibitem{Arenou2023}
+Gaia Collaboration, F.~Arenou, C.~Babusiaux, et al., Gaia Data Release 3: stellar
+multiplicity, a teaser for the hidden treasure, \emph{Astron. Astrophys.} \textbf{674},
+A34 (2023).
+
+\bibitem{Wright2010}
+E.~L. Wright, P.~R.~M. Eisenhardt, A.~K. Mainzer, et al., The Wide-field Infrared Survey
+Explorer (WISE): mission description and initial on-orbit performance, \emph{Astron. J.}
+\textbf{140}, 1868 (2010).
+
+\bibitem{Kervella2022}
+P.~Kervella, F.~Arenou and F.~Th\'evenin, Stellar and substellar companions from Gaia
+EDR3: proper-motion anomaly and resolved common proper-motion pairs, \emph{Astron.
+Astrophys.} \textbf{657}, A7 (2022).
+
+\bibitem{Kopparapu2013}
+R.~K. Kopparapu, R.~Ramirez, J.~F. Kasting, et al., Habitable zones around
+main-sequence stars: new estimates, \emph{Astrophys. J.} \textbf{765}, 131 (2013).
+
+\bibitem{Akeson2013}
+R.~L. Akeson, X.~Chen, D.~Ciardi, et al., The NASA Exoplanet Archive: data and tools for
+exoplanet research, \emph{Publ. Astron. Soc. Pac.} \textbf{125}, 989 (2013).
+
+\bibitem{Marocco2021}
+F.~Marocco, P.~R.~M. Eisenhardt, J.~W. Fowler, et al., The CatWISE2020 catalog,
+\emph{Astrophys. J. Suppl.} \textbf{253}, 8 (2021).
+
+\bibitem{Murakami2007}
+H.~Murakami, H.~Baba, P.~Barthel, et al., The infrared astronomical mission AKARI,
+\emph{Publ. Astron. Soc. Jpn.} \textbf{59}, S369 (2007).
+
+\bibitem{Mainzer2014}
+A.~Mainzer, J.~Bauer, R.~M. Cutri, et al., Initial performance of the NEOWISE
+reactivation mission, \emph{Astrophys. J.} \textbf{792}, 30 (2014).
+
+\bibitem{Solano2022}
+E.~Solano, B.~Villarroel and C.~Rodrigo, Discovering vanishing objects in POSS I red
+images using the Virtual Observatory, \emph{Mon. Not. R. Astron. Soc.} \textbf{515},
+1380 (2022).
+
+\bibitem{Villarroel2020}
+B.~Villarroel, I.~Imaz, J.~Bergstedt, et al., Exploring the Gaia Data Release 2 for
+vanishing sources, \emph{Astron. J.} \textbf{159}, 8 (2020).
+
+\bibitem{Dey2019}
+A.~Dey, D.~J. Schlegel, D.~Lang, et al., Overview of the DESI Legacy Imaging Surveys,
+\emph{Astron. J.} \textbf{157}, 168 (2019).
+
+\bibitem{Isaacson2017}
+H.~Isaacson, A.~P.~V. Siemion, G.~W. Marcy, et al., The Breakthrough Listen search for
+intelligent life: target selection of nearby stars and galaxies, \emph{Publ. Astron.
+Soc. Pac.} \textbf{129}, 054501 (2017).
+
+\bibitem{Dore2014}
+O.~Dor\'e, J.~Bock, M.~Ashby, et al., Cosmology with the SPHEREX all-sky spectral
+survey, arXiv:1412.4872 (2014).
+
+\end{thebibliography}
+
+\end{document}

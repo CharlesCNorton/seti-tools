@@ -1,0 +1,366 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Glints, Nightside Light, Satellite Belts, Timing Steps and Occulter Shapes:\\ Photometric Technosignature Searches in Kepler, TESS and Cepheid Timing}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Artificial objects around other stars could show in their photometry as glints of
+reflected light at an orbital period, as light from a planet's dark side, as a belt of
+satellites crossing the star with its planet, as a timing signal written into a regular
+clock, or as an occulter whose shape no planet has. We search the Kepler and TESS
+archives for each. Folded at the periods of $816$ Kepler and
+$794$ TESS planet candidates whose hosts show three or more brief flashes in $252239$
+and $317274$ star-days of short-cadence photometry, the flashes gather at one phase no
+more often than chance predicts, and the flashes in $2149$ TESS $20$\,s light curves of
+stars within $30$\,pc recur at no period beyond chance. The nightsides of $63$
+ultra-short-period rocky planets emit no light above $3\sigma$, with a median limit of
+$102$\,ppm of the star's flux. Belts of satellites $3$ to $90$ planetary radii from
+$461$ Kepler planets add no shoulders to their transits once each transit is timed and
+measured from its own light curve, with a median $3\sigma$ limit of $117$\,ppm six radii
+out. Of $1810$ Kepler planet candidates with $20$ or more
+transit times, none shows a phase step held from one transit on that a sinusoidal
+timing variation or chance does not explain, nor do the times of maximum of $2939$ LMC
+Cepheids over $14.6$ years. Those of $1116$ Kepler and $255$ TESS rejected candidates
+whose light curves fold to a stable profile are eclipsing binaries, stellar variability,
+heartbeat binaries and smooth dips of constant depth.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+The photometric archives of Kepler~\cite{Borucki2010} and TESS~\cite{Ricker2015} hold
+years of precise light curves of hundreds of thousands of stars, and several kinds of
+artificial object would leave marks in them. Flat surfaces in orbit, such as mirrors or
+solar panels, reflect sunlight specularly and appear as brief glints repeating at the
+orbital period~\cite{Jaiswal2023}. Artificial lighting on a planet's nightside would
+show as light before and after transit that the planet's own heat does not
+explain~\cite{LoebTurner2012}. An occulter of non-planetary shape would give a transit
+profile no limb-darkened disc produces~\cite{Arnold2005,Wright2016}. And a civilization
+could signal by shifting the phase of a regular clock: the transits of a body it
+controls, or the pulsations of a Cepheid it perturbs~\cite{Learned2012}.
+
+Where these ideas have been tested, it has been on individual objects. This paper
+applies each to the whole of an archive, with nulls drawn from the same light curves,
+so that the number of signals expected by chance is known.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item Searches for glints at every Kepler and TESS planet-candidate period and at any
+period in the TESS $20$\,s light curves of the nearest stars.
+\item A uniform limit on the nightside light of $63$ ultra-short-period rocky planets.
+\item A search of the transits of $461$ Kepler planets for the shoulders of satellite
+belts.
+\item Searches for held phase steps in the transit times of $1810$ Kepler candidates and
+in the pulsation timing of $2939$ LMC Cepheids.
+\item Shape tests of $1116$ Kepler and $255$ TESS rejected candidates.
+\end{enumerate}
+
+% =============================================================================
+\section{Searches}\label{sec:searches}
+% =============================================================================
+
+\emph{Glints at planet periods.} For the $765$ hosts of Kepler planet candidates with
+short-cadence data and the $6355$ hosts of TESS objects of interest (TOIs) that are
+neither false positives nor false alarms~\cite{Guerrero2021}, each light curve, divided
+by a running median of $30$ (Kepler) or $62$ (TESS) minutes, gives flashes: brightenings
+five robust deviations high lasting one to three cadences, with quiet flux on either
+side. For every candidate on a star with three or more flashes, the flashes are folded at
+its period, and the busiest window of $2.5$ cadences in phase is compared with the same
+statistic for $400$ sets of flash times drawn from the star's own good cadences. The
+per-cadence scatter of the detrended light curves has a median of $780$\,ppm in the
+Kepler short-cadence sample and $1600$\,ppm in the TESS two-minute sample, so a flash
+must reach about $0.4$ and $0.8$ per cent of the star's flux. The quiet flux required on
+either side, four cadences within two robust deviations, passes a flash in white noise
+with probability $0.954^8=0.69$, and the package's end-to-end test of the detector on
+synthetic Kepler cadences recovers $0.62$ of isolated flashes at ten deviations, so the
+searches see about two thirds of the flashes above their thresholds. A flat mirror of area $A$
+and reflectivity $\rho$ that reflects the star's disc toward the observer adds a glint
+of $\rho A/\pi R_\star^2$ of the star's flux, whatever its distance from the star, so
+those thresholds correspond to perfect reflectors of $6\times10^{15}$ and
+$8\times10^{15}$\,m$^2$, $80\,000$ to $90\,000$\,km on a side, around a star of solar
+radius. A mirror whose orientation follows its orbit sweeps its reflection across the
+observer in $R_\star P/2\pi a$, $1.5$ to $6$ hours at $0.05$ to $1$\,au from a solar
+radius, longer than the running median and the one-to-three-cadence window, so what the
+search covers is a reflector that spins, whose beam crosses the observer in minutes and
+recurs at the orbital phase where the geometry repeats.
+
+\emph{Glints at any period.} The TESS $20$\,s light curves of Gaia DR3 stars within
+$30$\,pc give flashes in the same way, over a $10$\,minute running median. For a star with
+three or more flashes, every period implied by a pair of flashes, and its fractions down
+to a fifth, is tested for flashes within $40$\,s of the predicted times, against the same
+count for flash times drawn from the star's good cadences. The $20$\,s cadences scatter
+by a median of $3000$\,ppm, so a flash must reach $1.5$ per cent of the flux, a
+reflector of $3\times10^{15}$\,m$^2$ around an M dwarf of $0.35$ solar radii.
+
+\emph{Nightside light.} A rocky planet's nightside faces us just before and after
+transit and is hidden in secondary eclipse, and below about $1500$\,K it emits next to
+nothing in the TESS band. Every TOI with a period below $1$\,d and a radius below
+$2\,R_\oplus$ is folded over its two-minute sectors and fitted outside transit and
+eclipse with a sinusoid and its first harmonic; the nightside flux is the fit at phase
+zero less the mean flux in eclipse.
+
+\emph{Satellite belts.} A belt of satellites $k$ planetary radii from a planet, such as
+one at its synchronous radius~\cite{SocasNavarro2018}, crosses the star with the planet
+and dims it for $kR_p/v$ before the planet's first contact and as long after its last,
+where $v$ is the planet's speed across the star. The long-cadence light curves of the
+$1243$ hosts of confirmed Kepler planets brighter than Kepler magnitude $15$, detrended by
+a running median that skips each transit and its shoulders and with the system's other
+transits masked, are folded on Holczer et al.'s measured transit times where they
+exist~\cite{Holczer2016} and on the catalogue ephemeris otherwise. For $k$ from $3$,
+beyond the Roche limit inside which natural rings lie, to $90$ or half the planet's Hill
+radius, the flux from $18$ minutes beyond each contact to $kR_p/v$ beyond it is compared
+with the flux just outside, for both shoulders together and each alone, against the same
+statistic at $40$ random phases away from transit and eclipse. Every test above $z=4$ is
+measured again with each transit's time and the transit's duration fitted from the light
+curve, against a null whose phases are detrended with the same gap as the transit, and a
+shoulder must exceed $z=5$ in both.
+
+\emph{Phase steps in transit times.} Holczer et al.\ give the time of every transit of
+$2599$ Kepler candidates~\cite{Holczer2016}. A perturbing planet moves transit times
+sinusoidally, tides and precession move them smoothly, and the spacecraft's quarterly
+rolls shift them at quarter boundaries; a step held from one transit on needs an
+impulsive change of the orbit, which natural dynamics makes only in a close encounter
+and which a civilization that moves a body, or that times an artificial occulter, would
+make at will. The held step is the simplest symbol such a clock could carry, and the one
+that a search without a model of the message can test. For each candidate
+with $20$ or more good times, the observed minus calculated times are fitted with a
+linear ephemeris, with a step held from one transit on (six or more transits each side)
+and with the best sinusoid. A step counts when it beats the sinusoid by $10$ in $\chi^2$,
+has a false-alarm probability below $0.01$ against $300$ permutations of the residuals,
+and lies more than two days from a quarter boundary.
+
+\emph{Phase steps in Cepheid timing.} Learned et al.\ proposed that a civilization could
+advance a Cepheid's pulsation and write information into its times of
+maximum~\cite{Learned2012}. Poleski's times of maximum of LMC Cepheids from MACHO
+(1992--1999) and OGLE (1997--2008)~\cite{Poleski2008} give each of $2939$ stars a median
+of $82$ maxima over $14.6$ years; each star's timing is fitted with a quadratic ephemeris
+with offsets between sources, then with a step held from one cycle on or with a
+companion's light-travel orbit of $1$ to $30$ years, and random walks of the star's own
+excess scatter give the null.
+
+\emph{Occulter shapes.} The Kepler DR25 candidates flagged only as not
+transit-like~\cite{Thompson2018}, $1116$ of them, and the $255$ TESS false positives and
+false alarms at $T\le11.5$ whose dispositions name no binary, blend or offset, are folded
+at their periods with stellar variability removed, fitted with a symmetric trapezoid, and
+measured for their departure from it, their ingress-egress asymmetry, their number of
+dips and the agreement between halves of the data and between odd and even events. A
+periodic, stable profile that no trapezoid describes and that has no secondary eclipse
+is listed.
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+\emph{Glints.} The Kepler light curves hold $3634$ flashes in $252239$ star-days; of the
+$816$ candidates on stars with three or more, $9$ gather their flashes at one phase at a
+false-alarm probability below $0.01$, against at most $8.2$ by chance, and $2$ reach the
+$1/401$ floor of the draws, against $2.0$. The TESS light curves hold $8710$ flashes in
+$317274$ star-days, and none of the $794$ TOIs on stars with three or more falls below a
+false-alarm probability of $0.01$, against at most $7.9$ by chance. The $2149$ TESS
+$20$\,s light curves, $1.13$ million star-hours, hold $19695$ flashes, $0.42$ a star-day,
+mostly cosmic rays and instrumental events; in the $1232$ stars with three or more, the
+best periodic family of each reaches $p\le0.01$ in $6$ stars against $12.3$ expected for
+uniform $p$, and $p\le0.05$ in $38$ against $61.6$.
+
+\emph{Nightside light.} For the $63$ planets the nightside flux divided by its error has
+a median of $-0.33$ and a spread of $0.87$, and none exceeds $+3$; the highest, TOI~4567.01
+at $2.9$, has an equally high level in eclipse, an offset of the eclipse level rather
+than light from the planet. The median $3\sigma$ limit is $102$\,ppm of the star's flux.
+That is far more than the starlight the planets receive: a planet of radius $R_p$ at
+distance $a$ intercepts $(R_p/2a)^2$ of its star's light, $0.5$ to $33$\,ppm for these
+$63$ (median $6.8$\,ppm), so the limits lie $3$ to $100$ times (median $21$) above all
+the starlight a nightside could re-emit, and constrain only light powered by something
+other than the star: at the median limit, $4\times10^{21}$\,W, with a range of
+$2\times10^{20}$ to $10^{23}$\,W, which is $10^{4}$ to $10^{6}$ times humanity's
+output. A nightside lit by its star's own energy, at or below a few parts per million,
+needs a precision these light curves do not reach.
+
+\emph{Satellite belts.} The $1243$ stars give $1522$ tests of $461$ planets. Eight exceed
+$z=5$ with both shoulders above $z=2$, where no null phase reaches $z=5$, and every test
+above $z=4$ falls below $z=5$ when measured again: with each transit's own time and fitted
+duration, against the null detrended as the transit is, the largest of the $22$ planets
+on the $16$ stars concerned reaches $z=3.3$ (KOI-1353.02). The excesses come from
+transit-timing variations that a linear ephemeris smears across the contacts (KOI-134.01,
+whose transits wander by about ten hours, falls from $z=28.7$ against the matched null to
+$1.0$ on its own times, and KOI-1474.01 from $16.8$ to $-0.2$), from catalogue durations
+shorter than the transit (KOI-620.01 lasts $7.4$\,h against the catalogue's $5.8$\,h), and
+from the running median's gap at the transit, which the matched null reproduces
+(KOI-1375.01 falls from $6.8$ to $3.0$). A shoulder six planetary radii out is excluded at
+$3\sigma$ down to $117$\,ppm of the star's flux for the median planet and $22$\,ppm for the
+best.
+
+\emph{Phase steps.} Of the $1810$ Kepler candidates, $8$ steps beat the sinusoid by $10$
+in $\chi^2$, one at a quarter boundary, where steps are set aside. The strongest of the
+other seven follow the long-period timing variations that Holczer et al.\ list (KOI-12.01,
+KOI-824.01 and KOI-2310.01), and the rest are low-signal timings at false-alarm
+probabilities of $0.0012$ to $0.0020$, of which two to four are expected among the
+trials. Among the Cepheids, four steps pass the tests: three fall at the start of
+OGLE-II's first season (HJD $2450467$), where the data change source, and one on a date
+that $15$ other stars share, so steps at a season's start or on a date other stars share
+are excluded and none remains.
+
+\emph{Occulter shapes.} Of the Kepler rejects, $129$ fold to periodic, stable profiles
+at S/N $15$ or more without a secondary eclipse: $81$ are Kepler eclipsing binaries,
+among them the one strongly asymmetric profile (KOI-3716.01), and the $48$ others are
+rotational and pulsational variability, heartbeat binaries, or smooth V- and U-shaped
+dips of constant depth (KOI-3198, KOI-8060, KOI-8240 and KOI-7698). Of the TESS rejects,
+$63$ are periodic and stable over three or more events; the strongest departures are
+stellar variability (TOI~1447.01), an eclipse on a blue supergiant (TOI~796.01), an
+eclipse whose depth changes between sectors (TOI~7247.01) and a grazing eclipsing binary
+(TOI~1090.01).
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+\emph{Transit anomalies.} Arnold showed how the transits of artificial occulters differ
+from planets'~\cite{Arnold2005}, the $\hat{G}$ search set out the signatures of
+transiting megastructures~\cite{Wright2016}, and Breakthrough Listen searched $218$
+Kepler systems transit by transit for anomalies~\cite{Zuckerman2023b}.
+
+\emph{Glints, nightsides and clocks.} Specular reflections from artificial surfaces were
+proposed as a technosignature by Jaiswal~\cite{Jaiswal2023}, artificial illumination
+detectable by its light curve by Loeb and Turner~\cite{LoebTurner2012}, and phase coding
+of Cepheids by Learned et al.~\cite{Learned2012}, whose idea Hippke et al.\ tested on one
+Kepler RR~Lyrae star~\cite{Hippke2015}. Socas-Navarro showed that a belt of satellites at
+a planet's synchronous radius would add shoulders to its transits~\cite{SocasNavarro2018}.
+We find no earlier archive-wide search for glints at planet periods, for nightside light
+across the ultra-short-period planets, for the shoulders of satellite belts, or for held
+phase steps in transit or Cepheid timing.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No glint repeats at a planet-candidate period in Kepler or TESS, or at any period in the
+fast light curves of the nearest stars, beyond what chance gives; no ultra-short-period
+rocky planet shows light from its nightside above a hundredth of a per cent of its star,
+twenty times what its star could power; no Kepler planet's transits carry the
+shoulders of a satellite belt once each transit is timed and measured from the light
+curve; no transit or Cepheid timing holds a phase
+step that natural timing variations, instrument changes or chance do not explain; and
+the rejected candidates with stable, non-planetary profiles are eclipsing binaries,
+variable stars and smooth dips.
+
+The glint searches apply to flashes lasting one to three cadences at five robust
+deviations, $0.4$ to $1.5$ per cent of the star's flux, which perfect reflectors of
+$3$ to $8\times10^{15}$\,m$^2$ would give, and to reflectors whose beam crosses the
+observer in minutes; the nightside limit, $102$\,ppm, is $21$ times the starlight the
+median planet intercepts and bounds only light of a non-stellar source above about
+$4\times10^{21}$\,W; the belt
+search applies to belts $3$ to $90$ planetary radii out whose shoulders outlast $18$ minutes
+beyond contact, and the timing searches to single held steps. A glint shorter than a
+cadence or longer than three, a reflector smaller than a planet, a signal at a period
+other than a candidate's in the longer-cadence data, a belt
+inside the Roche limit, or timing coded in many small shifts is not constrained.
+
+\section*{Acknowledgements}
+
+This work uses data from the Kepler and TESS missions, obtained from the Mikulski Archive
+for Space Telescopes at the Space Telescope Science Institute, from ExoFOP, from the
+OGLE and MACHO projects through Poleski's compilation, and from the European Space Agency
+mission Gaia.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Borucki2010}
+W.~J. Borucki, D.~Koch, G.~Basri, et al., Kepler planet-detection mission: introduction
+and first results, \emph{Science} \textbf{327}, 977 (2010).
+
+\bibitem{Ricker2015}
+G.~R. Ricker, J.~N. Winn, R.~Vanderspek, et al., Transiting Exoplanet Survey Satellite,
+\emph{J. Astron. Telesc. Instrum. Syst.} \textbf{1}, 014003 (2015).
+
+\bibitem{Jaiswal2023}
+B.~Jaiswal, Specular reflections from artificial surfaces as technosignature,
+\emph{Astrobiology} \textbf{23}, 291 (2023).
+
+\bibitem{LoebTurner2012}
+A.~Loeb and E.~L. Turner, Detection technique for artificially illuminated objects in
+the outer solar system and beyond, \emph{Astrobiology} \textbf{12}, 290 (2012).
+
+\bibitem{Arnold2005}
+L.~F.~A. Arnold, Transit light-curve signatures of artificial objects, \emph{Astrophys.
+J.} \textbf{627}, 534 (2005).
+
+\bibitem{Wright2016}
+J.~T. Wright, K.~M.~S. Cartier, M.~Zhao, D.~Jontof-Hutter and E.~B. Ford, The $\hat{G}$
+search for extraterrestrial civilizations with large energy supplies. IV. The
+signatures and information content of transiting megastructures, \emph{Astrophys. J.}
+\textbf{816}, 17 (2016).
+
+\bibitem{SocasNavarro2018}
+H.~Socas-Navarro, Possible photometric signatures of moderately advanced civilizations:
+the Clarke exobelt, \emph{Astrophys. J.} \textbf{855}, 110 (2018).
+
+\bibitem{Learned2012}
+J.~G. Learned, R.-P. Kudritzki, S.~Pakvasa and A.~Zee, The Cepheid galactic internet,
+\emph{Contemp. Phys.} \textbf{53}, 113 (2012).
+
+\bibitem{Guerrero2021}
+N.~M. Guerrero, S.~Seager, C.~X. Huang, et al., The TESS objects of interest catalog
+from the TESS prime mission, \emph{Astrophys. J. Suppl.} \textbf{254}, 39 (2021).
+
+\bibitem{Holczer2016}
+T.~Holczer, T.~Mazeh, G.~Nachmani, et al., Transit timing observations from Kepler. IX.
+Catalog of the full long-cadence data set, \emph{Astrophys. J. Suppl.} \textbf{225}, 9
+(2016).
+
+\bibitem{Poleski2008}
+R.~Poleski, Period changes of LMC Cepheids in the OGLE and MACHO data, \emph{Acta
+Astron.} \textbf{58}, 313 (2008).
+
+\bibitem{Thompson2018}
+S.~E. Thompson, J.~L. Coughlin, K.~Hoffman, et al., Planetary candidates observed by
+Kepler. VIII. A fully automated catalog with measured completeness and reliability
+based on data release 25, \emph{Astrophys. J. Suppl.} \textbf{235}, 38 (2018).
+
+\bibitem{Zuckerman2023b}
+A.~Zuckerman, J.~Davenport, S.~Croft, A.~Siemion and I.~de~Pater, The Breakthrough
+Listen search for intelligent life: detection and characterization of anomalous
+transits in Kepler lightcurves, arXiv:2312.07903 (2023).
+
+\bibitem{Hippke2015}
+M.~Hippke, J.~G. Learned, A.~Zee, et al., Pulsation period variations in the RRc Lyrae
+star KIC 5520878, \emph{Astrophys. J.} \textbf{798}, 42 (2015).
+
+\end{thebibliography}
+
+\end{document}

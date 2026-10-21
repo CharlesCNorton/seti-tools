@@ -1,0 +1,216 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Missing Light in Detached Eclipsing Binaries:\\ the Case of KIC 2557430}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A detached eclipsing binary's light curve and radial velocities give each component's
+radius and temperature, and so its luminosity, independently of its distance; with a
+Gaia parallax the system's apparent brightness follows, and a structure that intercepts
+part of the light would leave the system fainter than its components predict. We test
+the $117$ systems of DEBCat with components below $8000$\,K within $1$\,kpc and
+renormalised unit weight error (RUWE) of $1.4$ or less. The observed minus predicted
+$G$ has a median of $-0.04$\,mag and a robust scatter of $0.12$\,mag; $12$ systems are
+too bright, by the light of third stars and blends, and one is too faint by $0.3$\,mag at
+$3\sigma$: KIC~2557430, by $1.05\pm0.19$\,mag. Gaia resolves it into the eclipsing pair,
+$G=11.44$ at $343$\,pc, and a co-moving K star $2.4''$ away at $339$\,pc, inside
+Kepler's pixels. The pair's colour and Gaia temperature, $6130$\,K with no extinction,
+lie $900$\,K below the published $7050$\,K primary, and Gaia's luminosities for the two
+sources sum to $2.9\,L_\odot$ against the solution's $9.7\,L_\odot$. The light is not
+missing from the system: the published temperatures, and the extinction the test inferred
+from them, are too high, and a spectroscopic orbit free of the companion's light decides
+the radii.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+A structure that intercepts part of a star's light and re-radiates it in the infrared
+leaves the star fainter in the optical than its size and temperature imply. For a single
+star the size comes from models or interferometry, but a detached eclipsing binary
+gives both components' radii from its light curve and its velocities, and their
+temperatures from spectra and the eclipse depths, with uncertainties of one or two per
+cent for the best systems~\cite{Southworth2015}. With a Gaia parallax~\cite{Gaia2023}
+the system's luminosity then predicts its apparent magnitude, and a shortfall is light
+that the system does not send us. Detached eclipsing binaries have been used the other
+way, to test Gaia's parallaxes against their own distances~\cite{Stassun2021}; here
+the parallaxes are taken as given and the light is tested.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item A comparison of the predicted and observed Gaia $G$ magnitudes of the $117$ clean
+detached eclipsing binaries of DEBCat.
+\item The resolution of the one system too faint, KIC~2557430, by Gaia's view of the
+system and its companion.
+\end{enumerate}
+
+% =============================================================================
+\section{Data and method}\label{sec:method}
+% =============================================================================
+
+DEBCat~\cite{Southworth2015} lists $388$ detached eclipsing binaries with masses and
+radii measured to a few per cent, and for $252$ of them both components' luminosities
+and temperatures and a Gaia DR3 counterpart through CDS XMatch on their SIMBAD names.
+For each component, $\log L$ and $\log T_\mathrm{eff}$ give an absolute $G$ through
+bolometric corrections in temperature, and the two components summed and carried to
+the Gaia distance predict $G$. The extinction applied is the larger of Gaia's $A_G$ and
+$2.7\,E(B-V)$, with $E(B-V)$ the catalogue's $B-V$ less the intrinsic colour of the
+components' combined light. We keep the $117$ systems whose components are cooler than
+$8000$\,K, which lie within $1$\,kpc and whose RUWE is $1.4$ or less, so that the
+parallax and the photometry belong to an unresolved, well-measured source; BG~Ind,
+IM~Per and the other systems of high RUWE are set aside. A system is too faint when
+$G_\mathrm{obs}-G_\mathrm{pred}$ exceeds $0.3$\,mag at $3\sigma$, with the error from
+the luminosities, the parallax and the photometry.
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+Across the $117$ systems $G_\mathrm{obs}-G_\mathrm{pred}$ has a median of $-0.04$\,mag
+and a robust scatter of $0.12$\,mag. Twelve systems are too bright, as light from a
+third star or a blend in Gaia's photometry makes them, and one is too faint:
+KIC~2557430 (KOI-6277), an F2 and F9 pair with a period of $1.298$\,d, by
+$1.05\pm0.19$\,mag ($5.6\sigma$), a factor of $2.6$ in flux.
+
+Its published solution~\cite{Hoyman2020} gives radii of $1.88$ and $1.23\,R_\odot$ and
+temperatures of $7050$ and $6050$\,K, luminosities of $7.9$ and $1.8\,L_\odot$, and the
+catalogue's $B-V$ of $0.58$ against the $0.38$ of those components set the extinction
+in the test at $0.54$\,mag; without it the system would be $1.6$\,mag too faint.
+Table~\ref{tab:gaia} gives Gaia's view. The system is the visual double
+WDS~J19074+3749AB, and Gaia resolves it into two sources at the same parallax: the
+eclipsing pair, $G=11.44$, $G_\mathrm{BP}-G_\mathrm{RP}=0.68$, $2.916\pm0.012$\,mas,
+with RUWE $0.81$ and a radial velocity that varies by $20$\,km\,s$^{-1}$ over $20$
+transits, and a K star $2.4''$ away, $G=13.30$, $G_\mathrm{BP}-G_\mathrm{RP}=1.39$,
+$2.946\pm0.015$\,mas. The test matched the eclipsing pair's source; adding the K star
+brings the system to $G=11.26$, still $0.86$\,mag below the prediction.
+
+\begin{table}[t]
+\centering\small
+\caption{Gaia DR3 for the two sources of KIC~2557430: parallax, $G$, colour, RUWE, and the
+temperature, radius and luminosity of the astrophysical parameters (GSP-Phot and FLAME),
+which treat each source as a single star.}
+\label{tab:gaia}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Source & $\varpi$ (mas) & $G$ & BP$-$RP & RUWE & $T_\mathrm{eff}$ (K) & $R$ ($R_\odot$) & $L$ ($L_\odot$) \\
+\midrule
+2099133865420292992 & $2.916\pm0.012$ & $11.44$ & $0.68$ & $0.81$ & $6131$ & $1.31$ & $2.20$ \\
+2099133865420292480 & $2.946\pm0.015$ & $13.30$ & $1.39$ & $1.55$ & $4698$ & $1.31$ & $0.74$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Gaia's colours tell against the published temperatures rather than for missing light.
+Gaia gives the eclipsing pair $A_G=0.001$\,mag, so the catalogue's $B-V$ of $0.58$ is
+the pair's own colour, that of a star near $6000$\,K, where a $7050$\,K primary carrying
+four fifths of the light would give about $0.4$; Gaia's photometric temperature for the
+pair is $6130$\,K. At its parallax the pair's light corresponds to $2.2\,L_\odot$, and
+the K star's to $0.7\,L_\odot$, together $2.9\,L_\odot$ against the solution's
+$9.7\,L_\odot$. A primary at $6100$\,K with the published radius would hold $4.4\,L_\odot$,
+which halves the deficit, and the rest lies within what radii from a spectroscopic orbit
+contaminated by a third star can carry, since the K star, $1.9$\,mag fainter in $G$,
+falls inside Kepler's $4''$ pixels and any spectrograph's fibre or slit at that
+separation. An earlier analysis of the Kepler light curve read the system as a triple
+holding a $\gamma$~Doradus pulsator and two flaring components~\cite{Kamil2017}, and the
+K star is a flaring component that such a reading needs.
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+Detached eclipsing binaries serve as distance standards, and their luminosities have
+been used to test Gaia's parallaxes~\cite{Stassun2021}; searches for intercepted light
+around single stars use their infrared excess against models of their
+photospheres~\cite{Suazo2024}. We find no earlier search of eclipsing binaries for
+light that their measured components should send and do not.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No clean detached eclipsing binary of DEBCat is fainter than its components predict
+beyond the scatter of the comparison, $0.12$\,mag, save KIC~2557430, and Gaia shows
+that its deficit belongs to its published solution: the pair's colour and temperature
+are those of a $6100$\,K star with no extinction, and a resolved co-moving K star sits
+inside the apertures that gave the solution. The test bounds light intercepted from the
+other $116$ systems at about $0.36$\,mag, three times the scatter, a third of the flux.
+A new spectroscopic orbit of KIC~2557430 that separates the K star's light, with
+temperatures from high-resolution spectra, would place it among them.
+
+\section*{Acknowledgements}
+
+This work uses DEBCat, maintained by J.~Southworth; data from the European Space Agency
+mission Gaia, processed by the Gaia Data Processing and Analysis Consortium (DPAC), funded
+by national institutions, in particular those participating in the Gaia Multilateral
+Agreement; the SIMBAD and VizieR services and the XMatch service at CDS, Strasbourg; and
+the Washington Double Star Catalog maintained at the U.S. Naval Observatory.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Southworth2015}
+J.~Southworth, DEBCat: a catalog of detached eclipsing binary stars, in \emph{Living
+Together: Planets, Host Stars and Binaries}, ASP Conf. Ser. \textbf{496}, 164 (2015).
+
+\bibitem{Gaia2023}
+Gaia Collaboration, A.~Vallenari, A.~G.~A. Brown, et al., Gaia Data Release 3: summary
+of the content and survey properties, \emph{Astron. Astrophys.} \textbf{674}, A1 (2023).
+
+\bibitem{Stassun2021}
+K.~G. Stassun and G.~Torres, Parallax systematics and photocenter motions of benchmark
+eclipsing binaries in Gaia EDR3, \emph{Astrophys. J. Lett.} \textbf{907}, L33 (2021).
+
+\bibitem{Hoyman2020}
+B.~Hoyman, \"O.~\c{C}ak\i rl\i\ and O.~\"Ozdarcan, Updated pulsation period relations of
+$\gamma$~Dor-type stars in eclipsing binaries: the case of KIC~2557430, \emph{Mon. Not.
+R. Astron. Soc.} \textbf{491}, 5980 (2020).
+
+\bibitem{Kamil2017}
+C.~Kamil and H.~A. Dal, KIC~2557430: a triple system containing one $\gamma$~Dor and two
+flaring components?, \emph{Publ. Astron. Soc. Aust.} \textbf{34} (2017),
+arXiv:1707.04727.
+
+\bibitem{Suazo2024}
+M.~Suazo, E.~Zackrisson, P.~K. Mahto, et al., Project Hephaistos -- II. Dyson sphere
+candidates from Gaia DR3, 2MASS, and WISE, \emph{Mon. Not. R. Astron. Soc.}
+\textbf{531}, 695 (2024).
+
+\end{thebibliography}
+
+\end{document}

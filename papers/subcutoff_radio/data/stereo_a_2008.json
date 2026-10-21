@@ -1,0 +1,16 @@
+{
+ "year": 2008,
+ "craft": "ahead",
+ "days": null,
+ "persistent": 7,
+ "explained": {
+  "1375.0": "local to STEREO (Wind 0.000 within 25 kHz in 2008)",
+  "1675.0": "local to STEREO (Wind 0.000 within 25 kHz in 2008)",
+  "1975.0": "amateur band",
+  "2825.0": "aeronautical mobile band",
+  "7175.0": "shortwave broadcast band",
+  "225.0": "auroral kilometric radiation range",
+  "4275.0": "maritime mobile band"
+ },
+ "left": []
+}

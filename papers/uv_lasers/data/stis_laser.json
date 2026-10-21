@@ -1,0 +1,8633 @@
+{
+ "exposures": 4312,
+ "objects": 881,
+ "peaks": 4043,
+ "persistent": [
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2349.9738959791825,
+   "rest": 2349.9738959791825,
+   "n": 11,
+   "of": 146,
+   "z": 21.544320667472704,
+   "inst": 0.07833274563831974,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 6
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2350.030853310017,
+   "rest": 2350.030853310017,
+   "n": 2,
+   "of": 146,
+   "z": 13.590817648545253,
+   "inst": 0.07833270790164704,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 7
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2350.0884444528288,
+   "rest": 2350.0884444528288,
+   "n": 3,
+   "of": 146,
+   "z": 13.436412969402534,
+   "inst": 0.07833453362657532,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 7
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2350.1546450149326,
+   "rest": 2350.1546450149326,
+   "n": 2,
+   "of": 146,
+   "z": 18.3030096018395,
+   "inst": 0.07833666766158551,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 3,
+   "stars_obs": 6
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2350.2361663911843,
+   "rest": 2350.2361663911843,
+   "n": 4,
+   "of": 146,
+   "z": 15.077769981579715,
+   "inst": 0.07833903093426253,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 5,
+   "stars_obs": 3
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2350.313275515713,
+   "rest": 2350.313275515713,
+   "n": 7,
+   "of": 146,
+   "z": 14.41153064646636,
+   "inst": 0.07834461004535473,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 6,
+   "stars_obs": 1
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2616.2783258627433,
+   "rest": 2616.2783258627433,
+   "n": 2,
+   "of": 146,
+   "z": 6.555777484775689,
+   "inst": 0.08720942135100218,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "BD+28 4211",
+   "mode": "E230M",
+   "lam": 2616.543499624226,
+   "rest": 2616.543499624226,
+   "n": 2,
+   "of": 146,
+   "z": 6.468338466733331,
+   "inst": 0.08721720283992845,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 4
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2580.555149631465,
+   "rest": 2580.6864425595277,
+   "n": 2,
+   "of": 13,
+   "z": 6.207459258463814,
+   "inst": 0.022636385500683736,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Ori",
+    "* gam Cru",
+    "* gam Dra",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2686.196405016921,
+   "rest": 2686.3330727379794,
+   "n": 2,
+   "of": 13,
+   "z": 14.98616928501277,
+   "inst": 0.023563112323635442,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf CMi",
+    "* alf Cen B",
+    "* bet Dra",
+    "* ups And",
+    "HD 27561"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2703.464954587281,
+   "rest": 2703.6025008938786,
+   "n": 2,
+   "of": 13,
+   "z": 9.626503925259128,
+   "inst": 0.023714561915939687,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2733.281860923751,
+   "rest": 2733.420924248475,
+   "n": 7,
+   "of": 13,
+   "z": 8.261143335481625,
+   "inst": 0.023976035979450028,
+   "cenwaves": [
+    2713,
+    2812
+   ],
+   "stars_rest": 4,
+   "stars_obs": 4
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2735.150833554768,
+   "rest": 2735.289991968678,
+   "n": 3,
+   "of": 13,
+   "z": 7.977132870834674,
+   "inst": 0.02399250079130376,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 3
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2759.7525701285676,
+   "rest": 2759.8929802243224,
+   "n": 11,
+   "of": 13,
+   "z": 9.015199093848066,
+   "inst": 0.024208327381988644,
+   "cenwaves": [
+    2713,
+    2812
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2821.244388503939,
+   "rest": 2821.38792716716,
+   "n": 2,
+   "of": 13,
+   "z": 7.457516064490206,
+   "inst": 0.024747800205747322,
+   "cenwaves": [
+    2713,
+    2812
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2822.446645280359,
+   "rest": 2822.5902451117413,
+   "n": 4,
+   "of": 13,
+   "z": 7.9331535205987285,
+   "inst": 0.02475818379544458,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf Cen B",
+    "* bet Hyi",
+    "* bet Pic",
+    "* iot Hor",
+    "* ups And"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ]
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2864.844366504267,
+   "rest": 2864.9901234377608,
+   "n": 3,
+   "of": 13,
+   "z": 9.003481368815395,
+   "inst": 0.025130153718214965,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Gem"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2876.2168273310126,
+   "rest": 2876.3631628701146,
+   "n": 2,
+   "of": 13,
+   "z": 7.03481138515452,
+   "inst": 0.025229963060999006,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf CMi",
+    "BD+01 316",
+    "HD 26345",
+    "HD 27561"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2877.0915288216606,
+   "rest": 2877.237908863636,
+   "n": 5,
+   "of": 13,
+   "z": 11.194586173284828,
+   "inst": 0.025237594581974332,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2877.300 (+7 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2913.9570857584595,
+   "rest": 2914.105341438286,
+   "n": 2,
+   "of": 13,
+   "z": 7.288288191033433,
+   "inst": 0.025561056117640143,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "* rho01 Cnc"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2921.485770139257,
+   "rest": 2921.6344088618625,
+   "n": 2,
+   "of": 13,
+   "z": 7.14974193993919,
+   "inst": 0.025627118385881432,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra",
+    "* bet Gem"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1351.5672569220917,
+   "rest": 1351.636021669344,
+   "n": 12,
+   "of": 22,
+   "z": 12.633646424515597,
+   "inst": 0.029509949812916533,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1472.8714964135672,
+   "rest": 1472.9464328517408,
+   "n": 7,
+   "of": 22,
+   "z": 7.77290780087414,
+   "inst": 0.03215875586563687,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "S I 1472.972 (+5 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1473.8890219548903,
+   "rest": 1473.9640101625089,
+   "n": 6,
+   "of": 22,
+   "z": 7.0186016076483835,
+   "inst": 0.03218078333811408,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "S I 1473.995 (+6 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1481.564346621875,
+   "rest": 1481.6397253330058,
+   "n": 17,
+   "of": 22,
+   "z": 8.43043825924841,
+   "inst": 0.03234841799035816,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "S I 1481.665 (+5 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2581.8888657864763,
+   "rest": 2582.083396816341,
+   "n": 2,
+   "of": 9,
+   "z": 6.887466739600715,
+   "inst": 0.022648087834574983,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf CMi",
+    "* alf Cen A",
+    "* bet Gem",
+    "* bet Hyi",
+    "* del Pav",
+    "* iot Hor",
+    "* ups And",
+    "HD 26345",
+    "HD 27561",
+    "HD 6655"
+   ],
+   "forced_obs": [
+    "* del Pav",
+    "* ups And"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2655.8200657986313,
+   "rest": 2656.020167135053,
+   "n": 2,
+   "of": 9,
+   "z": 8.394566029253282,
+   "inst": 0.023296661779677968,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Cen A",
+    "* bet Hyi"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2657.2021077808704,
+   "rest": 2657.4023132465027,
+   "n": 4,
+   "of": 9,
+   "z": 8.456422561310491,
+   "inst": 0.023308796214702422,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra",
+    "* bet Gem",
+    "* bet Hyi"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2676.404406049137,
+   "rest": 2676.6060583016188,
+   "n": 2,
+   "of": 9,
+   "z": 7.72349476856441,
+   "inst": 0.023477219202824293,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* del Pav",
+    "* sig Dra"
+   ],
+   "forced_obs": [
+    "* bet Hyi"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2676.9590742853293,
+   "rest": 2677.1607683289917,
+   "n": 7,
+   "of": 9,
+   "z": 14.307232211627845,
+   "inst": 0.02348191308232452,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 5,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2700.7737451466082,
+   "rest": 2700.9772334938557,
+   "n": 5,
+   "of": 9,
+   "z": 12.830771655713795,
+   "inst": 0.02369091553090992,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* bet Gem",
+    "* sig Dra"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2705.4511979891104,
+   "rest": 2705.65503875653,
+   "n": 3,
+   "of": 9,
+   "z": 10.324744935313333,
+   "inst": 0.023731951483340043,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2714.285139621991,
+   "rest": 2714.4896459779984,
+   "n": 6,
+   "of": 9,
+   "z": 10.281970678722644,
+   "inst": 0.023809552285629167,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Co II 2714.440 (-5 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2759.8431638014954,
+   "rest": 2760.0511027023654,
+   "n": 6,
+   "of": 9,
+   "z": 10.025980071789943,
+   "inst": 0.024209075651995714,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2760.87416346902,
+   "rest": 2761.082180050006,
+   "n": 7,
+   "of": 9,
+   "z": 8.504768561613659,
+   "inst": 0.02421823936234118,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2820.5141922288794,
+   "rest": 2820.7267023557997,
+   "n": 7,
+   "of": 9,
+   "z": 8.702553693680748,
+   "inst": 0.02474129919211021,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [
+    "* ksi Dra"
+   ],
+   "id": "Fe I 2820.814 (+9 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2821.1791858350944,
+   "rest": 2821.3917460656007,
+   "n": 3,
+   "of": 9,
+   "z": 9.789894244363865,
+   "inst": 0.024747020860535984,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2821.1970799013166,
+   "rest": 2821.409641480042,
+   "n": 3,
+   "of": 9,
+   "z": 12.132139274560323,
+   "inst": 0.024747341440149846,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2830.7847487357467,
+   "rest": 2830.998032692231,
+   "n": 2,
+   "of": 9,
+   "z": 7.584522357402867,
+   "inst": 0.024831452235175477,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* sig Dra"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2830.924 (-8 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2831.7696666751435,
+   "rest": 2831.9830248397407,
+   "n": 2,
+   "of": 9,
+   "z": 8.398321880521358,
+   "inst": 0.024840107269564718,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E140M",
+   "lam": 1351.5509850374522,
+   "rest": 1351.6528169205042,
+   "n": 7,
+   "of": 10,
+   "z": 9.780190248932989,
+   "inst": 0.029509591084841923,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2169.6674581470684,
+   "rest": 2169.5089019900533,
+   "n": 4,
+   "of": 214,
+   "z": 9.674089511418556,
+   "inst": 0.07232125777425283,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2260.702181985261,
+   "rest": 2260.5369731424107,
+   "n": 4,
+   "of": 214,
+   "z": 14.073943413676988,
+   "inst": 0.07535660533863604,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2280.536656772233,
+   "rest": 2280.3699984546774,
+   "n": 10,
+   "of": 214,
+   "z": 10.30817260169879,
+   "inst": 0.07601748408592697,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2291.86326037679,
+   "rest": 2291.6957743274397,
+   "n": 10,
+   "of": 214,
+   "z": 9.304759817086602,
+   "inst": 0.07639387287777155,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2326.270958851525,
+   "rest": 2326.100958337379,
+   "n": 98,
+   "of": 214,
+   "z": 25.487047483268878,
+   "inst": 0.0775401138104858,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 6,
+   "stars_obs": 3
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2327.8175469276803,
+   "rest": 2327.6474333911165,
+   "n": 17,
+   "of": 214,
+   "z": 12.56931342728913,
+   "inst": 0.07759228431736005,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2328.998868254497,
+   "rest": 2328.828668388681,
+   "n": 2,
+   "of": 214,
+   "z": 6.868121475706031,
+   "inst": 0.07763192323359151,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2329.03970557136,
+   "rest": 2328.8695027212116,
+   "n": 2,
+   "of": 214,
+   "z": 6.310586231764564,
+   "inst": 0.07763581802662467,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2333.3621092257986,
+   "rest": 2333.191590500648,
+   "n": 3,
+   "of": 214,
+   "z": 7.865462908002775,
+   "inst": 0.07777849470203865,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2335.629544461146,
+   "rest": 2335.4588600351112,
+   "n": 4,
+   "of": 214,
+   "z": 7.3388723274105905,
+   "inst": 0.07785400723848925,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* GY And"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2338.5958347598034,
+   "rest": 2338.4249335615673,
+   "n": 4,
+   "of": 214,
+   "z": 8.47078378395112,
+   "inst": 0.07795287889279408,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2348.734464360227,
+   "rest": 2348.5628222456166,
+   "n": 15,
+   "of": 214,
+   "z": 10.800789709365947,
+   "inst": 0.07828969673026095,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* bet Gem",
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2360.636112944972,
+   "rest": 2360.463601075112,
+   "n": 33,
+   "of": 214,
+   "z": 18.404687991062236,
+   "inst": 0.07868676107304998,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* alf Cen B",
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2361.436322426226,
+   "rest": 2361.2637520782155,
+   "n": 5,
+   "of": 214,
+   "z": 8.130585393446877,
+   "inst": 0.07871405770741069,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "Fe II 2361.358 (+12 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2369.1827025879165,
+   "rest": 2369.0095661456576,
+   "n": 2,
+   "of": 214,
+   "z": 7.395709835956626,
+   "inst": 0.07897312998476957,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2369.228416065025,
+   "rest": 2369.055276282091,
+   "n": 4,
+   "of": 214,
+   "z": 7.5375600533097264,
+   "inst": 0.07897400409765822,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2379.9244691614554,
+   "rest": 2379.750547726445,
+   "n": 3,
+   "of": 214,
+   "z": 8.707777149921354,
+   "inst": 0.07933104133119308,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2380.4281143158955,
+   "rest": 2380.254156075226,
+   "n": 6,
+   "of": 214,
+   "z": 8.461339510420347,
+   "inst": 0.07934677591604529,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2392.121366165353,
+   "rest": 2391.9465533987654,
+   "n": 25,
+   "of": 214,
+   "z": 19.54994322593975,
+   "inst": 0.07973579352457101,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2403.2709327139705,
+   "rest": 2403.0953051532,
+   "n": 13,
+   "of": 214,
+   "z": 13.605516467970448,
+   "inst": 0.08010855454721809,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2403.7303537715857,
+   "rest": 2403.5546926369893,
+   "n": 6,
+   "of": 214,
+   "z": 7.941806782045823,
+   "inst": 0.08012407946845959,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [],
+   "id": "Fe III 2403.552 (-0 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2419.5257692265986,
+   "rest": 2419.3489537859064,
+   "n": 2,
+   "of": 214,
+   "z": 6.272848963092774,
+   "inst": 0.08065062482605691,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe II 2419.342 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2431.3594086991184,
+   "rest": 2431.181728473184,
+   "n": 7,
+   "of": 214,
+   "z": 7.505710882155103,
+   "inst": 0.08104459373421061,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2439.3972703641266,
+   "rest": 2439.2190027428974,
+   "n": 7,
+   "of": 214,
+   "z": 7.952368727193575,
+   "inst": 0.08131127880364927,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2439.170 (-6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2449.010334152326,
+   "rest": 2448.831364022311,
+   "n": 62,
+   "of": 214,
+   "z": 27.434005458970507,
+   "inst": 0.0816318633510058,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf Her",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2450.490376548025,
+   "rest": 2450.3112982586545,
+   "n": 10,
+   "of": 214,
+   "z": 10.870354790585406,
+   "inst": 0.08168238667469044,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* gam Cru",
+    "HD 27561"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2457.9034307288616,
+   "rest": 2457.7238107042226,
+   "n": 18,
+   "of": 214,
+   "z": 9.370988062079908,
+   "inst": 0.08192830541894298,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "S IV 2457.835 (+14 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2507.618979531697,
+   "rest": 2507.4357263667202,
+   "n": 174,
+   "of": 214,
+   "z": 27.2109125683974,
+   "inst": 0.08358549597925718,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2509.2441127853062,
+   "rest": 2509.060740857944,
+   "n": 71,
+   "of": 214,
+   "z": 26.264183238866273,
+   "inst": 0.08363899427656238,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe II 2509.121 (+7 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2516.8298895833177,
+   "rest": 2516.6459632983683,
+   "n": 25,
+   "of": 214,
+   "z": 13.2286112129943,
+   "inst": 0.08389421200692782,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Mn II 2516.599 (-6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2517.10272299194,
+   "rest": 2516.91877676872,
+   "n": 9,
+   "of": 214,
+   "z": 9.254911186181669,
+   "inst": 0.08390235312702772,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2516.956 (+4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2526.806298164044,
+   "rest": 2526.6216428175976,
+   "n": 4,
+   "of": 214,
+   "z": 9.461673093713786,
+   "inst": 0.08422683052272355,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* GY And",
+    "V* V1027 Sco"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2531.869152947239,
+   "rest": 2531.684127614694,
+   "n": 24,
+   "of": 214,
+   "z": 15.449474317598096,
+   "inst": 0.08439374906916916,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2539.6025396637388,
+   "rest": 2539.4169491864873,
+   "n": 3,
+   "of": 214,
+   "z": 7.310031491800806,
+   "inst": 0.08465228541960247,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* bet Gem",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2549.474966256468,
+   "rest": 2549.288654316573,
+   "n": 2,
+   "of": 214,
+   "z": 6.563106183339019,
+   "inst": 0.0849826050425827,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2563.80204787472,
+   "rest": 2563.6146889324395,
+   "n": 12,
+   "of": 214,
+   "z": 8.56526229340497,
+   "inst": 0.08545919452228534,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru",
+    "HD 128279",
+    "V* S Dor"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2578.5850949111154,
+   "rest": 2578.396655645158,
+   "n": 2,
+   "of": 214,
+   "z": 9.934148527015546,
+   "inst": 0.0859524570645237,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 3
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2580.8231965193154,
+   "rest": 2580.634593696132,
+   "n": 7,
+   "of": 214,
+   "z": 9.129023847873263,
+   "inst": 0.08602678677578995,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru",
+    "* gam Dra",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "HD 27561"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2592.1664455593773,
+   "rest": 2591.9770137879746,
+   "n": 10,
+   "of": 214,
+   "z": 9.339179397170547,
+   "inst": 0.08640407265588482,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Mg I 2591.891 (-10 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2592.238287151853,
+   "rest": 2592.0488501303707,
+   "n": 9,
+   "of": 214,
+   "z": 17.112574835434447,
+   "inst": 0.08640726444311796,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2618.2417898812064,
+   "rest": 2618.050452561388,
+   "n": 28,
+   "of": 214,
+   "z": 15.007701747750946,
+   "inst": 0.0872728937954392,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2618.018 (-4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2626.212571548421,
+   "rest": 2626.0206517354163,
+   "n": 10,
+   "of": 214,
+   "z": 8.94235069689623,
+   "inst": 0.08754000606057229,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2626.2958537607724,
+   "rest": 2626.1039278616245,
+   "n": 10,
+   "of": 214,
+   "z": 12.351023475479238,
+   "inst": 0.0875428471479257,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2631.6162732088633,
+   "rest": 2631.4239585011637,
+   "n": 3,
+   "of": 214,
+   "z": 7.424955192333783,
+   "inst": 0.08772064494602981,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2631.664776988823,
+   "rest": 2631.4724587365376,
+   "n": 4,
+   "of": 214,
+   "z": 6.764524881220806,
+   "inst": 0.08772188298300647,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2645.777486622962,
+   "rest": 2645.5841370342864,
+   "n": 2,
+   "of": 214,
+   "z": 6.496973568817423,
+   "inst": 0.08819241306882185,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "N IV 2645.650 (+7 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2647.338469068028,
+   "rest": 2647.145005405015,
+   "n": 15,
+   "of": 214,
+   "z": 11.997631124691512,
+   "inst": 0.08824283887862826,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2661.8756279436325,
+   "rest": 2661.6811019260927,
+   "n": 4,
+   "of": 214,
+   "z": 7.531467510821272,
+   "inst": 0.08872769616183478,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* gam Cru",
+    "BD+01 316"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2670.1503253274136,
+   "rest": 2669.955194606968,
+   "n": 34,
+   "of": 214,
+   "z": 10.390458118045393,
+   "inst": 0.08900372404047195,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2687.924494008211,
+   "rest": 2687.7280643772474,
+   "n": 5,
+   "of": 214,
+   "z": 9.329263858840836,
+   "inst": 0.0895975191982149,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2687.723 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2694.053847503443,
+   "rest": 2693.8569699481995,
+   "n": 45,
+   "of": 214,
+   "z": 20.476019975065192,
+   "inst": 0.08979920450442215,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2710.2917611005737,
+   "rest": 2710.0936969021104,
+   "n": 9,
+   "of": 214,
+   "z": 10.192883551640824,
+   "inst": 0.09034150466149729,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2715.7210291921147,
+   "rest": 2715.5225682305986,
+   "n": 38,
+   "of": 214,
+   "z": 17.696117377410353,
+   "inst": 0.0905211643987311,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2715.521 (-0 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2717.6602008227355,
+   "rest": 2717.461598149364,
+   "n": 7,
+   "of": 214,
+   "z": 14.309994939980069,
+   "inst": 0.09058750783035238,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2725.609590513076,
+   "rest": 2725.4104069098134,
+   "n": 56,
+   "of": 214,
+   "z": 22.68205834238818,
+   "inst": 0.09085193472955787,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "HD 6655"
+   ],
+   "forced_obs": [
+    "HD 6655"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2731.4368894847266,
+   "rest": 2731.237280030891,
+   "n": 33,
+   "of": 214,
+   "z": 20.201949954359176,
+   "inst": 0.09104658409827487,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2731.281 (+5 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2733.2254642952657,
+   "rest": 2733.025724134972,
+   "n": 34,
+   "of": 214,
+   "z": 25.30071244500925,
+   "inst": 0.09110598873866237,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 4
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2740.1850025888407,
+   "rest": 2739.984753835563,
+   "n": 46,
+   "of": 214,
+   "z": 23.72784665043461,
+   "inst": 0.09133725210092325,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Cr II 2740.095 (+12 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2747.126587933818,
+   "rest": 2746.925831899532,
+   "n": 49,
+   "of": 214,
+   "z": 23.484242627255004,
+   "inst": 0.09156989400266091,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2746.982 (+6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2748.313896684585,
+   "rest": 2748.1130538834946,
+   "n": 19,
+   "of": 214,
+   "z": 12.566675867021594,
+   "inst": 0.09160946041279834,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2748.197 (+9 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2750.722389265243,
+   "rest": 2750.521370455001,
+   "n": 4,
+   "of": 214,
+   "z": 8.56620126220174,
+   "inst": 0.09169022762684759,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2756.3724575713104,
+   "rest": 2756.1710258622556,
+   "n": 73,
+   "of": 214,
+   "z": 46.51977922884288,
+   "inst": 0.09187689922212372,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "O V 2756.140 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2757.0198794765297,
+   "rest": 2756.8184004548193,
+   "n": 10,
+   "of": 214,
+   "z": 11.834161715754435,
+   "inst": 0.09189829037559559,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2762.5344957276975,
+   "rest": 2762.3326137058148,
+   "n": 43,
+   "of": 214,
+   "z": 29.30536529691467,
+   "inst": 0.09208190204437293,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "V* S Dor"
+   ],
+   "id": "Ti II 2762.235 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2768.2459679863055,
+   "rest": 2768.043668578298,
+   "n": 7,
+   "of": 214,
+   "z": 8.105229817757408,
+   "inst": 0.09227455889968866,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr"
+   ],
+   "forced_obs": [
+    "HD 27561"
+   ],
+   "id": "Fe I 2768.038 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2768.330249879543,
+   "rest": 2768.1279443123367,
+   "n": 5,
+   "of": 214,
+   "z": 9.011969355849649,
+   "inst": 0.09227708217096205,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "HD 27561"
+   ],
+   "id": "Fe I 2768.104 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2773.7258268853443,
+   "rest": 2773.523127017181,
+   "n": 9,
+   "of": 214,
+   "z": 10.137350476821213,
+   "inst": 0.0924570755179618,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "V* S Dor"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2824.2065655005395,
+   "rest": 2824.0001765730744,
+   "n": 42,
+   "of": 214,
+   "z": 21.670364675891804,
+   "inst": 0.09413822525516286,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2834.3576827641728,
+   "rest": 2834.150552007753,
+   "n": 10,
+   "of": 214,
+   "z": 13.151216325258464,
+   "inst": 0.09447660280818158,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "HD 126238",
+    "HD 209458"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2840.5477801482944,
+   "rest": 2840.3401970285186,
+   "n": 3,
+   "of": 214,
+   "z": 6.3461886720386875,
+   "inst": 0.0946843199393531,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2845.106754455145,
+   "rest": 2844.8988381721265,
+   "n": 66,
+   "of": 214,
+   "z": 27.441337401043473,
+   "inst": 0.0948348034709325,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 4,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2846.5741330003552,
+   "rest": 2846.366109483437,
+   "n": 34,
+   "of": 214,
+   "z": 18.178500937257034,
+   "inst": 0.09488398863255822,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2846.460 (+10 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2852.6657972600988,
+   "rest": 2852.4573285731744,
+   "n": 6,
+   "of": 214,
+   "z": 8.552270665590527,
+   "inst": 0.0950883029525867,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2857.958770586355,
+   "rest": 2857.7499150966023,
+   "n": 3,
+   "of": 214,
+   "z": 13.084067301764456,
+   "inst": 0.09526477169486837,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2862.3043973291465,
+   "rest": 2862.095224267282,
+   "n": 28,
+   "of": 214,
+   "z": 14.402741855989046,
+   "inst": 0.09540928698044379,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2869.715921806042,
+   "rest": 2869.506207120698,
+   "n": 25,
+   "of": 214,
+   "z": 19.196969590990058,
+   "inst": 0.09565437393996881,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "HD 6655"
+   ],
+   "forced_obs": [
+    "HD 6655"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2870.0717687819856,
+   "rest": 2869.86202809186,
+   "n": 16,
+   "of": 214,
+   "z": 13.998470683187499,
+   "inst": 0.09566839218534132,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2875.841871259073,
+   "rest": 2875.631708898211,
+   "n": 32,
+   "of": 214,
+   "z": 19.063778874161372,
+   "inst": 0.09585788185813508,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2881.4590421393646,
+   "rest": 2881.248469283786,
+   "n": 21,
+   "of": 214,
+   "z": 14.531426576078346,
+   "inst": 0.09604860322426932,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2881.542806767544,
+   "rest": 2881.3322277905677,
+   "n": 12,
+   "of": 214,
+   "z": 16.008793276084337,
+   "inst": 0.09605038064618361,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2888.660601761729,
+   "rest": 2888.4495026265986,
+   "n": 23,
+   "of": 214,
+   "z": 13.67463729050434,
+   "inst": 0.09628821200972476,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2894.000604252173,
+   "rest": 2893.7891148773906,
+   "n": 36,
+   "of": 214,
+   "z": 13.771426420111244,
+   "inst": 0.09646395859518259,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2908.824150149684,
+   "rest": 2908.611577491626,
+   "n": 19,
+   "of": 214,
+   "z": 13.173265797349181,
+   "inst": 0.09695842608908992,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "* gam Dra"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2918.2755228350807,
+   "rest": 2918.0622594843885,
+   "n": 2,
+   "of": 214,
+   "z": 10.059316799523893,
+   "inst": 0.09727601050608167,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2918.025 (-4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2918.3656735147824,
+   "rest": 2918.1524035760094,
+   "n": 2,
+   "of": 214,
+   "z": 10.249424461833232,
+   "inst": 0.09727931397530187,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2918.159 (+1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2927.3225047244223,
+   "rest": 2927.10858023339,
+   "n": 28,
+   "of": 214,
+   "z": 10.818465824522463,
+   "inst": 0.09757604142166462,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen A",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2933.7644591398903,
+   "rest": 2933.550063880155,
+   "n": 4,
+   "of": 214,
+   "z": 6.394333453147415,
+   "inst": 0.09779250215005551,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2933.8254750567908,
+   "rest": 2933.611075338101,
+   "n": 7,
+   "of": 214,
+   "z": 12.079649772334344,
+   "inst": 0.09779381325332179,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2939.990111779855,
+   "rest": 2939.7752615584373,
+   "n": 4,
+   "of": 214,
+   "z": 7.824969921798217,
+   "inst": 0.09799987888514163,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* gam Dra",
+    "HD 201626"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2940.0545134251493,
+   "rest": 2939.8396584973525,
+   "n": 4,
+   "of": 214,
+   "z": 15.77884430405865,
+   "inst": 0.09800137110612647,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Dra",
+    "HD 201626"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2946.2847563800806,
+   "rest": 2946.0694461551475,
+   "n": 8,
+   "of": 214,
+   "z": 10.900397932547637,
+   "inst": 0.09820874699041936,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2946.099 (+3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2954.5396858843296,
+   "rest": 2954.3237724010983,
+   "n": 31,
+   "of": 214,
+   "z": 10.606912921141687,
+   "inst": 0.0984826298677005,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2954.344 (+2 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2954.666304191312,
+   "rest": 2954.450381454998,
+   "n": 2,
+   "of": 214,
+   "z": 7.3494241758602055,
+   "inst": 0.09848936844603563,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2954.344 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2965.478063206421,
+   "rest": 2965.2613503624098,
+   "n": 31,
+   "of": 214,
+   "z": 11.936258045460749,
+   "inst": 0.09884693923186684,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* GY And"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2965.254 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2971.8633015349988,
+   "rest": 2971.6461220670135,
+   "n": 37,
+   "of": 214,
+   "z": 15.898600040285068,
+   "inst": 0.09906003684637205,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2971.621 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2980.2015770605826,
+   "rest": 2979.983788243492,
+   "n": 8,
+   "of": 214,
+   "z": 10.045005738916169,
+   "inst": 0.09933957975447114,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2988.682396836241,
+   "rest": 2988.4639882531183,
+   "n": 59,
+   "of": 214,
+   "z": 20.32954776099469,
+   "inst": 0.09962169248524504,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2988.471 (+1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3003.9222368262153,
+   "rest": 3003.702714537648,
+   "n": 2,
+   "of": 214,
+   "z": 8.458457884824035,
+   "inst": 0.1001306948830466,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 3003.686 (-2 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3004.016194808163,
+   "rest": 3003.796665653282,
+   "n": 17,
+   "of": 214,
+   "z": 10.02973784601318,
+   "inst": 0.10013195303445341,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 3003.686 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3017.230484077009,
+   "rest": 3017.009989240997,
+   "n": 11,
+   "of": 214,
+   "z": 10.626196556102343,
+   "inst": 0.10057378294183965,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3026.3233207172093,
+   "rest": 3026.102161389859,
+   "n": 3,
+   "of": 214,
+   "z": 7.184321599672857,
+   "inst": 0.10087634893615452,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 3026.130 (+3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3032.6668400615995,
+   "rest": 3032.4452171590383,
+   "n": 45,
+   "of": 214,
+   "z": 16.189555323094712,
+   "inst": 0.10108627939229176,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "HD 172555",
+   "mode": "E230H",
+   "lam": 2568.899744649781,
+   "rest": 2568.8757518777375,
+   "n": 2,
+   "of": 16,
+   "z": 6.386074784218355,
+   "inst": 0.02253411520162336,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 172555",
+   "mode": "E230H",
+   "lam": 2568.9187960746226,
+   "rest": 2568.894803124644,
+   "n": 3,
+   "of": 16,
+   "z": 7.21276232816353,
+   "inst": 0.02253428880307165,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 172555",
+   "mode": "E230H",
+   "lam": 2587.4797109882493,
+   "rest": 2587.4555446847558,
+   "n": 2,
+   "of": 16,
+   "z": 6.630836620548674,
+   "inst": 0.02269721101598072,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 172555",
+   "mode": "E230H",
+   "lam": 2587.4898441157948,
+   "rest": 2587.465677717661,
+   "n": 3,
+   "of": 16,
+   "z": 7.242491733439933,
+   "inst": 0.02269730577476614,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 172555",
+   "mode": "E230H",
+   "lam": 2587.618559018798,
+   "rest": 2587.5943914185045,
+   "n": 2,
+   "of": 16,
+   "z": 7.775644235567771,
+   "inst": 0.022698424262086542,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 3,
+   "stars_obs": 4
+  },
+  {
+   "star": "* bet Pic",
+   "mode": "E230H",
+   "lam": 1893.9589551418333,
+   "rest": 1893.8525732883772,
+   "n": 2,
+   "of": 38,
+   "z": 6.887794808505676,
+   "inst": 0.016613609435571473,
+   "cenwaves": [
+    1763
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 1893.872 (+3 km/s)"
+  },
+  {
+   "star": "V* TW Hya",
+   "mode": "E140M",
+   "lam": 1455.0399573818495,
+   "rest": 1454.980092035153,
+   "n": 3,
+   "of": 10,
+   "z": 9.786556293961887,
+   "inst": 0.03176898643229927,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1455.038 (+12 km/s)"
+  },
+  {
+   "star": "V* TW Hya",
+   "mode": "E140M",
+   "lam": 1463.9020381462021,
+   "rest": 1463.8418081830323,
+   "n": 2,
+   "of": 10,
+   "z": 12.33537321889213,
+   "inst": 0.03196280132489511,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* TW Hya",
+   "mode": "E140M",
+   "lam": 1504.8127269896072,
+   "rest": 1504.7508138200355,
+   "n": 2,
+   "of": 10,
+   "z": 10.461990693005674,
+   "inst": 0.032855979248876774,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* gam Cru",
+    "* mu. Gem"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "V* RU Lup",
+   "mode": "E140M",
+   "lam": 1341.659187990974,
+   "rest": 1341.6444196855452,
+   "n": 5,
+   "of": 30,
+   "z": 7.866434911228909,
+   "inst": 0.029293677350187286,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "HD 166620",
+    "HD 5278",
+    "TOI-2094"
+   ],
+   "forced_obs": [
+    "HD 260655",
+    "HD 5278"
+   ]
+  },
+  {
+   "star": "V* RU Lup",
+   "mode": "E140M",
+   "lam": 1495.6257556922817,
+   "rest": 1495.6092926007866,
+   "n": 9,
+   "of": 30,
+   "z": 7.774485264535884,
+   "inst": 0.03265589014247518,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [],
+   "forced_obs": [
+    "* bet Hyi",
+    "HD 73752"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 1807.8747584109356,
+   "rest": 1808.010971763602,
+   "n": 2,
+   "of": 3,
+   "z": 11.587574851946242,
+   "inst": 0.0602617932146294,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* eps Eri"
+   ],
+   "forced_obs": [],
+   "id": "Co II 1808.019 (+1 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 1816.785445417971,
+   "rest": 1816.9223301415639,
+   "n": 2,
+   "of": 3,
+   "z": 20.573039196565528,
+   "inst": 0.060559434034839155,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 1900.1399333466634,
+   "rest": 1900.2830983693798,
+   "n": 2,
+   "of": 3,
+   "z": 11.686970618866106,
+   "inst": 0.06333797549371711,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 4,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 1993.4672082018324,
+   "rest": 1993.6174049179467,
+   "n": 2,
+   "of": 3,
+   "z": 19.796233545139994,
+   "inst": 0.06644878440100879,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 4,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2123.4939643437638,
+   "rest": 2123.6539578559823,
+   "n": 2,
+   "of": 3,
+   "z": 17.447982362382106,
+   "inst": 0.07078281796432707,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "* eps Eri",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2249.7050969213433,
+   "rest": 2249.8745997435585,
+   "n": 2,
+   "of": 3,
+   "z": 13.099854356524855,
+   "inst": 0.07499058156130847,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2253.6430777077157,
+   "rest": 2253.8128772349783,
+   "n": 2,
+   "of": 3,
+   "z": 10.565407638400723,
+   "inst": 0.07512101072622607,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* alf Her",
+    "* alf Ori"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2260.6044014498043,
+   "rest": 2260.774725474265,
+   "n": 2,
+   "of": 3,
+   "z": 19.038109360044402,
+   "inst": 0.07535238050504382,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* bet Gem",
+    "* eps Eri",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* alf Ori"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2268.125734967483,
+   "rest": 2268.296625682778,
+   "n": 2,
+   "of": 3,
+   "z": 18.252122507004803,
+   "inst": 0.07560310331051487,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2280.4402838215774,
+   "rest": 2280.6121023699416,
+   "n": 2,
+   "of": 3,
+   "z": 15.72586086800867,
+   "inst": 0.07601402996315651,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2294.1940865033457,
+   "rest": 2294.3669413245857,
+   "n": 2,
+   "of": 3,
+   "z": 17.04831174085394,
+   "inst": 0.07647272455701072,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "V* DX Cha",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2327.9325937366034,
+   "rest": 2328.10799056755,
+   "n": 2,
+   "of": 3,
+   "z": 10.512100496262095,
+   "inst": 0.0775978987628293,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2334.9415444712513,
+   "rest": 2335.1174693878265,
+   "n": 2,
+   "of": 3,
+   "z": 28.264034603513792,
+   "inst": 0.07783100673244982,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 2350.7194899635247,
+   "rest": 2350.896603660929,
+   "n": 2,
+   "of": 3,
+   "z": 43.15795613222311,
+   "inst": 0.07835688615231899,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 5,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 27561",
+   "mode": "E230M",
+   "lam": 2677.4700721927884,
+   "rest": 2677.120751832067,
+   "n": 2,
+   "of": 2,
+   "z": 10.76660569615159,
+   "inst": 0.08924904351414405,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 5,
+   "stars_obs": 0
+  },
+  {
+   "star": "HD 27561",
+   "mode": "E230M",
+   "lam": 2765.7434378975295,
+   "rest": 2765.3826008127667,
+   "n": 2,
+   "of": 2,
+   "z": 13.431045108477209,
+   "inst": 0.09219142905879271,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 1
+  },
+  {
+   "star": "HD 26345",
+   "mode": "E230M",
+   "lam": 2732.7256168632584,
+   "rest": 2732.3872954222097,
+   "n": 2,
+   "of": 2,
+   "z": 9.859928665729813,
+   "inst": 0.09109089790708993,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "HD 26345",
+   "mode": "E230M",
+   "lam": 2832.419516056926,
+   "rest": 2832.0688521459892,
+   "n": 2,
+   "of": 2,
+   "z": 9.370877116739878,
+   "inst": 0.09441360268878243,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1707.287363701478,
+   "rest": 1707.3130211955304,
+   "n": 3,
+   "of": 6,
+   "z": 8.102649194721948,
+   "inst": 0.03727707378607036,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1708.9073913423174,
+   "rest": 1708.9330731825055,
+   "n": 6,
+   "of": 6,
+   "z": 12.551492963962708,
+   "inst": 0.037312202994110893,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1717.3406341673278,
+   "rest": 1717.3664427441638,
+   "n": 6,
+   "of": 6,
+   "z": 17.53304295343984,
+   "inst": 0.03749644207497945,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1717.413 (+8 km/s)"
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1727.032421332307,
+   "rest": 1727.058375559475,
+   "n": 6,
+   "of": 6,
+   "z": 15.517176069598422,
+   "inst": 0.03770816130467853,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe III 1727.032 (-5 km/s)"
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1727.9526572830628,
+   "rest": 1727.9786253397415,
+   "n": 2,
+   "of": 6,
+   "z": 10.582625545943554,
+   "inst": 0.03772799025610639,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "LS IV -14 116",
+    "V* TW Hya"
+   ]
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1728.9477126624556,
+   "rest": 1728.9736956730476,
+   "n": 4,
+   "of": 6,
+   "z": 8.568919779368645,
+   "inst": 0.03774973030468663,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "S III 1728.939 (-6 km/s)"
+  },
+  {
+   "star": "* gam Dra",
+   "mode": "E230M",
+   "lam": 2325.91324450233,
+   "rest": 2326.12980192744,
+   "n": 6,
+   "of": 6,
+   "z": 16.53497429878951,
+   "inst": 0.07752994973208852,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 6,
+   "stars_obs": 2
+  },
+  {
+   "star": "* gam Dra",
+   "mode": "E230M",
+   "lam": 2350.6673499404037,
+   "rest": 2350.8862121313286,
+   "n": 6,
+   "of": 6,
+   "z": 10.528964418094613,
+   "inst": 0.07835537151808877,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 5,
+   "stars_obs": 2
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2391.427136212595,
+   "rest": 2391.4000867072536,
+   "n": 3,
+   "of": 7,
+   "z": 7.294600298402369,
+   "inst": 0.020977376012616514,
+   "cenwaves": [
+    2263,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2391.478 (+10 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2561.4330433425607,
+   "rest": 2561.404070895214,
+   "n": 2,
+   "of": 7,
+   "z": 8.361300519294499,
+   "inst": 0.022468718103462255,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 46202"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2569.02237584269,
+   "rest": 2568.993317552172,
+   "n": 2,
+   "of": 7,
+   "z": 11.003592554684792,
+   "inst": 0.0225352309686188,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2569.9486678746007,
+   "rest": 2569.919599106765,
+   "n": 2,
+   "of": 7,
+   "z": 7.921382046771117,
+   "inst": 0.022543414752017023,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Hyi",
+    "* del Pav",
+    "HD 27561"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2573.2751934821704,
+   "rest": 2573.2460870879017,
+   "n": 2,
+   "of": 7,
+   "z": 12.198965969659072,
+   "inst": 0.02257253074387092,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf CMi",
+    "* bet Hyi",
+    "* iot Hor",
+    "* nu. Ind"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2580.957870329959,
+   "rest": 2580.928677036698,
+   "n": 2,
+   "of": 7,
+   "z": 8.613599232320368,
+   "inst": 0.022639974538583286,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "HD 175640"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2580.951 (+3 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2604.0523166595576,
+   "rest": 2604.0228621443093,
+   "n": 2,
+   "of": 7,
+   "z": 8.387526207258864,
+   "inst": 0.022842514451167025,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": "Ti II 2604.097 (+8 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2638.7512902896256,
+   "rest": 2638.7214432932274,
+   "n": 3,
+   "of": 7,
+   "z": 9.451502376500484,
+   "inst": 0.023146776999551245,
+   "cenwaves": [
+    2513,
+    2762
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen A",
+    "* bet Hyi"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 1900.2984950416073,
+   "rest": 1900.277000707319,
+   "n": 4,
+   "of": 4,
+   "z": 11.938851458950115,
+   "inst": 0.06334294247286226,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 4,
+   "stars_obs": 2
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 1993.6333275333113,
+   "rest": 1993.6107774858835,
+   "n": 4,
+   "of": 4,
+   "z": 13.002989922087666,
+   "inst": 0.06645411768714449,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 4,
+   "stars_obs": 2
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2123.662424490649,
+   "rest": 2123.638403680136,
+   "n": 3,
+   "of": 4,
+   "z": 13.514318801547402,
+   "inst": 0.07078827063407775,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* eps Eri",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "* eps Eri"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2125.807092880238,
+   "rest": 2125.7830478113156,
+   "n": 3,
+   "of": 4,
+   "z": 10.780246686285833,
+   "inst": 0.07085976296818347,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2140.3059856875725,
+   "rest": 2140.2817766212306,
+   "n": 4,
+   "of": 4,
+   "z": 6.831508051056849,
+   "inst": 0.07134367538467895,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ti II 2140.200 (-11 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2161.9043161938157,
+   "rest": 2161.8798628280983,
+   "n": 4,
+   "of": 4,
+   "z": 9.11415287677135,
+   "inst": 0.07206307240401148,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* gam Cru"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2261.5723384957832,
+   "rest": 2261.546757782023,
+   "n": 2,
+   "of": 4,
+   "z": 8.47562009727945,
+   "inst": 0.07538581478899856,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2268.310323361329,
+   "rest": 2268.2846664340163,
+   "n": 3,
+   "of": 4,
+   "z": 9.471367362273783,
+   "inst": 0.07560941936709098,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2294.392075712115,
+   "rest": 2294.3661237733054,
+   "n": 4,
+   "of": 4,
+   "z": 13.86421225291681,
+   "inst": 0.07647994349997238,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "V* DX Cha",
+    "V* GY And"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2295.020814006035,
+   "rest": 2294.994854955547,
+   "n": 2,
+   "of": 4,
+   "z": 10.63737650077116,
+   "inst": 0.07650087673568767,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra",
+    "* omi Aql",
+    "* sig Boo",
+    "HD 27561",
+    "V* GY And",
+    "V* S Dor"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2315.11002418379,
+   "rest": 2315.0838379036322,
+   "n": 4,
+   "of": 4,
+   "z": 12.197249379779262,
+   "inst": 0.07717075584034777,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "V* GY And",
+    "V* S Dor"
+   ],
+   "forced_obs": [
+    "* bet Dra",
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2316.0724569028084,
+   "rest": 2316.046259736545,
+   "n": 2,
+   "of": 4,
+   "z": 10.0194690957426,
+   "inst": 0.07720241753524432,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "V* GY And",
+    "V* S Dor"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2326.1593817819135,
+   "rest": 2326.133070522135,
+   "n": 4,
+   "of": 4,
+   "z": 20.400011868071054,
+   "inst": 0.07753909276147965,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 6,
+   "stars_obs": 2
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2335.142310004892,
+   "rest": 2335.115897138938,
+   "n": 4,
+   "of": 4,
+   "z": 25.939234703595577,
+   "inst": 0.07783821657026918,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2344.9275901618776,
+   "rest": 2344.9010666143213,
+   "n": 4,
+   "of": 4,
+   "z": 11.438075480270358,
+   "inst": 0.07816349260214152,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "* alf Her",
+    "* gam Dra",
+    "HD 269357",
+    "SK -69 140",
+    "V* S Dor"
+   ]
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2350.9160159738494,
+   "rest": 2350.889424691026,
+   "n": 4,
+   "of": 4,
+   "z": 35.524067884629694,
+   "inst": 0.07836405488889263,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 5,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Aqr",
+   "mode": "E230M",
+   "lam": 2326.2000893486816,
+   "rest": 2326.1471018297016,
+   "n": 5,
+   "of": 5,
+   "z": 8.297792096330845,
+   "inst": 0.07753890865952397,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 6,
+   "stars_obs": 3
+  },
+  {
+   "star": "* bet Dra",
+   "mode": "E230M",
+   "lam": 2325.9804148693747,
+   "rest": 2326.141999678634,
+   "n": 4,
+   "of": 4,
+   "z": 7.9993982353269155,
+   "inst": 0.07753288296233041,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 6,
+   "stars_obs": 2
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 1900.3993607514647,
+   "rest": 1900.2662500270762,
+   "n": 4,
+   "of": 5,
+   "z": 10.092942550218691,
+   "inst": 0.06334619135616726,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 4,
+   "stars_obs": 1
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 1993.746064483371,
+   "rest": 1993.606415424141,
+   "n": 4,
+   "of": 5,
+   "z": 9.301414349301856,
+   "inst": 0.06645721256383434,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 3,
+   "stars_obs": 1
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2237.537043406813,
+   "rest": 2237.3803183610967,
+   "n": 3,
+   "of": 5,
+   "z": 7.804095050153852,
+   "inst": 0.07458425665950633,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": null
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2250.1342132775962,
+   "rest": 2249.976605881337,
+   "n": 4,
+   "of": 5,
+   "z": 15.76723360156967,
+   "inst": 0.0750047019249242,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 3,
+   "stars_obs": 0
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2251.880219226158,
+   "rest": 2251.7224895334375,
+   "n": 4,
+   "of": 5,
+   "z": 8.488984304863006,
+   "inst": 0.07506190262055248,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2261.7904164819,
+   "rest": 2261.6319926437477,
+   "n": 3,
+   "of": 5,
+   "z": 8.07390055301785,
+   "inst": 0.07539229731724101,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Ti II 2261.607 (-3 km/s)"
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2268.5489434569868,
+   "rest": 2268.3900462275883,
+   "n": 4,
+   "of": 5,
+   "z": 11.761413190553988,
+   "inst": 0.07561723660766716,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 3,
+   "stars_obs": 0
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2269.6924000665363,
+   "rest": 2269.5334227453736,
+   "n": 4,
+   "of": 5,
+   "z": 7.298104106583247,
+   "inst": 0.07565652295619739,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B",
+    "* bet Gem",
+    "* eps Eri",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* eps Eri",
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2280.8930559872515,
+   "rest": 2280.733294132346,
+   "n": 5,
+   "of": 5,
+   "z": 16.425560567793973,
+   "inst": 0.07602967932884952,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2291.88794818255,
+   "rest": 2291.7274162063245,
+   "n": 5,
+   "of": 5,
+   "z": 8.889783060379262,
+   "inst": 0.07639637549792157,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2317.052563503334,
+   "rest": 2316.890268908028,
+   "n": 3,
+   "of": 5,
+   "z": 6.88815518846679,
+   "inst": 0.07723510362851733,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [
+    "* bet Gem",
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2326.29411081609,
+   "rest": 2326.1311689099693,
+   "n": 5,
+   "of": 5,
+   "z": 45.770159068396914,
+   "inst": 0.07754227217891561,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 6,
+   "stars_obs": 2
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2327.8311911307146,
+   "rest": 2327.668141562027,
+   "n": 5,
+   "of": 5,
+   "z": 16.598072901282702,
+   "inst": 0.07759366329362458,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 2
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2333.848445116478,
+   "rest": 2333.6849740779385,
+   "n": 4,
+   "of": 5,
+   "z": 12.373518389714262,
+   "inst": 0.07779503679317232,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": "Ti II 2333.660 (-3 km/s)"
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2339.047585027986,
+   "rest": 2338.8837498232115,
+   "n": 5,
+   "of": 5,
+   "z": 20.26374324256109,
+   "inst": 0.07796774784433835,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* alf Ori"
+   ],
+   "forced_obs": [
+    "* alf Ori",
+    "V* GY And"
+   ]
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2345.3245262714163,
+   "rest": 2345.1602514073716,
+   "n": 5,
+   "of": 5,
+   "z": 19.401921423200164,
+   "inst": 0.07817732013442126,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her",
+    "* alf Ori",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* alf Ori"
+   ]
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2351.052945093438,
+   "rest": 2350.888268990583,
+   "n": 5,
+   "of": 5,
+   "z": 11.586199810532117,
+   "inst": 0.07836783980011575,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 5,
+   "stars_obs": 1
+  },
+  {
+   "star": "V* S Dor",
+   "mode": "E230M",
+   "lam": 2329.268047934766,
+   "rest": 2327.5546823586324,
+   "n": 2,
+   "of": 2,
+   "z": 10.995076179978668,
+   "inst": 0.07764209046886351,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 0
+  },
+  {
+   "star": "HD 269445",
+   "mode": "E230M",
+   "lam": 2350.1107619616387,
+   "rest": 2347.933504006358,
+   "n": 2,
+   "of": 5,
+   "z": 6.333079211656349,
+   "inst": 0.07833570935177453,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 7
+  },
+  {
+   "star": "HD 46223",
+   "mode": "E230M",
+   "lam": 2564.054655837176,
+   "rest": 2563.794678122143,
+   "n": 2,
+   "of": 4,
+   "z": 7.198130846030805,
+   "inst": 0.08546823330624155,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem",
+    "* nu. Ind",
+    "HD 128279",
+    "HD 26345",
+    "V* S Dor"
+   ],
+   "forced_obs": [
+    "HD 26345"
+   ]
+  },
+  {
+   "star": "HD 46223",
+   "mode": "E230M",
+   "lam": 2616.5988497875205,
+   "rest": 2616.3335444483473,
+   "n": 2,
+   "of": 4,
+   "z": 14.75309886411135,
+   "inst": 0.08721940660492916,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 3,
+   "stars_obs": 4
+  },
+  {
+   "star": "HD 46223",
+   "mode": "E230M",
+   "lam": 2744.396154892783,
+   "rest": 2744.11789177547,
+   "n": 2,
+   "of": 4,
+   "z": 10.462956319084473,
+   "inst": 0.09148039785391808,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 2,
+   "stars_obs": 3
+  },
+  {
+   "star": "HD 46223",
+   "mode": "E230M",
+   "lam": 3062.297823895289,
+   "rest": 3061.9873277094166,
+   "n": 2,
+   "of": 4,
+   "z": 6.9833655414349645,
+   "inst": 0.10207645304012168,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 2
+  },
+  {
+   "star": "HD 101190",
+   "mode": "E230M",
+   "lam": 2400.187075729244,
+   "rest": 2400.2166988953677,
+   "n": 2,
+   "of": 4,
+   "z": 8.405990092566775,
+   "inst": 0.08000621731110376,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* alf Ori",
+    "* gam Cru",
+    "* zet Pup"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "* zet Pup",
+    "BD+28 4211",
+    "HD 46223"
+   ]
+  },
+  {
+   "star": "HD 101190",
+   "mode": "E230M",
+   "lam": 2744.382940041587,
+   "rest": 2744.4168112812754,
+   "n": 2,
+   "of": 4,
+   "z": 12.65973494057244,
+   "inst": 0.09147913084178362,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 3
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1279.9652039779787,
+   "rest": 1280.0446216862233,
+   "n": 2,
+   "of": 5,
+   "z": 7.301655460217556,
+   "inst": 0.027946925902335416,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "Feige 110"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "O III 1280.030 (-4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1291.960400279525,
+   "rest": 1292.0405622509709,
+   "n": 5,
+   "of": 5,
+   "z": 9.31762890113469,
+   "inst": 0.0282086535694017,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116",
+    "PG 0909+276"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1300.467691495055,
+   "rest": 1300.548381316453,
+   "n": 2,
+   "of": 5,
+   "z": 6.990888624819211,
+   "inst": 0.028394427111992568,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 175640"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe III 1300.524 (-6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1313.6103225088425,
+   "rest": 1313.691827788061,
+   "n": 5,
+   "of": 5,
+   "z": 11.638807132402553,
+   "inst": 0.028681191274203686,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "C I 1313.633 (-13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1314.8155723685593,
+   "rest": 1314.89715242964,
+   "n": 4,
+   "of": 5,
+   "z": 14.369228024685887,
+   "inst": 0.028707541926422928,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe II 1314.962 (+15 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1321.5013325841026,
+   "rest": 1321.5833274750182,
+   "n": 2,
+   "of": 5,
+   "z": 8.45475193172586,
+   "inst": 0.028853439110096996,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1338.5392491101638,
+   "rest": 1338.6223011487891,
+   "n": 4,
+   "of": 5,
+   "z": 8.39308890919372,
+   "inst": 0.02922567395153872,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116",
+    "V* TW Hya"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1344.9960795436914,
+   "rest": 1345.0795322077977,
+   "n": 4,
+   "of": 5,
+   "z": 11.176684246417512,
+   "inst": 0.029366670084858226,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1345.083 (+1 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1362.606918100275,
+   "rest": 1362.691463460053,
+   "n": 5,
+   "of": 5,
+   "z": 11.267329878867434,
+   "inst": 0.029751117752036173,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* ksi Oct"
+   ],
+   "forced_obs": [
+    "* alf Lyr",
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1369.103148889385,
+   "rest": 1369.188097319309,
+   "n": 4,
+   "of": 5,
+   "z": 9.029802317559332,
+   "inst": 0.029892807905211972,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1369.169 (-4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1380.022427658977,
+   "rest": 1380.1080535948931,
+   "n": 3,
+   "of": 5,
+   "z": 14.325651913431923,
+   "inst": 0.030131380140346633,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1397.1021189025053,
+   "rest": 1397.1888045781175,
+   "n": 3,
+   "of": 5,
+   "z": 21.265170152192734,
+   "inst": 0.030504262915550074,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1405.2194071266429,
+   "rest": 1405.3065964537807,
+   "n": 2,
+   "of": 5,
+   "z": 12.576392142220595,
+   "inst": 0.030681729787765302,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1426.8532551978535,
+   "rest": 1426.9417868354144,
+   "n": 4,
+   "of": 5,
+   "z": 14.159273994327862,
+   "inst": 0.03115400176237208,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1426.962 (+4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1436.1971839985135,
+   "rest": 1436.2862953966874,
+   "n": 2,
+   "of": 5,
+   "z": 7.702562937421136,
+   "inst": 0.03135792357560428,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1437.0078318676383,
+   "rest": 1437.0969935638952,
+   "n": 2,
+   "of": 5,
+   "z": 7.34638637562733,
+   "inst": 0.03137552439718883,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 57095"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1437.073383214193,
+   "rest": 1437.1625489776993,
+   "n": 3,
+   "of": 5,
+   "z": 8.491937982326165,
+   "inst": 0.03137687740147043,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1443.357388469013,
+   "rest": 1443.4469441347558,
+   "n": 3,
+   "of": 5,
+   "z": 13.304881065760256,
+   "inst": 0.03151419190119909,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1443.475 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1471.7424876369419,
+   "rest": 1471.8338045064404,
+   "n": 5,
+   "of": 5,
+   "z": 12.842891804659537,
+   "inst": 0.032134018970640436,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra",
+    "* gam Cru",
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "* bet Dra",
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1472.2550871958993,
+   "rest": 1472.3464358705453,
+   "n": 4,
+   "of": 5,
+   "z": 11.563686815964978,
+   "inst": 0.032145210584236895,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen A",
+    "* pi.03 Ori"
+   ],
+   "forced_obs": [
+    "* alf Cen A",
+    "BD+05 3409",
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1482.503573005104,
+   "rest": 1482.595557565205,
+   "n": 4,
+   "of": 5,
+   "z": 8.686698369028653,
+   "inst": 0.032368776248810974,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1490.1518658541836,
+   "rest": 1490.2443249661615,
+   "n": 3,
+   "of": 5,
+   "z": 14.840188739574003,
+   "inst": 0.03253564065937011,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1500.0823078370624,
+   "rest": 1500.1753831009028,
+   "n": 4,
+   "of": 5,
+   "z": 9.40134672438023,
+   "inst": 0.03275233695121244,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "V* S Dor"
+   ],
+   "id": "Si III 1500.240 (+13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1518.9716906458852,
+   "rest": 1519.0659379349402,
+   "n": 2,
+   "of": 5,
+   "z": 15.944324882666995,
+   "inst": 0.03316528705846731,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "O IV 1519.020 (-9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1530.0061118388555,
+   "rest": 1530.1010437781183,
+   "n": 2,
+   "of": 5,
+   "z": 6.546989682804278,
+   "inst": 0.03340565686385478,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1555.738821179763,
+   "rest": 1555.8353497505564,
+   "n": 4,
+   "of": 5,
+   "z": 12.83441691931724,
+   "inst": 0.033967888195236606,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* TW Hya"
+   ],
+   "forced_obs": [],
+   "id": "Fe III 1555.861 (+5 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1557.8976186889856,
+   "rest": 1557.9942812061943,
+   "n": 4,
+   "of": 5,
+   "z": 12.904794028395102,
+   "inst": 0.03401489725268373,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1565.6448394308609,
+   "rest": 1565.7419826381029,
+   "n": 3,
+   "of": 5,
+   "z": 7.775602664172193,
+   "inst": 0.03418447562224464,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1626.5744421385707,
+   "rest": 1626.6753658309353,
+   "n": 4,
+   "of": 5,
+   "z": 8.378037737518657,
+   "inst": 0.03551455181256379,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1627.9876850398664,
+   "rest": 1628.08869641939,
+   "n": 5,
+   "of": 5,
+   "z": 7.727348775401457,
+   "inst": 0.03554533937312881,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Mg I 1628.104 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1682.2609167703108,
+   "rest": 1682.3652956286298,
+   "n": 4,
+   "of": 5,
+   "z": 8.616635782511901,
+   "inst": 0.03673040881937846,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1684.084230720679,
+   "rest": 1684.1887227097416,
+   "n": 4,
+   "of": 5,
+   "z": 13.345968214268815,
+   "inst": 0.03677046547554377,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1692.06940032115,
+   "rest": 1692.1743877642043,
+   "n": 3,
+   "of": 5,
+   "z": 8.959741590431209,
+   "inst": 0.03694474296875988,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1706.3452931273348,
+   "rest": 1706.4511663434448,
+   "n": 2,
+   "of": 5,
+   "z": 7.067359195651734,
+   "inst": 0.037256534676121396,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1706.3703070306904,
+   "rest": 1706.4761817988324,
+   "n": 3,
+   "of": 5,
+   "z": 6.692300560276422,
+   "inst": 0.03725653160840938,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1719.6286813273246,
+   "rest": 1719.7353787347838,
+   "n": 5,
+   "of": 5,
+   "z": 9.099101784944818,
+   "inst": 0.03754638395879118,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "* alf CMi",
+    "LS IV -14 116"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1682.2319774233304,
+   "rest": 1682.3363544860563,
+   "n": 2,
+   "of": 2,
+   "z": 7.634370405752729,
+   "inst": 0.056075219474299595,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1781.5988292944617,
+   "rest": 1781.7093717495175,
+   "n": 2,
+   "of": 2,
+   "z": 8.704276874969873,
+   "inst": 0.05938611301225093,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1782.4695654363252,
+   "rest": 1782.5801619177473,
+   "n": 2,
+   "of": 2,
+   "z": 7.69201879579577,
+   "inst": 0.05941532459877014,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1851.8908387471095,
+   "rest": 1852.0057425943978,
+   "n": 2,
+   "of": 2,
+   "z": 9.47592631824698,
+   "inst": 0.06172952608617978,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1915.9731548040943,
+   "rest": 1916.0920347521896,
+   "n": 2,
+   "of": 2,
+   "z": 9.162998000489647,
+   "inst": 0.06386543879606789,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1916.132 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1921.8339524875767,
+   "rest": 1921.9531960792453,
+   "n": 2,
+   "of": 2,
+   "z": 10.367683576633913,
+   "inst": 0.06406125992873138,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1921.996 (+7 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1935.7579230993074,
+   "rest": 1935.8780306283957,
+   "n": 2,
+   "of": 2,
+   "z": 7.40862119528651,
+   "inst": 0.06452523330262641,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Al III 1935.840 (-6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1944.9863066705711,
+   "rest": 1945.1069867910642,
+   "n": 2,
+   "of": 2,
+   "z": 8.36807961505507,
+   "inst": 0.06483318663836278,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 1945.091 (-2 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1959.9326945647226,
+   "rest": 1960.0543020603266,
+   "n": 2,
+   "of": 2,
+   "z": 9.279441861529682,
+   "inst": 0.06533111476804068,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1960.049 (-1 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1965.7998744948045,
+   "rest": 1965.9218460299796,
+   "n": 2,
+   "of": 2,
+   "z": 18.81219196307627,
+   "inst": 0.06552614080042818,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1976.333369933469,
+   "rest": 1976.4559950380262,
+   "n": 2,
+   "of": 2,
+   "z": 9.805398656764455,
+   "inst": 0.06587741440098718,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1976.515 (+9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2023.2177569894397,
+   "rest": 2023.3432911188368,
+   "n": 2,
+   "of": 2,
+   "z": 14.397798168803728,
+   "inst": 0.06744039490717875,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": "Fe III 2023.298 (-7 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2076.494319773502,
+   "rest": 2076.623159541604,
+   "n": 2,
+   "of": 2,
+   "z": 9.665941756334924,
+   "inst": 0.06921639189360419,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2138.184663904105,
+   "rest": 2138.317331358879,
+   "n": 2,
+   "of": 2,
+   "z": 7.557037081917375,
+   "inst": 0.07127249681661142,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Ti II 2138.359 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2169.9682511562783,
+   "rest": 2170.1028906800207,
+   "n": 2,
+   "of": 2,
+   "z": 12.36094274082628,
+   "inst": 0.07233161103179245,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* S Dor"
+   ],
+   "forced_obs": [],
+   "id": "Fe II 2170.176 (+10 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2176.808771576893,
+   "rest": 2176.943835532841,
+   "n": 2,
+   "of": 2,
+   "z": 13.28780282702862,
+   "inst": 0.07255987437529225,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* omi Aql",
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2198.28890787781,
+   "rest": 2198.425304606862,
+   "n": 2,
+   "of": 2,
+   "z": 11.95125027245516,
+   "inst": 0.07327616165075522,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "N V 2198.450 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2205.384108068704,
+   "rest": 2205.5209450320194,
+   "n": 2,
+   "of": 2,
+   "z": 7.207686770116782,
+   "inst": 0.0735125441492846,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 2205.524 (+0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2206.301366136868,
+   "rest": 2206.4382600130853,
+   "n": 2,
+   "of": 2,
+   "z": 10.811588791164501,
+   "inst": 0.07354349976717947,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2206.440 (+0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2216.1371948684596,
+   "rest": 2216.274699026092,
+   "n": 2,
+   "of": 2,
+   "z": 9.11351674890013,
+   "inst": 0.07387096915942523,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Cr II 2216.317 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2226.2950865776374,
+   "rest": 2226.4332209996537,
+   "n": 2,
+   "of": 2,
+   "z": 16.90322280501193,
+   "inst": 0.07420979613994522,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": "Cr II 2226.459 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2237.6497186391343,
+   "rest": 2237.788557579409,
+   "n": 2,
+   "of": 2,
+   "z": 21.902799023998014,
+   "inst": 0.07458820395591947,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2237.817 (+4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2253.1906208503265,
+   "rest": 2253.3304240534057,
+   "n": 2,
+   "of": 2,
+   "z": 9.507045415718569,
+   "inst": 0.0751055281629829,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ti II 2253.264 (-9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2255.2337532475944,
+   "rest": 2255.373683220442,
+   "n": 2,
+   "of": 2,
+   "z": 9.9330885968188,
+   "inst": 0.07517365942549717,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* gam Cru",
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2260.406364910352,
+   "rest": 2260.5466158270524,
+   "n": 2,
+   "of": 2,
+   "z": 13.123934174766678,
+   "inst": 0.07534669262593904,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2273.59831024161,
+   "rest": 2273.7393796759247,
+   "n": 2,
+   "of": 2,
+   "z": 15.93032177177461,
+   "inst": 0.0757869319330387,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2293.677059720695,
+   "rest": 2293.8193749765865,
+   "n": 2,
+   "of": 2,
+   "z": 21.95469813301748,
+   "inst": 0.07645627787895745,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "BD+28 4211",
+    "V* S Dor"
+   ],
+   "forced_obs": [
+    "* alf Aqr",
+    "* omi Aql",
+    "* sig Boo"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2305.153126807173,
+   "rest": 2305.296154115974,
+   "n": 2,
+   "of": 2,
+   "z": 12.194811114570786,
+   "inst": 0.07683832615360256,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2322.8120752760396,
+   "rest": 2322.9561982655773,
+   "n": 2,
+   "of": 2,
+   "z": 22.016846999271582,
+   "inst": 0.07742703170055985,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [
+    "* bet Dra"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2336.507725244028,
+   "rest": 2336.6526980044264,
+   "n": 2,
+   "of": 2,
+   "z": 16.206536131190493,
+   "inst": 0.07788334617115597,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2342.020923035298,
+   "rest": 2342.166237871819,
+   "n": 2,
+   "of": 2,
+   "z": 15.034572456918818,
+   "inst": 0.07806714074404572,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* S Dor",
+    "V* V1027 Sco"
+   ],
+   "forced_obs": [
+    "* bet Gem",
+    "V* V1027 Sco"
+   ]
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2358.2016057152964,
+   "rest": 2358.3479245109343,
+   "n": 2,
+   "of": 2,
+   "z": 7.997226272004696,
+   "inst": 0.07860631545225794,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Mn II 2358.448 (+13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2402.4509074725756,
+   "rest": 2402.5999717945188,
+   "n": 2,
+   "of": 5,
+   "z": 10.203506957252541,
+   "inst": 0.021074006059776672,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2402.599 (-0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2415.0902052730394,
+   "rest": 2415.240053822602,
+   "n": 2,
+   "of": 5,
+   "z": 8.856940545520372,
+   "inst": 0.021184866613096015,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 2415.316 (+9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2441.9813769335674,
+   "rest": 2442.132893993507,
+   "n": 2,
+   "of": 5,
+   "z": 7.7527477614914355,
+   "inst": 0.021420850573670366,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2555.0819836253636,
+   "rest": 2555.2405182127773,
+   "n": 2,
+   "of": 5,
+   "z": 8.066380457170343,
+   "inst": 0.022413000235336992,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* eta Car",
+   "mode": "E140M",
+   "lam": 1526.237759098703,
+   "rest": 1526.3650442424341,
+   "n": 2,
+   "of": 5,
+   "z": 9.703553374110077,
+   "inst": 0.03332399130661809,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* rho01 Cnc",
+   "mode": "E230M",
+   "lam": 2933.29053700209,
+   "rest": 2933.022527527618,
+   "n": 4,
+   "of": 18,
+   "z": 6.881925074554011,
+   "inst": 0.09777556016826103,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra",
+    "* bet Gem",
+    "* gam Cru",
+    "* gam Dra",
+    "HD 27561",
+    "HD 6655"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "HD 27561",
+    "HD 6655"
+   ]
+  },
+  {
+   "star": "* rho01 Cnc",
+   "mode": "E230M",
+   "lam": 2943.984422348998,
+   "rest": 2943.7154357934783,
+   "n": 2,
+   "of": 18,
+   "z": 7.579349399576387,
+   "inst": 0.09813250906076341,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra",
+    "* bet Gem"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* rho01 Cnc",
+   "mode": "E230M",
+   "lam": 2962.054257975305,
+   "rest": 2961.783620411442,
+   "n": 9,
+   "of": 18,
+   "z": 6.871740378063464,
+   "inst": 0.09873427587243767,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* alf Ori",
+    "* bet Dra",
+    "* bet Gem",
+    "* gam Cru",
+    "* gam Dra",
+    "BD+01 316",
+    "BD-20 2976",
+    "HD 209458",
+    "HD 27561",
+    "HD 6655",
+    "HD 97658"
+   ],
+   "forced_obs": [
+    "* alf Ori",
+    "* gam Cru",
+    "BD-20 2976",
+    "HD 27561",
+    "HD 6655"
+   ]
+  },
+  {
+   "star": "* rho01 Cnc",
+   "mode": "E230M",
+   "lam": 2989.451123923216,
+   "rest": 2989.1779831570443,
+   "n": 3,
+   "of": 18,
+   "z": 7.357191127180907,
+   "inst": 0.09964766517004782,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr",
+    "* bet Dra",
+    "* bet Gem",
+    "* gam Cru",
+    "* gam Dra",
+    "BD+01 316",
+    "HD 126238",
+    "HD 209458",
+    "HD 26345",
+    "HD 27561",
+    "HD 6655",
+    "HD 86226"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "HD 26345",
+    "HD 27561",
+    "HD 6655",
+    "HD 86226"
+   ]
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 1807.2236076624758,
+   "rest": 1807.4170748841664,
+   "n": 3,
+   "of": 5,
+   "z": 6.723376399347766,
+   "inst": 0.06023991121571601,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ca II 1807.340 (-13 km/s)"
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2169.297124358274,
+   "rest": 2169.5293523381933,
+   "n": 5,
+   "of": 5,
+   "z": 9.164489760931724,
+   "inst": 0.07230889716922632,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Ori",
+    "* gam Cru"
+   ],
+   "forced_obs": []
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2251.5190576143586,
+   "rest": 2251.760087631238,
+   "n": 4,
+   "of": 5,
+   "z": 7.835566975990176,
+   "inst": 0.07505060819316854,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2260.313833773738,
+   "rest": 2260.5558052905526,
+   "n": 5,
+   "of": 5,
+   "z": 11.82331897279946,
+   "inst": 0.07534316617909828,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 1
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2268.1897522876357,
+   "rest": 2268.4325669386735,
+   "n": 2,
+   "of": 5,
+   "z": 10.298499932141105,
+   "inst": 0.07560637923366297,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2280.5225374633133,
+   "rest": 2280.7666723658535,
+   "n": 5,
+   "of": 5,
+   "z": 8.619982055368649,
+   "inst": 0.07601708798430667,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2291.452114613253,
+   "rest": 2291.697419550822,
+   "n": 2,
+   "of": 5,
+   "z": 6.083853218363422,
+   "inst": 0.07638144346167974,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 2,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2325.8578777700445,
+   "rest": 2326.106865919464,
+   "n": 5,
+   "of": 5,
+   "z": 27.828215638627753,
+   "inst": 0.07752828299943909,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 6,
+   "stars_obs": 2
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2327.3993006034025,
+   "rest": 2327.648453765492,
+   "n": 5,
+   "of": 5,
+   "z": 12.560581185180551,
+   "inst": 0.07757987413993472,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 3,
+   "stars_obs": 0
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 2360.2386907347527,
+   "rest": 2360.49135942505,
+   "n": 5,
+   "of": 5,
+   "z": 10.424013274241752,
+   "inst": 0.07867429423388264,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Ori",
+    "* gam Cru",
+    "* gam Dra"
+   ],
+   "forced_obs": [
+    "* gam Cru",
+    "* gam Dra",
+    "* sig Boo"
+   ]
+  }
+ ],
+ "identified": [
+  {
+   "star": "* alf Cen A",
+   "mode": "E230H",
+   "lam": 2877.0915288216606,
+   "rest": 2877.237908863636,
+   "n": 5,
+   "of": 13,
+   "z": 11.194586173284828,
+   "inst": 0.025237594581974332,
+   "cenwaves": [
+    2812
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2877.300 (+7 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1472.8714964135672,
+   "rest": 1472.9464328517408,
+   "n": 7,
+   "of": 22,
+   "z": 7.77290780087414,
+   "inst": 0.03215875586563687,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "S I 1472.972 (+5 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1473.8890219548903,
+   "rest": 1473.9640101625089,
+   "n": 6,
+   "of": 22,
+   "z": 7.0186016076483835,
+   "inst": 0.03218078333811408,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "S I 1473.995 (+6 km/s)"
+  },
+  {
+   "star": "* alf Cen A",
+   "mode": "E140M",
+   "lam": 1481.564346621875,
+   "rest": 1481.6397253330058,
+   "n": 17,
+   "of": 22,
+   "z": 8.43043825924841,
+   "inst": 0.03234841799035816,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "S I 1481.665 (+5 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2714.285139621991,
+   "rest": 2714.4896459779984,
+   "n": 6,
+   "of": 9,
+   "z": 10.281970678722644,
+   "inst": 0.023809552285629167,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Co II 2714.440 (-5 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2820.5141922288794,
+   "rest": 2820.7267023557997,
+   "n": 7,
+   "of": 9,
+   "z": 8.702553693680748,
+   "inst": 0.02474129919211021,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [
+    "* ksi Dra"
+   ],
+   "id": "Fe I 2820.814 (+9 km/s)"
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230H",
+   "lam": 2830.7847487357467,
+   "rest": 2830.998032692231,
+   "n": 2,
+   "of": 9,
+   "z": 7.584522357402867,
+   "inst": 0.024831452235175477,
+   "cenwaves": [
+    2713
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* sig Dra"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2830.924 (-8 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2333.3621092257986,
+   "rest": 2333.191590500648,
+   "n": 3,
+   "of": 214,
+   "z": 7.865462908002775,
+   "inst": 0.07777849470203865,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2335.629544461146,
+   "rest": 2335.4588600351112,
+   "n": 4,
+   "of": 214,
+   "z": 7.3388723274105905,
+   "inst": 0.07785400723848925,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* GY And"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2361.436322426226,
+   "rest": 2361.2637520782155,
+   "n": 5,
+   "of": 214,
+   "z": 8.130585393446877,
+   "inst": 0.07871405770741069,
+   "cenwaves": [
+    1978,
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Her"
+   ],
+   "forced_obs": [
+    "* alf Cen B"
+   ],
+   "id": "Fe II 2361.358 (+12 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2369.1827025879165,
+   "rest": 2369.0095661456576,
+   "n": 2,
+   "of": 214,
+   "z": 7.395709835956626,
+   "inst": 0.07897312998476957,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2369.228416065025,
+   "rest": 2369.055276282091,
+   "n": 4,
+   "of": 214,
+   "z": 7.5375600533097264,
+   "inst": 0.07897400409765822,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2379.9244691614554,
+   "rest": 2379.750547726445,
+   "n": 3,
+   "of": 214,
+   "z": 8.707777149921354,
+   "inst": 0.07933104133119308,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2380.4281143158955,
+   "rest": 2380.254156075226,
+   "n": 6,
+   "of": 214,
+   "z": 8.461339510420347,
+   "inst": 0.07934677591604529,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2392.121366165353,
+   "rest": 2391.9465533987654,
+   "n": 25,
+   "of": 214,
+   "z": 19.54994322593975,
+   "inst": 0.07973579352457101,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2403.2709327139705,
+   "rest": 2403.0953051532,
+   "n": 13,
+   "of": 214,
+   "z": 13.605516467970448,
+   "inst": 0.08010855454721809,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2403.7303537715857,
+   "rest": 2403.5546926369893,
+   "n": 6,
+   "of": 214,
+   "z": 7.941806782045823,
+   "inst": 0.08012407946845959,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [],
+   "id": "Fe III 2403.552 (-0 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2419.5257692265986,
+   "rest": 2419.3489537859064,
+   "n": 2,
+   "of": 214,
+   "z": 6.272848963092774,
+   "inst": 0.08065062482605691,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe II 2419.342 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2439.3972703641266,
+   "rest": 2439.2190027428974,
+   "n": 7,
+   "of": 214,
+   "z": 7.952368727193575,
+   "inst": 0.08131127880364927,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2439.170 (-6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2457.9034307288616,
+   "rest": 2457.7238107042226,
+   "n": 18,
+   "of": 214,
+   "z": 9.370988062079908,
+   "inst": 0.08192830541894298,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "S IV 2457.835 (+14 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2509.2441127853062,
+   "rest": 2509.060740857944,
+   "n": 71,
+   "of": 214,
+   "z": 26.264183238866273,
+   "inst": 0.08363899427656238,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe II 2509.121 (+7 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2516.8298895833177,
+   "rest": 2516.6459632983683,
+   "n": 25,
+   "of": 214,
+   "z": 13.2286112129943,
+   "inst": 0.08389421200692782,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Mn II 2516.599 (-6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2517.10272299194,
+   "rest": 2516.91877676872,
+   "n": 9,
+   "of": 214,
+   "z": 9.254911186181669,
+   "inst": 0.08390235312702772,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2516.956 (+4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2592.1664455593773,
+   "rest": 2591.9770137879746,
+   "n": 10,
+   "of": 214,
+   "z": 9.339179397170547,
+   "inst": 0.08640407265588482,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Mg I 2591.891 (-10 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2592.238287151853,
+   "rest": 2592.0488501303707,
+   "n": 9,
+   "of": 214,
+   "z": 17.112574835434447,
+   "inst": 0.08640726444311796,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2618.2417898812064,
+   "rest": 2618.050452561388,
+   "n": 28,
+   "of": 214,
+   "z": 15.007701747750946,
+   "inst": 0.0872728937954392,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2618.018 (-4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2626.212571548421,
+   "rest": 2626.0206517354163,
+   "n": 10,
+   "of": 214,
+   "z": 8.94235069689623,
+   "inst": 0.08754000606057229,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2626.2958537607724,
+   "rest": 2626.1039278616245,
+   "n": 10,
+   "of": 214,
+   "z": 12.351023475479238,
+   "inst": 0.0875428471479257,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2645.777486622962,
+   "rest": 2645.5841370342864,
+   "n": 2,
+   "of": 214,
+   "z": 6.496973568817423,
+   "inst": 0.08819241306882185,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "N IV 2645.650 (+7 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2647.338469068028,
+   "rest": 2647.145005405015,
+   "n": 15,
+   "of": 214,
+   "z": 11.997631124691512,
+   "inst": 0.08824283887862826,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2687.924494008211,
+   "rest": 2687.7280643772474,
+   "n": 5,
+   "of": 214,
+   "z": 9.329263858840836,
+   "inst": 0.0895975191982149,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2687.723 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2715.7210291921147,
+   "rest": 2715.5225682305986,
+   "n": 38,
+   "of": 214,
+   "z": 17.696117377410353,
+   "inst": 0.0905211643987311,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2715.521 (-0 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2731.4368894847266,
+   "rest": 2731.237280030891,
+   "n": 33,
+   "of": 214,
+   "z": 20.201949954359176,
+   "inst": 0.09104658409827487,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2731.281 (+5 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2740.1850025888407,
+   "rest": 2739.984753835563,
+   "n": 46,
+   "of": 214,
+   "z": 23.72784665043461,
+   "inst": 0.09133725210092325,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Cr II 2740.095 (+12 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2747.126587933818,
+   "rest": 2746.925831899532,
+   "n": 49,
+   "of": 214,
+   "z": 23.484242627255004,
+   "inst": 0.09156989400266091,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2746.982 (+6 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2748.313896684585,
+   "rest": 2748.1130538834946,
+   "n": 19,
+   "of": 214,
+   "z": 12.566675867021594,
+   "inst": 0.09160946041279834,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2748.197 (+9 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2756.3724575713104,
+   "rest": 2756.1710258622556,
+   "n": 73,
+   "of": 214,
+   "z": 46.51977922884288,
+   "inst": 0.09187689922212372,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "O V 2756.140 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2762.5344957276975,
+   "rest": 2762.3326137058148,
+   "n": 43,
+   "of": 214,
+   "z": 29.30536529691467,
+   "inst": 0.09208190204437293,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Cen B"
+   ],
+   "forced_obs": [
+    "V* S Dor"
+   ],
+   "id": "Ti II 2762.235 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2768.2459679863055,
+   "rest": 2768.043668578298,
+   "n": 7,
+   "of": 214,
+   "z": 8.105229817757408,
+   "inst": 0.09227455889968866,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr"
+   ],
+   "forced_obs": [
+    "HD 27561"
+   ],
+   "id": "Fe I 2768.038 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2768.330249879543,
+   "rest": 2768.1279443123367,
+   "n": 5,
+   "of": 214,
+   "z": 9.011969355849649,
+   "inst": 0.09227708217096205,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "HD 27561"
+   ],
+   "id": "Fe I 2768.104 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2846.5741330003552,
+   "rest": 2846.366109483437,
+   "n": 34,
+   "of": 214,
+   "z": 18.178500937257034,
+   "inst": 0.09488398863255822,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2846.460 (+10 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2852.6657972600988,
+   "rest": 2852.4573285731744,
+   "n": 6,
+   "of": 214,
+   "z": 8.552270665590527,
+   "inst": 0.0950883029525867,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2881.542806767544,
+   "rest": 2881.3322277905677,
+   "n": 12,
+   "of": 214,
+   "z": 16.008793276084337,
+   "inst": 0.09605038064618361,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2918.2755228350807,
+   "rest": 2918.0622594843885,
+   "n": 2,
+   "of": 214,
+   "z": 10.059316799523893,
+   "inst": 0.09727601050608167,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2918.025 (-4 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2918.3656735147824,
+   "rest": 2918.1524035760094,
+   "n": 2,
+   "of": 214,
+   "z": 10.249424461833232,
+   "inst": 0.09727931397530187,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* gam Cru"
+   ],
+   "forced_obs": [
+    "* gam Cru"
+   ],
+   "id": "Fe I 2918.159 (+1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2933.7644591398903,
+   "rest": 2933.550063880155,
+   "n": 4,
+   "of": 214,
+   "z": 6.394333453147415,
+   "inst": 0.09779250215005551,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2933.8254750567908,
+   "rest": 2933.611075338101,
+   "n": 7,
+   "of": 214,
+   "z": 12.079649772334344,
+   "inst": 0.09779381325332179,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2946.2847563800806,
+   "rest": 2946.0694461551475,
+   "n": 8,
+   "of": 214,
+   "z": 10.900397932547637,
+   "inst": 0.09820874699041936,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2946.099 (+3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2954.5396858843296,
+   "rest": 2954.3237724010983,
+   "n": 31,
+   "of": 214,
+   "z": 10.606912921141687,
+   "inst": 0.0984826298677005,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2954.344 (+2 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2954.666304191312,
+   "rest": 2954.450381454998,
+   "n": 2,
+   "of": 214,
+   "z": 7.3494241758602055,
+   "inst": 0.09848936844603563,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2954.344 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2965.478063206421,
+   "rest": 2965.2613503624098,
+   "n": 31,
+   "of": 214,
+   "z": 11.936258045460749,
+   "inst": 0.09884693923186684,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* GY And"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2965.254 (-1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2971.8633015349988,
+   "rest": 2971.6461220670135,
+   "n": 37,
+   "of": 214,
+   "z": 15.898600040285068,
+   "inst": 0.09906003684637205,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2971.621 (-3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2980.2015770605826,
+   "rest": 2979.983788243492,
+   "n": 8,
+   "of": 214,
+   "z": 10.045005738916169,
+   "inst": 0.09933957975447114,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 2988.682396836241,
+   "rest": 2988.4639882531183,
+   "n": 59,
+   "of": 214,
+   "z": 20.32954776099469,
+   "inst": 0.09962169248524504,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2988.471 (+1 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3003.9222368262153,
+   "rest": 3003.702714537648,
+   "n": 2,
+   "of": 214,
+   "z": 8.458457884824035,
+   "inst": 0.1001306948830466,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 3003.686 (-2 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3004.016194808163,
+   "rest": 3003.796665653282,
+   "n": 17,
+   "of": 214,
+   "z": 10.02973784601318,
+   "inst": 0.10013195303445341,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 3003.686 (-11 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3017.230484077009,
+   "rest": 3017.009989240997,
+   "n": 11,
+   "of": 214,
+   "z": 10.626196556102343,
+   "inst": 0.10057378294183965,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3026.3233207172093,
+   "rest": 3026.102161389859,
+   "n": 3,
+   "of": 214,
+   "z": 7.184321599672857,
+   "inst": 0.10087634893615452,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 3026.130 (+3 km/s)"
+  },
+  {
+   "star": "* alf Ori",
+   "mode": "E230M",
+   "lam": 3032.6668400615995,
+   "rest": 3032.4452171590383,
+   "n": 45,
+   "of": 214,
+   "z": 16.189555323094712,
+   "inst": 0.10108627939229176,
+   "cenwaves": [
+    2707
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* bet Pic",
+   "mode": "E230H",
+   "lam": 1893.9589551418333,
+   "rest": 1893.8525732883772,
+   "n": 2,
+   "of": 38,
+   "z": 6.887794808505676,
+   "inst": 0.016613609435571473,
+   "cenwaves": [
+    1763
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 1893.872 (+3 km/s)"
+  },
+  {
+   "star": "V* TW Hya",
+   "mode": "E140M",
+   "lam": 1455.0399573818495,
+   "rest": 1454.980092035153,
+   "n": 3,
+   "of": 10,
+   "z": 9.786556293961887,
+   "inst": 0.03176898643229927,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1455.038 (+12 km/s)"
+  },
+  {
+   "star": "V* TW Hya",
+   "mode": "E140M",
+   "lam": 1463.9020381462021,
+   "rest": 1463.8418081830323,
+   "n": 2,
+   "of": 10,
+   "z": 12.33537321889213,
+   "inst": 0.03196280132489511,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Cen B",
+   "mode": "E230M",
+   "lam": 1807.8747584109356,
+   "rest": 1808.010971763602,
+   "n": 2,
+   "of": 3,
+   "z": 11.587574851946242,
+   "inst": 0.0602617932146294,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* eps Eri"
+   ],
+   "forced_obs": [],
+   "id": "Co II 1808.019 (+1 km/s)"
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1707.287363701478,
+   "rest": 1707.3130211955304,
+   "n": 3,
+   "of": 6,
+   "z": 8.102649194721948,
+   "inst": 0.03727707378607036,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1708.9073913423174,
+   "rest": 1708.9330731825055,
+   "n": 6,
+   "of": 6,
+   "z": 12.551492963962708,
+   "inst": 0.037312202994110893,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1717.3406341673278,
+   "rest": 1717.3664427441638,
+   "n": 6,
+   "of": 6,
+   "z": 17.53304295343984,
+   "inst": 0.03749644207497945,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1717.413 (+8 km/s)"
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1727.032421332307,
+   "rest": 1727.058375559475,
+   "n": 6,
+   "of": 6,
+   "z": 15.517176069598422,
+   "inst": 0.03770816130467853,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe III 1727.032 (-5 km/s)"
+  },
+  {
+   "star": "* alf CMi",
+   "mode": "E140M",
+   "lam": 1728.9477126624556,
+   "rest": 1728.9736956730476,
+   "n": 4,
+   "of": 6,
+   "z": 8.568919779368645,
+   "inst": 0.03774973030468663,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "S III 1728.939 (-6 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2391.427136212595,
+   "rest": 2391.4000867072536,
+   "n": 3,
+   "of": 7,
+   "z": 7.294600298402369,
+   "inst": 0.020977376012616514,
+   "cenwaves": [
+    2263,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2391.478 (+10 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2561.4330433425607,
+   "rest": 2561.404070895214,
+   "n": 2,
+   "of": 7,
+   "z": 8.361300519294499,
+   "inst": 0.022468718103462255,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 46202"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2580.957870329959,
+   "rest": 2580.928677036698,
+   "n": 2,
+   "of": 7,
+   "z": 8.613599232320368,
+   "inst": 0.022639974538583286,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 1,
+   "stars_obs": 1,
+   "forced_rest": [
+    "HD 175640"
+   ],
+   "forced_obs": [],
+   "id": "Fe I 2580.951 (+3 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230H",
+   "lam": 2604.0523166595576,
+   "rest": 2604.0228621443093,
+   "n": 2,
+   "of": 7,
+   "z": 8.387526207258864,
+   "inst": 0.022842514451167025,
+   "cenwaves": [
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": "Ti II 2604.097 (+8 km/s)"
+  },
+  {
+   "star": "* bet Gem",
+   "mode": "E230M",
+   "lam": 2140.3059856875725,
+   "rest": 2140.2817766212306,
+   "n": 4,
+   "of": 4,
+   "z": 6.831508051056849,
+   "inst": 0.07134367538467895,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ti II 2140.200 (-11 km/s)"
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2237.537043406813,
+   "rest": 2237.3803183610967,
+   "n": 3,
+   "of": 5,
+   "z": 7.804095050153852,
+   "inst": 0.07458425665950633,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": null
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2261.7904164819,
+   "rest": 2261.6319926437477,
+   "n": 3,
+   "of": 5,
+   "z": 8.07390055301785,
+   "inst": 0.07539229731724101,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Ti II 2261.607 (-3 km/s)"
+  },
+  {
+   "star": "* gam Cru",
+   "mode": "E230M",
+   "lam": 2333.848445116478,
+   "rest": 2333.6849740779385,
+   "n": 4,
+   "of": 5,
+   "z": 12.373518389714262,
+   "inst": 0.07779503679317232,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "V* GY And"
+   ],
+   "id": "Ti II 2333.660 (-3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1279.9652039779787,
+   "rest": 1280.0446216862233,
+   "n": 2,
+   "of": 5,
+   "z": 7.301655460217556,
+   "inst": 0.027946925902335416,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "Feige 110"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "O III 1280.030 (-4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1300.467691495055,
+   "rest": 1300.548381316453,
+   "n": 2,
+   "of": 5,
+   "z": 6.990888624819211,
+   "inst": 0.028394427111992568,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 175640"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe III 1300.524 (-6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1313.6103225088425,
+   "rest": 1313.691827788061,
+   "n": 5,
+   "of": 5,
+   "z": 11.638807132402553,
+   "inst": 0.028681191274203686,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "C I 1313.633 (-13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1314.8155723685593,
+   "rest": 1314.89715242964,
+   "n": 4,
+   "of": 5,
+   "z": 14.369228024685887,
+   "inst": 0.028707541926422928,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "LS IV -14 116"
+   ],
+   "id": "Fe II 1314.962 (+15 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1321.5013325841026,
+   "rest": 1321.5833274750182,
+   "n": 2,
+   "of": 5,
+   "z": 8.45475193172586,
+   "inst": 0.028853439110096996,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1344.9960795436914,
+   "rest": 1345.0795322077977,
+   "n": 4,
+   "of": 5,
+   "z": 11.176684246417512,
+   "inst": 0.029366670084858226,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1345.083 (+1 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1369.103148889385,
+   "rest": 1369.188097319309,
+   "n": 4,
+   "of": 5,
+   "z": 9.029802317559332,
+   "inst": 0.029892807905211972,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1369.169 (-4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1380.022427658977,
+   "rest": 1380.1080535948931,
+   "n": 3,
+   "of": 5,
+   "z": 14.325651913431923,
+   "inst": 0.030131380140346633,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1397.1021189025053,
+   "rest": 1397.1888045781175,
+   "n": 3,
+   "of": 5,
+   "z": 21.265170152192734,
+   "inst": 0.030504262915550074,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1405.2194071266429,
+   "rest": 1405.3065964537807,
+   "n": 2,
+   "of": 5,
+   "z": 12.576392142220595,
+   "inst": 0.030681729787765302,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1426.8532551978535,
+   "rest": 1426.9417868354144,
+   "n": 4,
+   "of": 5,
+   "z": 14.159273994327862,
+   "inst": 0.03115400176237208,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1426.962 (+4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1436.1971839985135,
+   "rest": 1436.2862953966874,
+   "n": 2,
+   "of": 5,
+   "z": 7.702562937421136,
+   "inst": 0.03135792357560428,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1437.0078318676383,
+   "rest": 1437.0969935638952,
+   "n": 2,
+   "of": 5,
+   "z": 7.34638637562733,
+   "inst": 0.03137552439718883,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "HD 57095"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1437.073383214193,
+   "rest": 1437.1625489776993,
+   "n": 3,
+   "of": 5,
+   "z": 8.491937982326165,
+   "inst": 0.03137687740147043,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1443.357388469013,
+   "rest": 1443.4469441347558,
+   "n": 3,
+   "of": 5,
+   "z": 13.304881065760256,
+   "inst": 0.03151419190119909,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1443.475 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1482.503573005104,
+   "rest": 1482.595557565205,
+   "n": 4,
+   "of": 5,
+   "z": 8.686698369028653,
+   "inst": 0.032368776248810974,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1490.1518658541836,
+   "rest": 1490.2443249661615,
+   "n": 3,
+   "of": 5,
+   "z": 14.840188739574003,
+   "inst": 0.03253564065937011,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1500.0823078370624,
+   "rest": 1500.1753831009028,
+   "n": 4,
+   "of": 5,
+   "z": 9.40134672438023,
+   "inst": 0.03275233695121244,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "LS IV -14 116"
+   ],
+   "forced_obs": [
+    "V* S Dor"
+   ],
+   "id": "Si III 1500.240 (+13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1518.9716906458852,
+   "rest": 1519.0659379349402,
+   "n": 2,
+   "of": 5,
+   "z": 15.944324882666995,
+   "inst": 0.03316528705846731,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "O IV 1519.020 (-9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1530.0061118388555,
+   "rest": 1530.1010437781183,
+   "n": 2,
+   "of": 5,
+   "z": 6.546989682804278,
+   "inst": 0.03340565686385478,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1555.738821179763,
+   "rest": 1555.8353497505564,
+   "n": 4,
+   "of": 5,
+   "z": 12.83441691931724,
+   "inst": 0.033967888195236606,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* TW Hya"
+   ],
+   "forced_obs": [],
+   "id": "Fe III 1555.861 (+5 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1557.8976186889856,
+   "rest": 1557.9942812061943,
+   "n": 4,
+   "of": 5,
+   "z": 12.904794028395102,
+   "inst": 0.03401489725268373,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1565.6448394308609,
+   "rest": 1565.7419826381029,
+   "n": 3,
+   "of": 5,
+   "z": 7.775602664172193,
+   "inst": 0.03418447562224464,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1626.5744421385707,
+   "rest": 1626.6753658309353,
+   "n": 4,
+   "of": 5,
+   "z": 8.378037737518657,
+   "inst": 0.03551455181256379,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1627.9876850398664,
+   "rest": 1628.08869641939,
+   "n": 5,
+   "of": 5,
+   "z": 7.727348775401457,
+   "inst": 0.03554533937312881,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Mg I 1628.104 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1682.2609167703108,
+   "rest": 1682.3652956286298,
+   "n": 4,
+   "of": 5,
+   "z": 8.616635782511901,
+   "inst": 0.03673040881937846,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1684.084230720679,
+   "rest": 1684.1887227097416,
+   "n": 4,
+   "of": 5,
+   "z": 13.345968214268815,
+   "inst": 0.03677046547554377,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1692.06940032115,
+   "rest": 1692.1743877642043,
+   "n": 3,
+   "of": 5,
+   "z": 8.959741590431209,
+   "inst": 0.03694474296875988,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1706.3452931273348,
+   "rest": 1706.4511663434448,
+   "n": 2,
+   "of": 5,
+   "z": 7.067359195651734,
+   "inst": 0.037256534676121396,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E140M",
+   "lam": 1706.3703070306904,
+   "rest": 1706.4761817988324,
+   "n": 3,
+   "of": 5,
+   "z": 6.692300560276422,
+   "inst": 0.03725653160840938,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1682.2319774233304,
+   "rest": 1682.3363544860563,
+   "n": 2,
+   "of": 2,
+   "z": 7.634370405752729,
+   "inst": 0.056075219474299595,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1781.5988292944617,
+   "rest": 1781.7093717495175,
+   "n": 2,
+   "of": 2,
+   "z": 8.704276874969873,
+   "inst": 0.05938611301225093,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1782.4695654363252,
+   "rest": 1782.5801619177473,
+   "n": 2,
+   "of": 2,
+   "z": 7.69201879579577,
+   "inst": 0.05941532459877014,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf CMi"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1851.8908387471095,
+   "rest": 1852.0057425943978,
+   "n": 2,
+   "of": 2,
+   "z": 9.47592631824698,
+   "inst": 0.06172952608617978,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1915.9731548040943,
+   "rest": 1916.0920347521896,
+   "n": 2,
+   "of": 2,
+   "z": 9.162998000489647,
+   "inst": 0.06386543879606789,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 1916.132 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1921.8339524875767,
+   "rest": 1921.9531960792453,
+   "n": 2,
+   "of": 2,
+   "z": 10.367683576633913,
+   "inst": 0.06406125992873138,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1921.996 (+7 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1935.7579230993074,
+   "rest": 1935.8780306283957,
+   "n": 2,
+   "of": 2,
+   "z": 7.40862119528651,
+   "inst": 0.06452523330262641,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Al III 1935.840 (-6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1944.9863066705711,
+   "rest": 1945.1069867910642,
+   "n": 2,
+   "of": 2,
+   "z": 8.36807961505507,
+   "inst": 0.06483318663836278,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 1945.091 (-2 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1959.9326945647226,
+   "rest": 1960.0543020603266,
+   "n": 2,
+   "of": 2,
+   "z": 9.279441861529682,
+   "inst": 0.06533111476804068,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1960.049 (-1 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1965.7998744948045,
+   "rest": 1965.9218460299796,
+   "n": 2,
+   "of": 2,
+   "z": 18.81219196307627,
+   "inst": 0.06552614080042818,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 1976.333369933469,
+   "rest": 1976.4559950380262,
+   "n": 2,
+   "of": 2,
+   "z": 9.805398656764455,
+   "inst": 0.06587741440098718,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe III 1976.515 (+9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2023.2177569894397,
+   "rest": 2023.3432911188368,
+   "n": 2,
+   "of": 2,
+   "z": 14.397798168803728,
+   "inst": 0.06744039490717875,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": "Fe III 2023.298 (-7 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2076.494319773502,
+   "rest": 2076.623159541604,
+   "n": 2,
+   "of": 2,
+   "z": 9.665941756334924,
+   "inst": 0.06921639189360419,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2138.184663904105,
+   "rest": 2138.317331358879,
+   "n": 2,
+   "of": 2,
+   "z": 7.557037081917375,
+   "inst": 0.07127249681661142,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Ti II 2138.359 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2169.9682511562783,
+   "rest": 2170.1028906800207,
+   "n": 2,
+   "of": 2,
+   "z": 12.36094274082628,
+   "inst": 0.07233161103179245,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 1,
+   "stars_obs": 0,
+   "forced_rest": [
+    "V* S Dor"
+   ],
+   "forced_obs": [],
+   "id": "Fe II 2170.176 (+10 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2198.28890787781,
+   "rest": 2198.425304606862,
+   "n": 2,
+   "of": 2,
+   "z": 11.95125027245516,
+   "inst": 0.07327616165075522,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "N V 2198.450 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2205.384108068704,
+   "rest": 2205.5209450320194,
+   "n": 2,
+   "of": 2,
+   "z": 7.207686770116782,
+   "inst": 0.0735125441492846,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 2205.524 (+0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2206.301366136868,
+   "rest": 2206.4382600130853,
+   "n": 2,
+   "of": 2,
+   "z": 10.811588791164501,
+   "inst": 0.07354349976717947,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2206.440 (+0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2216.1371948684596,
+   "rest": 2216.274699026092,
+   "n": 2,
+   "of": 2,
+   "z": 9.11351674890013,
+   "inst": 0.07387096915942523,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Cr II 2216.317 (+6 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2226.2950865776374,
+   "rest": 2226.4332209996537,
+   "n": 2,
+   "of": 2,
+   "z": 16.90322280501193,
+   "inst": 0.07420979613994522,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": "Cr II 2226.459 (+3 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2237.6497186391343,
+   "rest": 2237.788557579409,
+   "n": 2,
+   "of": 2,
+   "z": 21.902799023998014,
+   "inst": 0.07458820395591947,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 1,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe I 2237.817 (+4 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2253.1906208503265,
+   "rest": 2253.3304240534057,
+   "n": 2,
+   "of": 2,
+   "z": 9.507045415718569,
+   "inst": 0.0751055281629829,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ti II 2253.264 (-9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2273.59831024161,
+   "rest": 2273.7393796759247,
+   "n": 2,
+   "of": 2,
+   "z": 15.93032177177461,
+   "inst": 0.0757869319330387,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2305.153126807173,
+   "rest": 2305.296154115974,
+   "n": 2,
+   "of": 2,
+   "z": 12.194811114570786,
+   "inst": 0.07683832615360256,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [
+    "* sig Boo"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2322.8120752760396,
+   "rest": 2322.9561982655773,
+   "n": 2,
+   "of": 2,
+   "z": 22.016846999271582,
+   "inst": 0.07742703170055985,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Dra"
+   ],
+   "forced_obs": [
+    "* bet Dra"
+   ],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230M",
+   "lam": 2358.2016057152964,
+   "rest": 2358.3479245109343,
+   "n": 2,
+   "of": 2,
+   "z": 7.997226272004696,
+   "inst": 0.07860631545225794,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* bet Gem"
+   ],
+   "forced_obs": [],
+   "id": "Mn II 2358.448 (+13 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2402.4509074725756,
+   "rest": 2402.5999717945188,
+   "n": 2,
+   "of": 5,
+   "z": 10.203506957252541,
+   "inst": 0.021074006059776672,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Fe II 2402.599 (-0 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2415.0902052730394,
+   "rest": 2415.240053822602,
+   "n": 2,
+   "of": 5,
+   "z": 8.856940545520372,
+   "inst": 0.021184866613096015,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Co II 2415.316 (+9 km/s)"
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2441.9813769335674,
+   "rest": 2442.132893993507,
+   "n": 2,
+   "of": 5,
+   "z": 7.7527477614914355,
+   "inst": 0.021420850573670366,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "V* GY And",
+   "mode": "E230H",
+   "lam": 2555.0819836253636,
+   "rest": 2555.2405182127773,
+   "n": 2,
+   "of": 5,
+   "z": 8.066380457170343,
+   "inst": 0.022413000235336992,
+   "cenwaves": [
+    2463,
+    2513
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [
+    "* alf Aqr"
+   ],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* eta Car",
+   "mode": "E140M",
+   "lam": 1526.237759098703,
+   "rest": 1526.3650442424341,
+   "n": 2,
+   "of": 5,
+   "z": 9.703553374110077,
+   "inst": 0.03332399130661809,
+   "cenwaves": [
+    1425
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": null
+  },
+  {
+   "star": "* alf Her",
+   "mode": "E230M",
+   "lam": 1807.2236076624758,
+   "rest": 1807.4170748841664,
+   "n": 3,
+   "of": 5,
+   "z": 6.723376399347766,
+   "inst": 0.06023991121571601,
+   "cenwaves": [
+    1978
+   ],
+   "stars_rest": 0,
+   "stars_obs": 0,
+   "forced_rest": [],
+   "forced_obs": [],
+   "id": "Ca II 1807.340 (-13 km/s)"
+  }
+ ]
+}

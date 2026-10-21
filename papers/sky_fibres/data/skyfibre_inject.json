@@ -1,0 +1,228 @@
+{
+ "plain_1_1.0": {
+  "n": 1720,
+  "found": 517,
+  "lost": {
+   "shared": 807,
+   "below threshold": 394,
+   "masked": 2
+  },
+  "false": 16,
+  "fibres": 1727,
+  "recovered": 0.3005813953488372
+ },
+ "plain_1_1.5": {
+  "n": 1720,
+  "found": 658,
+  "lost": {
+   "shared": 1058,
+   "below threshold": 2,
+   "masked": 2
+  },
+  "false": 18,
+  "fibres": 1727,
+  "recovered": 0.3825581395348837
+ },
+ "plain_1_2.0": {
+  "n": 1720,
+  "found": 648,
+  "lost": {
+   "shared": 1072
+  },
+  "false": 17,
+  "fibres": 1727,
+  "recovered": 0.3767441860465116
+ },
+ "plain_1_3.0": {
+  "n": 1720,
+  "found": 633,
+  "lost": {
+   "shared": 1086,
+   "masked": 1
+  },
+  "false": 16,
+  "fibres": 1727,
+  "recovered": 0.3680232558139535
+ },
+ "plain_1_5.0": {
+  "n": 1720,
+  "found": 626,
+  "lost": {
+   "shared": 1093,
+   "masked": 1
+  },
+  "false": 12,
+  "fibres": 1727,
+  "recovered": 0.363953488372093
+ },
+ "plain_2_1.0": {
+  "n": 1720,
+  "found": 963,
+  "lost": {
+   "below threshold": 394,
+   "shared": 358,
+   "width": 3,
+   "masked": 2
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.5598837209302325
+ },
+ "plain_2_1.5": {
+  "n": 1720,
+  "found": 1274,
+  "lost": {
+   "shared": 442,
+   "below threshold": 2,
+   "masked": 2
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.7406976744186047
+ },
+ "plain_2_2.0": {
+  "n": 1720,
+  "found": 1242,
+  "lost": {
+   "shared": 478
+  },
+  "false": 23,
+  "fibres": 1727,
+  "recovered": 0.7220930232558139
+ },
+ "plain_2_3.0": {
+  "n": 1720,
+  "found": 1207,
+  "lost": {
+   "shared": 512,
+   "masked": 1
+  },
+  "false": 23,
+  "fibres": 1727,
+  "recovered": 0.7017441860465117
+ },
+ "plain_2_5.0": {
+  "n": 1720,
+  "found": 1236,
+  "lost": {
+   "shared": 483,
+   "masked": 1
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.7186046511627907
+ },
+ "common_1_1.0": {
+  "n": 1720,
+  "found": 520,
+  "lost": {
+   "shared": 794,
+   "below threshold": 404,
+   "masked": 2
+  },
+  "false": 16,
+  "fibres": 1727,
+  "recovered": 0.3023255813953488
+ },
+ "common_1_1.5": {
+  "n": 1720,
+  "found": 691,
+  "lost": {
+   "shared": 1025,
+   "below threshold": 2,
+   "masked": 2
+  },
+  "false": 18,
+  "fibres": 1727,
+  "recovered": 0.40174418604651163
+ },
+ "common_1_2.0": {
+  "n": 1720,
+  "found": 672,
+  "lost": {
+   "shared": 1048
+  },
+  "false": 17,
+  "fibres": 1727,
+  "recovered": 0.39069767441860465
+ },
+ "common_1_3.0": {
+  "n": 1720,
+  "found": 652,
+  "lost": {
+   "shared": 1067,
+   "masked": 1
+  },
+  "false": 16,
+  "fibres": 1727,
+  "recovered": 0.37906976744186044
+ },
+ "common_1_5.0": {
+  "n": 1720,
+  "found": 641,
+  "lost": {
+   "shared": 1078,
+   "masked": 1
+  },
+  "false": 12,
+  "fibres": 1727,
+  "recovered": 0.37267441860465117
+ },
+ "common_2_1.0": {
+  "n": 1720,
+  "found": 953,
+  "lost": {
+   "below threshold": 404,
+   "shared": 358,
+   "width": 3,
+   "masked": 2
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.5540697674418604
+ },
+ "common_2_1.5": {
+  "n": 1720,
+  "found": 1279,
+  "lost": {
+   "shared": 437,
+   "below threshold": 2,
+   "masked": 2
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.7436046511627907
+ },
+ "common_2_2.0": {
+  "n": 1720,
+  "found": 1256,
+  "lost": {
+   "shared": 464
+  },
+  "false": 23,
+  "fibres": 1727,
+  "recovered": 0.7302325581395349
+ },
+ "common_2_3.0": {
+  "n": 1720,
+  "found": 1223,
+  "lost": {
+   "shared": 496,
+   "masked": 1
+  },
+  "false": 23,
+  "fibres": 1727,
+  "recovered": 0.711046511627907
+ },
+ "common_2_5.0": {
+  "n": 1720,
+  "found": 1248,
+  "lost": {
+   "shared": 471,
+   "masked": 1
+  },
+  "false": 24,
+  "fibres": 1727,
+  "recovered": 0.7255813953488373
+ }
+}

@@ -1,0 +1,286 @@
+{
+ "object": {
+  "kind": "an",
+  "spkid": "20883607",
+  "orbit_id": "23",
+  "prefix": null,
+  "des": "883607",
+  "orbit_class": {
+   "code": "APO",
+   "name": "Apollo"
+  },
+  "pha": false,
+  "neo": true,
+  "fullname": "883607 (2016 TA56)"
+ },
+ "phys_par": [
+  {
+   "notes": null,
+   "title": "absolute magnitude",
+   "ref": "MPO987240",
+   "desc": "absolute magnitude (magnitude at 1 au from Sun and observer)",
+   "name": "H",
+   "sigma": null,
+   "units": null,
+   "value": "18.13"
+  }
+ ],
+ "orbit": {
+  "not_valid_before": null,
+  "producer": "Davide Farnocchia",
+  "first_obs": "2007-09-14",
+  "source": "JPL",
+  "elements": [
+   {
+    "label": "e",
+    "title": "eccentricity",
+    "name": "e",
+    "sigma": "9.238E-8",
+    "units": null,
+    "value": ".7815565756214315"
+   },
+   {
+    "name": "a",
+    "sigma": "2.192E-7",
+    "units": "au",
+    "value": "2.693698737545613",
+    "label": "a",
+    "title": "semi-major axis"
+   },
+   {
+    "value": ".5884207764736904",
+    "name": "q",
+    "sigma": "2.2764E-7",
+    "units": "au",
+    "title": "perihelion distance",
+    "label": "q"
+   },
+   {
+    "label": "i",
+    "title": "inclination; angle with respect to x-y ecliptic plane",
+    "sigma": "1.7717E-5",
+    "units": "deg",
+    "name": "i",
+    "value": "32.32754328068912"
+   },
+   {
+    "value": "173.87593814558",
+    "name": "om",
+    "sigma": "3.0013E-5",
+    "units": "deg",
+    "title": "longitude of the ascending node",
+    "label": "node"
+   },
+   {
+    "label": "peri",
+    "title": "argument of perihelion",
+    "name": "w",
+    "units": "deg",
+    "sigma": "2.9016E-5",
+    "value": "359.7022642910391"
+   },
+   {
+    "sigma": "3.8277E-5",
+    "units": "deg",
+    "name": "ma",
+    "value": "32.68239786852716",
+    "label": "M",
+    "title": "mean anomaly"
+   },
+   {
+    "title": "time of perihelion passage",
+    "label": "tp",
+    "value": "2461053.900201656160",
+    "name": "tp",
+    "sigma": ".00015583",
+    "units": "TDB"
+   },
+   {
+    "title": "sidereal orbital period",
+    "label": "period",
+    "value": "1614.811973591607",
+    "name": "per",
+    "sigma": ".00019711",
+    "units": "d"
+   },
+   {
+    "value": ".2229361720667087",
+    "units": "deg/d",
+    "sigma": "2.7212E-8",
+    "name": "n",
+    "title": "mean motion",
+    "label": "n"
+   },
+   {
+    "title": "aphelion distance",
+    "label": "Q",
+    "value": "4.798976698617535",
+    "units": "au",
+    "sigma": "3.9052E-7",
+    "name": "ad"
+   }
+  ],
+  "pe_used": "DE441",
+  "epoch": "2461200.5",
+  "moid": ".405159",
+  "moid_jup": ".184583",
+  "last_obs": "2026-06-10",
+  "model_pars": [
+   {
+    "value": "-3.185843703887927E-12",
+    "n": 1,
+    "kind": "EST",
+    "units": "au/d^2",
+    "sigma": "3.583E-13",
+    "name": "A2",
+    "desc": "non-gravitational transverse acceleration parameter",
+    "title": "non-grav. transverse accel."
+   }
+  ],
+  "soln_date": "2026-06-17 07:50:46",
+  "two_body": null,
+  "t_jup": "2.690",
+  "data_arc": "6844",
+  "orbit_id": "23",
+  "comment": null,
+  "n_dop_obs_used": null,
+  "not_valid_after": null,
+  "condition_code": "0",
+  "n_obs_used": 94,
+  "n_del_obs_used": null,
+  "rms": ".43456",
+  "equinox": "J2000",
+  "covariance": {
+   "data": [
+    [
+     "7.223053295137666E-15",
+     "-1.980341734498169E-14",
+     "-9.088127746831707E-13",
+     "2.935483749766625E-13",
+     "4.414787440488117E-13",
+     "2.906092204819207E-13",
+     "9.330306763724469E-21"
+    ],
+    [
+     "-1.980341734498169E-14",
+     "5.490703228540107E-14",
+     "1.977120782319064E-12",
+     "-6.114439746760004E-13",
+     "-1.691347428623225E-12",
+     "-7.19799629370127E-13",
+     "-3.240950049239162E-20"
+    ],
+    [
+     "-9.088127746831707E-13",
+     "1.977120782319064E-12",
+     "2.357531279775001E-9",
+     "3.289169407799687E-11",
+     "3.831461593610377E-10",
+     "1.297609874577145E-10",
+     "2.931713209724467E-18"
+    ],
+    [
+     "2.935483749766625E-13",
+     "-6.114439746760004E-13",
+     "3.289169407799687E-11",
+     "9.00565934830162E-10",
+     "-6.955055971594468E-10",
+     "3.547855123248691E-10",
+     "-2.878824130272169E-18"
+    ],
+    [
+     "4.414787440488117E-13",
+     "-1.691347428623225E-12",
+     "3.831461593610377E-10",
+     "-6.955055971594468E-10",
+     "8.37341760577407E-10",
+     "-2.42983531400047E-10",
+     "6.920370329627274E-18"
+    ],
+    [
+     "2.906092204819207E-13",
+     "-7.19799629370127E-13",
+     "1.297609874577145E-10",
+     "3.547855123248691E-10",
+     "-2.42983531400047E-10",
+     "3.151591066351769E-10",
+     "-1.348219300668681E-18"
+    ],
+    [
+     "9.330306763724469E-21",
+     "-3.240950049239162E-20",
+     "2.931713209724467E-18",
+     "-2.878824130272169E-18",
+     "6.920370329627274E-18",
+     "-1.348219300668681E-18",
+     "1.283722703079549E-25"
+    ]
+   ],
+   "labels": [
+    "e",
+    "q",
+    "tp",
+    "node",
+    "peri",
+    "i",
+    "A2"
+   ],
+   "epoch": "2457517.5",
+   "elements": [
+    {
+     "sigma": 8.498854802347e-08,
+     "units": null,
+     "name": "e",
+     "value": ".7835525289944338",
+     "label": "e",
+     "title": "eccentricity"
+    },
+    {
+     "value": ".5815177224841316",
+     "units": "au",
+     "sigma": 2.34322496328033e-07,
+     "name": "q",
+     "title": "perihelion distance",
+     "label": "q"
+    },
+    {
+     "sigma": 4.85544156568175e-05,
+     "units": "TDB",
+     "name": "tp",
+     "value": "2457833.521559488156",
+     "label": "tp",
+     "title": "time of perihelion passage"
+    },
+    {
+     "name": "om",
+     "sigma": 3.00094307648473e-05,
+     "units": "deg",
+     "value": "173.8787349768098",
+     "label": "node",
+     "title": "longitude of the ascending node"
+    },
+    {
+     "title": "argument of perihelion",
+     "label": "peri",
+     "value": "359.6388166737792",
+     "name": "w",
+     "sigma": 2.89368581670057e-05,
+     "units": "deg"
+    },
+    {
+     "label": "i",
+     "title": "inclination",
+     "sigma": 1.77527211050919e-05,
+     "units": "deg",
+     "name": "i",
+     "value": "32.41822338660582"
+    }
+   ]
+  },
+  "sb_used": "SB441-N16"
+ },
+ "signature": {
+  "source": "NASA/JPL Small-Body Database (SBDB) API",
+  "version": "1.3"
+ }
+}

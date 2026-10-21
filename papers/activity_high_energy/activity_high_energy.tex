@@ -1,0 +1,479 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Coronae, Pulses and Particles: Archival Tests for Artificial\\ Emission in Stellar Activity and High-Energy Surveys}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A technology on or near a star could add X-rays a corona cannot make, radio emission a
+quiet star should not have, a pulse train, a flare clock, or particles from a direction
+no astrophysical source occupies. We put each of these to the archive that measures it.
+Of $137{,}896$ eROSITA coronal counterparts, none exceeds a tenth of its star's
+luminosity in X-rays, and the $250$ above a hundredth are evolved stars, catalogued
+cataclysmic, young or extragalactic sources and M dwarfs whose flares reach that level;
+no slow rotator stands far above the rotation-activity relation, and among $63{,}043$
+eROSITA point sources none holds its counts in a band where no continuum could put
+them. No X-ray light curve of a star within $10$ to $20$\,pc holds a coherent period
+beyond the noise. Radio emission from inactive stars, circular polarisation without a
+counterpart and NVSS sources polarised beyond the synchrotron ceiling all trace to
+background galaxies, active stars, pulsars or the diffuse emission of their fields, and
+no GLEAM-X spectrum steps at a sub-band edge. No neutrino source sits at the $271$
+systems within $10$\,pc or moves with Jupiter, Saturn, Mars or Venus, and ultra-high-energy
+cosmic rays arrive in pairs and triplets as often as chance allows. In photon timing,
+flares and pulses, every cluster of ultraviolet photons on a nearby star is a flare, no
+flaring star keeps a clock better than a part in a thousand, planet hosts flare as their
+matched stars do, and the dispersed pulses of the nearest stars' radio cadences appear
+as often off the stars.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Stars are bright in every band, and a technology among them is most easily hidden
+in their light. The places where it would show are the places where a star's own
+physics sets a limit: a corona saturates at about a thousandth of the star's
+luminosity~\cite{Pizzolato2003,Wright2011}; a quiet star's radio emission is faint and
+unpolarised; synchrotron radiation polarises at most $72$ per cent; flares come at
+random times; and neutrinos and the highest-energy cosmic rays come from cosmic
+accelerators, not from nearby stars. A transmitter, a power plant or a beam would cross
+one of these limits. Proposals have taken this direction for neutrinos~\cite{Learned2009}
+and for structures around pulsars~\cite{Osmanov2016}. This paper tests the limits
+against the archives that measure them, with a null drawn from the same data for each.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item Tests of stellar X-ray emission against the coronal ceiling, the rotation-activity
+relation, the band structure of a continuum and coherent periodicity.
+\item Tests of radio emission from inactive stars, of circular and linear polarisation
+against what stars and synchrotron radiation allow, and of spectral edges and long-period
+transients.
+\item Tests of TeV neutrinos at nearby systems and moving with the planets, and of
+ultra-high-energy cosmic rays arriving in pairs.
+\item Tests of photon timing, flares and pulses: ultraviolet photon clusters, flare
+clocks, superflare rates of planet hosts, box-shaped flares, dispersed pulses and pulsars
+as hosts.
+\end{enumerate}
+
+% =============================================================================
+\section{X-rays}\label{sec:xray}
+% =============================================================================
+
+\emph{The coronal ceiling.} A corona saturates near \lxl$=10^{-3}$, and flares raise it
+for hours; a source holding a tenth of a star's luminosity in X-rays is not a corona.
+The eRASS1 catalogue~\cite{Merloni2024} matched to Gaia by the HamStar
+method~\cite{Schneider2022,Freund2024} gives $137{,}896$ coronal counterparts with a
+distance and a colour, whose \lxl\ has percentiles $50$, $90$, $99$ and $99.9$ at
+$-3.42$, $-2.85$, $-2.30$ and $-1.90$ dex. Two hundred and fifty exceed $10^{-2}$ and none
+exceeds $10^{-1}$. Of the $250$, $153$ sit off Gaia's main sequence, $38$ carry a
+cataclysmic, young, emission-line or extragalactic type on the counterpart or on a SIMBAD
+object within $20''$, and $59$ are main-sequence M dwarfs of $3000$ to $3550$\,K at $50$
+to $630$\,pc, whose flares reach $10^{-2}$ within eRASS1's day-long average. The one K
+dwarf of the first pass, 1eRASS~J082623.3$-$703142 at $7.6\times10^{-2}$, is the
+cataclysmic variable 1ES~0826$-$70.3, which SIMBAD files $11''$ from its Gaia counterpart.
+
+\emph{Coronae without a dynamo.} A slowly rotating star has a weak corona, so X-rays far
+above the rotation-activity relation of a slow rotator would need another source. For
+$8287$ coronal counterparts of $3000$ to $6000$\,K with rotation periods from
+TESS~\cite{Fetherolf2023}, Gaia DR3 and ZTF~\cite{Chen2020}, the Rossby number from the
+turnover time of the colour's temperature~\cite{CranmerSaar2011} places each against the
+relation of Wright et al.~\cite{Wright2011}: the residuals scatter by $0.82$\,dex below a
+Rossby number of one, with $0.24$ per cent beyond $1.5$\,dex. Only $26$ stars reach a
+Rossby number of one, since the period catalogues hold few slow rotators, and the one
+beyond $1.5$\,dex is a ZTF RS~CVn binary at $1$\,kpc.
+
+\emph{Line-only sources.} A continuum spreads its counts over the bands; an X-ray line
+source at $0.5$ to $2$\,keV would hold them in one. Of the $63{,}043$ point sources of the
+eRASS:3 catalogue with $80$ or more counts in four bands, the largest fraction in one
+band has a median of $0.46$ and a $99$th percentile of $0.78$. Holding $85$ per cent in
+one band at $3\sigma$ with every other below $5$ per cent are $13$ sources at
+$0.2$--$0.5$\,keV, the supersoft class, $2$ at $2$--$5$\,keV, the absorbed class, and none
+at $0.5$--$1$ or $1$--$2$\,keV, where no continuum could put them; the same test on the
+released spectra is the step that remains.
+
+\emph{Periodicities.} A transmitter pulsing in X-rays at seconds to minutes would show a
+coherent period. In $209$ Chandra detections of the $50$ SIMBAD objects within $10$\,pc,
+none reaches a false-alarm probability of $10^{-3}$ once the dither, the frame
+sidebands and the red noise of flares are filtered; in $180$ XMM-Newton EPIC-pn
+observations of stars within $20$\,pc, periods of $5$ to $600$\,s reach $0.01$ in four
+against $3.6$ expected and $10^{-3}$ in none against $0.4$.
+
+\emph{Nearby high-energy sources.} Of the $2626$ Gaia sources within $20$\,pc, carried to
+eRASS1's epoch, the five above \lxl$=10^{-2.5}$ are M3 to M6 flare stars, and seven stars
+lie inside the error ellipses of unassociated Fermi-LAT sources~\cite{Abdollahi2022}
+against $7.9$ by chance.
+
+% =============================================================================
+\section{Radio}\label{sec:radio}
+% =============================================================================
+
+\emph{Inactive stars.} A quiet F to early K dwarf with no X-ray source and no activity
+should be radio-silent. Against $605$ stellar radio emitters within $500$\,pc in
+VLASS~\cite{Lacy2020}, $30$ inactive stars show $3$\,GHz emission, fewer than the $38$
+chance alignments the shifted positions give; LoTSS-DR2~\cite{Shimwell2022} holds two
+inactive single F to early K dwarfs and RACS-low~\cite{Hale2021} three, as many as chance
+gives. The two brightest coincidences are background radio galaxies: $52.6$\,mJy at
+$0.34''$ from Gaia DR3 2906691964510880128 by a steady steep spectrum from $0.86$ to
+$3$\,GHz that no star gives, and $81$\,mJy at $1.2''$ from Gaia DR3 1283261877869284096,
+resolved by LoTSS with a second WISE source beside the star.
+
+\emph{Circular polarisation.} Coherent radio emission is circularly polarised, and in
+stars it comes from activity. No RACS source of $10$ per cent circular polarisation at
+signal-to-noise six lacks a counterpart among pulsars, active stars and published brown
+dwarfs. Of the stars of V-LoTSS~\cite{Callingham2023} and the RACS
+survey~\cite{Pritchard2021}, $23$ of the $31$ in eRASS1's half of the sky are detected in
+X-rays at \lxl\ of $7.5\times10^{-5}$ to $3.6\times10^{-3}$, the rest are RS~CVn, BY~Dra
+and flare stars by name and type, and none polarised above $30$ per cent has
+\lxl\ below $10^{-5}$ and a period above $20$\,d.
+
+\emph{The synchrotron ceiling.} Synchrotron radiation in a uniform field polarises at
+most $72$ per cent, and a source beyond it needs a coherent emitter. Of the $26{,}973$
+NVSS sources~\cite{Condon1998} above $10$\,mJy with polarised flux above $6$\,mJy, the
+Rician-debiased fraction's $3\sigma$ lower bound has a median of $0.058$ and a $99$th
+percentile of $0.51$; the $23$ above $0.72$ all have polarised fluxes at or above their
+total fluxes, which no component can have, and lie in Fornax~A's lobes and on the Galactic
+plane in Cygnus, Cassiopeia and Aquila, where the catalogue's polarised flux is the
+field's diffuse emission. None sits at a pulsar.
+
+\emph{Spectral edges.} A transmitter's band begins and ends abruptly. GLEAM-X~\cite{HurleyWalker2022}
+gives $27{,}585$ sources with sixteen or more of its twenty $7.68$\,MHz sub-bands from
+$72$ to $231$\,MHz; a step at a sub-band boundary fitted beside a curved power law gains a
+$\chi^2$ whose median is $0.2$ and whose $99.9$th percentile is $71$, the flux-scale errors
+common to all sources. The one source in the top thousandth with a step above $30$ per
+cent, GLEAM-X~J082817.6$-$221400, shares the low-frequency beam with a $1.18$\,Jy source
+$69''$ away, and the sub-band fits merge and split the pair as the beam shrinks.
+
+\emph{Long-period transients and millimetre flares.} Of $16$ long-period radio
+transients~\cite{Rea2026}, ten are given a natural nature by their papers, as white-dwarf
+binaries, X-ray outbursts or rotators, and the other six hold no Gaia star at their
+dispersion-measure distances beyond the rate at control positions. Of the $66$ stars of
+the SPT-3G millimetre flares~\cite{Tandoi2024}, every one has an X-ray source except four
+M5 to M8 emission-line dwarfs at $37$ to $49$\,pc, below eRASS1's limit.
+
+% =============================================================================
+\section{Particles}\label{sec:particles}
+% =============================================================================
+
+\emph{Neutrinos from nearby systems.} A power source or a beam of TeV neutrinos would
+appear as a point source in IceCube's tracks. The unbinned point-source likelihood over
+the ten-year sample~\cite{IceCube2021} at the $271$ systems within $10$\,pc finds none above
+chance, and the stack of all has $p=0.26$; the median $90$ per cent limit on an $E^{-2}$
+source is $1.6\times10^{29}$\,erg\,s$^{-1}$.
+
+\emph{Neutrinos moving with the planets.} A source on a planet moves with it. The same
+likelihood in each planet's frame, against $1000$ time scrambles that keep the events and
+move the planet, gives test statistics of $0.9$ for Jupiter ($p=0.17$), $0.6$ for Saturn
+($0.17$), $0.0$ for Mars ($0.42$) and $0.3$ for Venus ($0.23$), where the scrambles reach
+$9$ to $13$; the $90$ per cent limits on $E^{-2}$ luminosity are $7\times10^{9}$\,W at
+Venus, $10^{10}$\,W at Mars, $2\times10^{11}$\,W at Jupiter and $6\times10^{11}$\,W at
+Saturn.
+
+\emph{Cosmic-ray doublets.} Particles launched together arrive close in direction and
+time. Among the $2635$ events above $32$\,EeV of the Pierre Auger Observatory's Phase
+One~\cite{Auger2022}, pairs within $2^\circ$ number eight within ten days against a mean of
+$5.7$ with the arrival times permuted ($p=0.21$) and two within a day against $0.56$
+($p=0.11$), with no triplet within thirty days against $0.34$ expected; one pair's circle
+holds Kapteyn's Star at $3.9$\,pc, its members $1.8$ and $2.1^\circ$ from it, beyond the
+$0.9^\circ$ resolution. In the open data, the $2355$ inclined showers give seven pairs
+against $5.1$ and the $22{,}751$ showers of the $1500$\,m array $569$ against $559$, with
+$349$ triplets within thirty days against $361$.
+
+% =============================================================================
+\section{Photons in time}\label{sec:timing}
+% =============================================================================
+
+\emph{Ultraviolet photon clusters.} A pulsed ultraviolet source would gather photons in a
+few milliseconds. Of $147$ GALEX near-ultraviolet eclipses of the $51$ stars within
+$10$\,pc~\cite{Martin2005,Million2016}, nine hold a cluster at a false-alarm probability
+below $0.01$ against $4.8$ from $1176$ control apertures; they are five events on Wolf~359,
+Ross~128, Wolf~424, G~272$-$61 and GJ~725~A, all flare stars. GJ~725~A's is an isolated
+$100$\,ms brightening of seven photons against $0.2$, clean of detector and field events and
+fixed to the star in rebuilt detector coordinates; a census of $116$ eclipses finds $98$
+such bursts across the detector, at $1.4\times10^{-6}$ per source-second, the mapped ones at
+the detector's edge, and none on a catalogued star like GJ~725~A's. The far-ultraviolet
+lists of $26$ stars hold no cluster, nor do $720$ control apertures, and HST's
+photon-event lists of $108$ stars hold two below $10^{-3}$ against $3.7$ expected.
+
+\emph{Flare clocks.} Flares come at random times, and a flare train at a fixed period
+would be a clock. For $2304$ Kepler stars with ten or more catalogued
+flares~\cite{YangLiu2019}, the H test~\cite{deJager2010} from $0.5$\,d to a third of the
+span, against twenty draws of other stars' flare times in the same quarters, finds $22$
+of the forty highest beating every draw away from rotation: one burst in three cycles,
+two at the spacecraft's quarter or downlink spacing and $19$ locked in phase with
+scatters of $0.004$ to $0.017$ of the period, none below the $10^{-3}$ of a clock. The two
+long clocks on fast rotators are beats of two spot periods: KIC~7838383's $49.91$\,d from
+$1.0472$ and $1.0685$\,d, and KIC~7746984's flare clock at half the $268$\,d beat of
+$0.7398$ and $0.7377$\,d. Of $1426$ TESS stars~\cite{Yang2023}, nine of the forty highest beat
+every draw, eight of them bursts at the $240$\,d spacing of TESS's pointings, and the
+ninth, TIC~457100137 at $1.213$\,d, scatters by $0.0087$ of the period.
+
+\emph{Superflares at planet hosts.} A civilization that dims or shields its star's
+largest flares would leave its host short of superflares. Among $60{,}810$ TESS flares,
+the $83$ flaring planet hosts have $28.3$ per cent of their flares above $10^{34}$\,erg
+among those above $10^{33}$, against $35.0\pm6.0$ per cent for each host's ten nearest
+non-hosts in temperature, radius, distance and sectors drawn $2000$ times ($p=0.14$), and
+$48$ per cent of them carry a flare above $10^{34}$\,erg against $48\pm4$ per cent.
+
+\emph{Box-shaped brightenings.} A flare rises fast and decays slowly, and a switched
+source rises and falls alike. Among the $1806$ TESS $20$\,s light curves of stars within
+$30$\,pc, $256$ brightenings at $7\sigma$ are fitted better by a box than by a flare,
+against $263$ dips of the same shape: the rate of instrumental steps.
+
+\emph{Dispersed pulses.} A pulse from a transmitter at a star is dispersed by the
+interstellar medium in front of it and by nothing behind it. In Breakthrough Listen's
+$349\,\mu$s products of $88$ scans of the nearest stars, broadband pulses at $7\sigma$ that
+peak at a dispersion measure below $-1$, between $-1$ and $1$, and above $1$\,pc\,cm$^{-3}$
+number $25$, $36$ and $9$ in the scans on the stars against $39$, $34$ and $12$ off them, so
+the pulses are interference; folds at the Crab, Vela, B1937+21 and J0437$-$4715 periods
+as each star sees them give $26$ of $176$ below $p=0.05$, but the off-source scans of a
+control cadence fold as low, the red noise of the series.
+
+\emph{Pulsars.} A structure around a pulsar would re-radiate its spin-down power in the
+infrared. Of $1978$ pulsars with positions good to $1''$~\cite{Manchester2005}, $143$
+have an AllWISE counterpart~\cite{Wright2010} against $98.6$ by chance, none of them ring-like
+against $0.12$ per shifted copy, at a sensitivity of about $2$\,mJy at $12\,\mu$m for a
+$300$\,K ring re-radiating $10^{32}$\,erg\,s$^{-1}$ at $1$\,kpc. The $45{,}116$ stars near the
+antipodes of the hundred brightest pulsars, where a beacon timed to a pulsar would be
+aimed, hold no result at $p<0.01$ in the coverage store.
+
+\begin{table}[t]
+\centering\small
+\caption{The tests, their samples and results.}
+\label{tab:tests}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.22\textwidth} >{\raggedright\arraybackslash}p{0.3\textwidth} >{\raggedright\arraybackslash}p{0.4\textwidth}}
+\toprule
+Test & Sample & Result \\
+\midrule
+Coronal ceiling & $137{,}896$ eRASS1 stars & none above $10^{-1}$; the $250$ above $10^{-2}$ explained \\
+Coronae without a dynamo & $8287$ stars with periods & one beyond $1.5$\,dex, an RS~CVn binary \\
+Line-only X-ray sources & $63{,}043$ eRASS:3 sources & none at $0.5$--$2$\,keV \\
+X-ray periodicities & $209$ Chandra, $180$ XMM detections & at the chance rate \\
+Radio from inactive stars & VLASS, LoTSS, RACS & at the chance-alignment rate \\
+Circular polarisation & RACS, V-LoTSS & active stars, pulsars, brown dwarfs \\
+Synchrotron ceiling & $26{,}973$ NVSS sources & field emission in all $23$ \\
+Spectral edges & $27{,}585$ GLEAM-X sources & one blend \\
+TeV neutrinos & $271$ systems; four planets & at background \\
+Cosmic-ray doublets & $2635$ events; open data & at the chance rate \\
+Ultraviolet photon clusters & $51$, $26$ and $108$ stars & flares \\
+Flare clocks & $2304$ Kepler, $1426$ TESS stars & beats, bursts and spacecraft periods \\
+Superflares at hosts & $83$ hosts & as the matched stars \\
+Dispersed pulses & $88$ scans & as often off the stars \\
+Pulsars & $1978$ pulsars; $45{,}116$ stars & at the chance rate \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+Learned, Pakvasa and Zee~\cite{Learned2009} proposed neutrinos for interstellar
+signalling, and Osmanov~\cite{Osmanov2016} proposed infrared searches for structures around
+pulsars. The tests here rest on the surveys' own work: the eROSITA catalogues and their
+stellar identifications~\cite{Merloni2024,Schneider2022,Freund2024}, the rotation-activity
+relation~\cite{Pizzolato2003,Wright2011}, the radio surveys and their stellar
+samples~\cite{Lacy2020,Shimwell2022,Hale2021,Callingham2023,Pritchard2021,Condon1998,HurleyWalker2022},
+the review of long-period transients~\cite{Rea2026}, the SPT-3G
+flares~\cite{Tandoi2024}, IceCube's and the Pierre Auger Observatory's public
+data~\cite{IceCube2021,Auger2022} and the flare catalogues of Kepler and
+TESS~\cite{YangLiu2019,Yang2023}.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No test finds emission a star or its surroundings cannot make. The X-ray sources above the
+coronal ceiling are evolved, cataclysmic, young or flaring; the slow rotators sit on the
+rotation-activity relation; no source holds its X-rays in a band no continuum could; no
+nearby star pulses in X-rays. Radio emission from quiet stars arrives at the chance rate of
+background sources, polarised emission belongs to active stars, pulsars or the diffuse
+field, and no low-frequency spectrum steps. Neutrinos show no source at the nearest systems
+or the planets, and cosmic rays pair as chance allows. Ultraviolet photon clusters are
+flares, flare trains are beats and bursts, planet hosts flare as their twins do, box-shaped
+flares are steps, and dispersed pulses are interference.
+
+The reach of each test is its sample's. The X-ray tests cover eRASS1's half of the sky
+at its depth and day-long average, so a source that flares beyond the ceiling for minutes
+escapes it; the neutrino limits are $10^{22}$\,W at the nearest systems and $10^{10}$ to
+$10^{12}$\,W at the planets; the polarisation and spectral tests reach the surveys'
+flux limits; and the timing tests reach periods from milliseconds to the spans of the
+photon lists and light curves.
+
+\section*{Acknowledgements}
+
+This work uses data from eROSITA, the soft X-ray instrument aboard SRG, through the eRASS1
+and eRASS:3 releases; Gaia DR3 (ESA, Gaia DPAC); Chandra and XMM-Newton through their
+archives; Fermi-LAT's 4FGL-DR3; VLASS (NRAO), LoTSS (LOFAR), RACS (ASKAP, CSIRO), NVSS
+and GLEAM-X (MWA) through CIRADA, CASDA and VizieR; SPT-3G; the IceCube ten-year
+point-source sample; the Pierre Auger Observatory's Phase One and open data; GALEX
+through MAST and gPhoton and HST's photon-event lists; the Kepler and TESS flare
+catalogues; Breakthrough Listen's open data; the ATNF Pulsar Catalogue and AllWISE; and
+SIMBAD and VizieR at CDS, Strasbourg.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{Pizzolato2003}
+N.~Pizzolato, A.~Maggio, G.~Micela, S.~Sciortino and P.~Ventura, The stellar
+activity-rotation relationship revisited: dependence of saturated and non-saturated X-ray
+emission regimes on stellar mass for late-type dwarfs, \emph{Astron. Astrophys.}
+\textbf{397}, 147 (2003).
+
+\bibitem{Wright2011}
+N.~J. Wright, J.~J. Drake, E.~E. Mamajek and G.~W. Henry, The stellar-activity-rotation
+relationship and the evolution of stellar dynamos, \emph{Astrophys. J.} \textbf{743}, 48
+(2011).
+
+\bibitem{Learned2009}
+J.~G. Learned, S.~Pakvasa and A.~Zee, Galactic neutrino communication, \emph{Phys. Lett.
+B} \textbf{671}, 15 (2009).
+
+\bibitem{Osmanov2016}
+Z.~Osmanov, On the search for artificial Dyson-like structures around pulsars,
+\emph{Int. J. Astrobiol.} \textbf{15}, 127 (2016).
+
+\bibitem{Merloni2024}
+A.~Merloni, G.~Lamer, T.~Liu, et al., The SRG/eROSITA all-sky survey: first X-ray
+catalogues and data release of the western Galactic hemisphere, \emph{Astron.
+Astrophys.} \textbf{682}, A34 (2024).
+
+\bibitem{Schneider2022}
+P.~C. Schneider, S.~Freund, S.~Czesla, et al., The eROSITA Final Equatorial-Depth Survey
+(eFEDS): the stellar counterparts of eROSITA sources identified by machine learning and
+Bayesian algorithms, \emph{Astron. Astrophys.} \textbf{661}, A6 (2022).
+
+\bibitem{Freund2024}
+S.~Freund, S.~Czesla, P.~Predehl, et al., The SRG/eROSITA all-sky survey: identifying the
+coronal content with HamStar, \emph{Astron. Astrophys.} \textbf{684}, A121 (2024).
+
+\bibitem{Fetherolf2023}
+T.~Fetherolf, J.~Pepper, E.~Simpson, et al., Variability catalog of stars observed during
+the TESS prime mission, \emph{Astrophys. J. Suppl.} \textbf{268}, 4 (2023).
+
+\bibitem{Chen2020}
+X.~Chen, S.~Wang, L.~Deng, R.~de~Grijs, M.~Yang and H.~Tian, The Zwicky Transient Facility
+catalog of periodic variable stars, \emph{Astrophys. J. Suppl.} \textbf{249}, 18 (2020).
+
+\bibitem{CranmerSaar2011}
+S.~R. Cranmer and S.~H. Saar, Testing a predictive theoretical model for the mass loss
+rates of cool stars, \emph{Astrophys. J.} \textbf{741}, 54 (2011).
+
+\bibitem{Abdollahi2022}
+S.~Abdollahi, F.~Acero, L.~Baldini, et al., Incremental Fermi Large Area Telescope fourth
+source catalog, \emph{Astrophys. J. Suppl.} \textbf{260}, 53 (2022).
+
+\bibitem{Lacy2020}
+M.~Lacy, S.~A. Baum, C.~J. Chandler, et al., The Karl G. Jansky Very Large Array Sky
+Survey (VLASS): science case and survey design, \emph{Publ. Astron. Soc. Pac.}
+\textbf{132}, 035001 (2020).
+
+\bibitem{Shimwell2022}
+T.~W. Shimwell, M.~J. Hardcastle, C.~Tasse, et al., The LOFAR Two-metre Sky Survey. V.
+Second data release, \emph{Astron. Astrophys.} \textbf{659}, A1 (2022).
+
+\bibitem{Hale2021}
+C.~L. Hale, D.~McConnell, A.~J.~M. Thomson, et al., The Rapid ASKAP Continuum Survey
+paper II: first Stokes I source catalogue data release, \emph{Publ. Astron. Soc. Aust.}
+\textbf{38}, e058 (2021).
+
+\bibitem{Callingham2023}
+J.~R. Callingham, T.~W. Shimwell, H.~K. Vedantham, et al., V-LoTSS: the circularly
+polarised LOFAR Two-metre Sky Survey, \emph{Astron. Astrophys.} \textbf{670}, A124 (2023).
+
+\bibitem{Pritchard2021}
+J.~Pritchard, T.~Murphy, A.~Zic, et al., A circular polarization survey for radio stars
+with the Australian SKA Pathfinder, \emph{Mon. Not. R. Astron. Soc.} \textbf{502}, 5438
+(2021).
+
+\bibitem{Condon1998}
+J.~J. Condon, W.~D. Cotton, E.~W. Greisen, et al., The NRAO VLA Sky Survey, \emph{Astron.
+J.} \textbf{115}, 1693 (1998).
+
+\bibitem{HurleyWalker2022}
+N.~Hurley-Walker, T.~J. Galvin, S.~W. Duchesne, et al., GaLactic and Extragalactic All-sky
+Murchison Widefield Array survey eXtended (GLEAM-X) I: survey description and initial
+data release, \emph{Publ. Astron. Soc. Aust.} \textbf{39}, e035 (2022).
+
+\bibitem{Rea2026}
+N.~Rea, N.~Hurley-Walker, M.~Caleb, et al., Long period transients (LPTs): a comprehensive
+review, arXiv:2601.10393 (2026).
+
+\bibitem{Tandoi2024}
+C.~Tandoi, S.~Guns, A.~Foster, et al., Flaring stars in a non-targeted mm-wave survey with
+SPT-3G, \emph{Astrophys. J.} \textbf{972}, 6 (2024).
+
+\bibitem{IceCube2021}
+IceCube Collaboration, R.~Abbasi, M.~Ackermann, et al., IceCube data for neutrino
+point-source searches years 2008--2018, arXiv:2101.09836 (2021).
+
+\bibitem{Auger2022}
+Pierre Auger Collaboration, P.~Abreu, M.~Aglietta, et al., Arrival directions of cosmic
+rays above 32 EeV from Phase One of the Pierre Auger Observatory, \emph{Astrophys. J.}
+\textbf{935}, 170 (2022).
+
+\bibitem{Martin2005}
+D.~C. Martin, J.~Fanson, D.~Schiminovich, et al., The Galaxy Evolution Explorer: a space
+ultraviolet survey mission, \emph{Astrophys. J.} \textbf{619}, L1 (2005).
+
+\bibitem{Million2016}
+C.~Million, S.~W. Fleming, B.~Shiao, et al., gPhoton: the GALEX photon data archive,
+\emph{Astrophys. J.} \textbf{833}, 292 (2016).
+
+\bibitem{YangLiu2019}
+H.~Yang and J.~Liu, The flare catalog and the flare activity in the Kepler mission,
+\emph{Astrophys. J. Suppl.} \textbf{241}, 29 (2019).
+
+\bibitem{deJager2010}
+O.~C. de Jager and I.~B\"usching, The H-test probability distribution revisited: improved
+sensitivity, \emph{Astron. Astrophys.} \textbf{517}, L9 (2010).
+
+\bibitem{Yang2023}
+Z.~Yang, L.~Zhang, et al., Properties of flare events based on light curves from the TESS
+survey, \emph{Astron. Astrophys.} \textbf{669}, A15 (2023).
+
+\bibitem{Manchester2005}
+R.~N. Manchester, G.~B. Hobbs, A.~Teoh and M.~Hobbs, The Australia Telescope National
+Facility pulsar catalogue, \emph{Astron. J.} \textbf{129}, 1993 (2005).
+
+\bibitem{Wright2010}
+E.~L. Wright, P.~R.~M. Eisenhardt, A.~K. Mainzer, et al., The Wide-field Infrared Survey
+Explorer (WISE): mission description and initial on-orbit performance, \emph{Astron. J.}
+\textbf{140}, 1868 (2010).
+
+\end{thebibliography}
+
+\end{document}

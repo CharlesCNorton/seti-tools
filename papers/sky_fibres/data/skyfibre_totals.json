@@ -1,0 +1,8 @@
+{
+ "n_plates": 3853,
+ "n_sky": 381943,
+ "n_files": 4131,
+ "pos_all": 115169,
+ "neg_all": 75591,
+ "note": "pos_all and neg_all count every emission-like and absorption-like peak at 6 sigma before the four tests; the CSV holds every peak that passes the mask, airglow and width tests, with the number of other sky fibres of its plate at 3 sigma within a pixel (n_shared), so that any sharing rule can be applied; flux is the integrated line flux in 1e-17 erg/s/cm2, for a dip its depth; values are written at full precision"
+}

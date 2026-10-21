@@ -1,0 +1,431 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{A Search for Laser Lines in Five Large Spectroscopic Surveys\\ of Nearby Stars}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A laser aimed at Earth from another star adds an unresolved emission line to the
+star's spectrum. The large spectroscopic surveys now hold spectra of tens of thousands of
+stars within $100$\,pc, taken for stellar parameters and abundances, and none has been
+searched for such lines. We search five: the Gaia DR3 mean RVS spectra of $2363$ FGK
+stars within $75$\,pc ($846$ to $870$\,nm), GALAH DR4 spectra of $621$ dwarfs within
+$100$\,pc ($471$ to $789$\,nm in four windows), APOGEE DR17 combined spectra and
+$14178$ visits of $3370$ dwarfs within $100$\,pc ($1.51$ to $1.70$\um, including the
+$1530$ to $1565$\,nm band of terrestrial fibre-optic lasers), DESI DR1 spectra of $7705$
+stars within $100$\,pc ($360$ to $982$\,nm), and LAMOST DR10 medium-resolution spectra
+of $14400$ stars within $100$\,pc in $35179$ observations. Each spectrum is modelled by a
+non-negative combination of the most similar spectra of its survey, so a narrow emission
+line that they lack cannot be fitted away, and emission-like residuals are judged against
+the absorption-like residuals of the same spectra. No emission line above that null
+remains in the Gaia, APOGEE and multi-exposure DESI spectra; every GALAH candidate is
+instrumental; and in LAMOST the $19$ features that recur in two exposures of single
+stars are one or two pixels wide where the instrument's profile spans six, detector
+pixels and not light. From each spectrum's noise and the star's magnitude, a line at the
+detection threshold carries a median of $2\times10^{-16}$\,erg\,cm$^{-2}$\,s$^{-1}$ in
+APOGEE and DESI and $1$ to $3\times10^{-15}$ in GALAH, Gaia and LAMOST, the flux of a
+transmitter of $10^{19}$ to $10^{20}$\,W radiating isotropically or of $5$\,kW to
+$70$\,kW behind a $10$\,m aperture at the median star, and of $5$ to $50$\,W at the
+nearest.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Schwartz and Townes proposed that a civilization could signal with optical masers, whose
+light, confined to a narrow beam and a narrow band, would outshine its star at that
+wavelength~\cite{SchwartzTownes1961}. A laser aimed at Earth would add an unresolved
+emission line to the star's spectrum; from a $10$\,m aperture the beam is a few
+hundredths of an astronomical unit wide at $10$\,pc and about one at $100$\,pc, so it
+has to be held on the Earth's position when the light arrives. Searches have looked for
+such lines in the high-resolution spectra of radial-velocity programmes: $577$ FGKM
+stars with Keck/HIRES~\cite{ReinesMarcy2002}, $2796$ stars at $3640$ to
+$7890$\,\AA~\cite{TellisMarcy2015}, $5600$ FGKM stars with thresholds of
+megawatts~\cite{TellisMarcy2017}, $388$ stars with the Automated Planet
+Finder~\cite{Zuckerman2023}, and $2821$ stars in archival HARPS spectra, where three
+candidates in two M dwarfs and a red giant remain to be explained by the stars
+themselves~\cite{FieldsGoodman2025}.
+
+The spectroscopic surveys of the last decade observe many more nearby stars, at lower
+resolution and over different wavelengths: the Gaia RVS spectra near the calcium triplet,
+GALAH's four optical windows, APOGEE's $H$ band, which contains the $1530$ to $1565$\,nm
+band in which Earth's fibre-optic lasers operate, and the wide optical coverage of DESI
+and LAMOST. Their spectra are taken in many fibres at once and reduced in bulk, so a
+search must tell a line in a star from the defects of fibres, detectors and sky
+subtraction. This paper searches the nearby stars of all five surveys with methods that
+compare each spectrum with others of the same survey.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item A search for unresolved emission lines in the spectra of nearby stars from Gaia
+DR3, GALAH DR4, APOGEE DR17, DESI DR1 and LAMOST DR10, about $28000$ stars counted
+survey by survey.
+\item Comparison-spectrum models in which a narrow line that the comparison stars lack
+cannot be fitted away, with each spectrum's own absorption-like residuals as the null.
+\item The instrumental and terrestrial features of each survey that mimic a line, each
+turned into a test.
+\item The line flux at each survey's threshold, star by star, from the spectrum's noise
+and the star's Gaia or 2MASS magnitude, as an isotropic luminosity and as the power of a
+$10$\,m transmitter aimed at Earth.
+\end{enumerate}
+
+% =============================================================================
+\section{Data and method}\label{sec:method}
+% =============================================================================
+
+\emph{The common method.} Each spectrum is divided by its upper envelope or continuum and
+fitted, window by window, as a non-negative combination of the spectra of its most
+similar stars in the same survey, with a signed continuum and signed first and second
+derivatives of the fitted model, which absorb small differences of velocity and line
+width. A narrow emission line in the target cannot be reproduced unless a comparison
+spectrum carries it. The residual is searched with a matched filter of the instrument's
+line profile, and peaks of both signs are kept: the absorption-like peaks arise from the
+same imperfections of the model and the data as false emission-like ones, and serve as
+their null. A peak of unresolved width is then
+tested against the same position in other stars, in the stellar rest frame (a stellar
+line the model misses) and in the observatory frame (sky, telluric and instrumental
+features).
+
+\emph{Gaia RVS.} The mean RVS spectra of Gaia DR3~\cite{Gaia2023,Katz2023}, $846$ to
+$870$\,nm at a resolving power of $11500$, of the $2363$ FGK stars within $75$\,pc that
+have one, are each fitted by their $25$ nearest neighbours in colour and absolute
+magnitude. A positive peak counts only above every absorption-like peak of its
+environment, and is tested against the cores of the \ion{Ca}{ii} triplet and the Paschen
+lines, the same position in other stars, and deblended neighbours.
+
+\emph{GALAH.} GALAH DR4~\cite{Buder2024} gives $699$ spectra of $621$ dwarfs within
+$100$\,pc, at a resolving power of $28000$ in four windows from $471$ to $789$\,nm. Each
+spectrum, camera by camera, is fitted by the $20$ sample spectra nearest in effective
+temperature, gravity and metallicity; a candidate is then measured in the other fibres of
+the same exposure.
+
+\emph{APOGEE.} APOGEE DR17~\cite{Majewski2017,Abdurrouf2022} holds $H$-band spectra at a
+resolving power of $22500$. For the $3370$ dwarfs within $100$\,pc with three or more
+visits, the combined spectrum is fitted in $256$-pixel windows by its $12$ most similar
+stars, and peaks under bright subtracted sky are OH airglow. Separately, each of the
+$14178$ visits is divided by the star's median visit, which cancels anything present in
+every visit, and lines that recur in several visits at one rest wavelength but at
+different observatory wavelengths are grouped; detector dropouts that depress the median
+are masked.
+
+\emph{DESI.} The DESI DR1~\cite{DESI2025} Milky Way Survey~\cite{Cooper2023} spectra of
+$7718$ stars with Gaia parallaxes of $10$ to $800$\,mas and S/N above $20$, $6266$ of
+them cooler than $3500$\,K and $455$ white dwarfs, are fitted by their $12$ most similar
+spectra; each candidate is checked exposure by exposure, since a coadd of several
+exposures can carry a cosmic ray or a defect of one of them.
+
+\emph{LAMOST.} LAMOST DR10's medium-resolution survey~\cite{Cui2012,Liu2020} observes
+$495$ to $535$ and $630$ to $680$\,nm at a resolving power of $7500$ in several
+exposures a night. In the $35179$ observations of $14400$ Gaia DR3 stars within
+$100$\,pc with declination above $-15^\circ$ and $G<15$, a peak counts at $6\sigma$
+above the local continuum with an unresolved width in a single exposure, and persists
+when two exposures hold it within a third of a resolution element in the star's frame.
+A feature is explained by an arm's end, by sharing with other stars in the stellar or
+the instrument's frame, by recurrence in the same or neighbouring fibres of a
+spectrograph, by instrument-frame recurrence on other nights, or by light in
+neighbouring fibres of the same exposure, and what remains is set against the
+coincidences of two exposures that chance makes and read again at its peak pixel in
+every exposure of its star: a feature narrower than half the instrumental profile is a
+detector pixel, one whose exposures peak more than half a resolution element apart is
+not one feature, and one held by a single exposure of a night whose other exposures are
+flat is a cosmic ray.
+
+\emph{Flux limits.} Each search's threshold is a matched-filter significance $k$ in a
+residual that is in units of the continuum: $k=5$ for the Gaia, APOGEE and DESI
+searches, $5.5$ for GALAH and $6$ for a LAMOST exposure. An unresolved line whose
+filter response sits at the threshold has a peak of $k\sigma/g$ of the continuum, with
+$\sigma$ the spectrum's noise per pixel and $g$ the filter's gain, and a flux
+$F=(k\sigma/g)\sqrt{2\pi}\,\sigma_\lambda F_\lambda$, with $\sigma_\lambda$ the
+Gaussian width of the line profile and $F_\lambda$ the star's continuum flux density,
+which we take from its Gaia BP, G and RP magnitudes, interpolated in wavelength in the
+Vega system, and from its 2MASS $H$ magnitude for APOGEE. For Gaia the noise is that of
+each star's residual; for GALAH, APOGEE and DESI it is the survey's per-pixel
+signal-to-noise ratio of each camera or of the combined spectrum; for LAMOST it is the
+per-exposure ratio of each arm, read from the headers of a random $1500$ of the
+$35{,}179$ observations. An isotropic source at the star's Gaia distance $d$ then has
+$L=4\pi d^2F$, and a transmitter aimed at Earth through a diffraction-limited $10$\,m
+aperture needs $P=F d^2(\lambda/10\,\mathrm{m})^2$. These are thresholds, not
+completeness limits: in the ultraviolet search of the same kind, lines injected into
+archival spectra were recovered at $90$ per cent of the attainable fraction at $3$ to
+$5$ times the nominal threshold, and the same factor applies here, since the same
+envelopes, masks and comparison fits intervene.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{The surveys searched and their results. The null is the set of absorption-like
+residual peaks found by the same method in the same spectra.}
+\label{tab:surveys}
+\begin{tabular}{l l r r >{\raggedright\arraybackslash}p{0.31\textwidth}}
+\toprule
+Survey & Range & $R$ & Stars & Result \\
+\midrule
+Gaia DR3 RVS & $846$--$870$\,nm & $11500$ & $2363$ & no line above the null \\
+GALAH DR4 & $471$--$789$\,nm & $28000$ & $621$ & every candidate instrumental \\
+APOGEE DR17, combined & $1.51$--$1.70$\um & $22500$ & $3370$ & no line above the null; one peak above it is OH airglow \\
+APOGEE DR17, visits & $1.51$--$1.70$\um & $22500$ & $3370$ & $3431$ recurring emission-like groups against $3410$ absorption-like \\
+DESI DR1 & $360$--$982$\,nm & $2000$--$5000$ & $7705$ & coadds of two or more exposures match the null \\
+LAMOST DR10 MRS & $495$--$535$, $630$--$680$\,nm & $7500$ & $14400$ & $19$ two-exposure features, all detector pixels \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+Table~\ref{tab:surveys} summarises the results.
+
+\emph{Gaia RVS and APOGEE.} No emission-like peak in the RVS spectra rises above the
+absorption-like null. In the APOGEE combined spectra no emission-like peak exceeds the
+null either in the continuum or inside stellar lines, once OH airglow is masked where the
+visits' subtracted sky was bright; the one peak above the null was such airglow. In the
+visit-to-visit search the recurring emission-like groups number $3431$ against $3410$
+absorption-like ones, and the strongest, $48.2$, falls below the strongest absorption-like
+group, $67.0$.
+
+\emph{GALAH.} Every GALAH candidate is instrumental: pixels that several stars share in
+the observatory frame, charge persistence in one fibre from a bright earlier exposure,
+cosmic rays, and a ghost in the blue camera.
+
+\emph{DESI.} The $1091$ stars with three or more exposures match the absorption-like null
+in the continuum. Every peak above the null in them, and in the $1878$ coadds of two
+exposures, vetted exposure by exposure, is a cosmic ray in one exposure, a corrupt
+exposure, an OH residual, or a mismatch of the comparison spectra in a telluric band or
+in a white dwarf's Paschen lines. The $4749$ stars with a single exposure, $62$ per cent
+of the sample, have no second exposure to separate a line from a cosmic ray, so for them
+the search ends at the peak list: their emission-like peaks are as numerous as their
+absorption-like ones, and they are not searched in the sense the others are.
+
+\emph{LAMOST.} The single exposures hold $12261$ unresolved spikes at $6\sigma$, and $110$
+persist in two exposures in the star's frame. Arm ends, lines shared in the stellar or
+the instrument's frame (sky residuals moved by the heliocentric correction), defects of
+the same or neighbouring fibres, recurrence in the instrument's frame on other nights and
+light in neighbouring fibres of the same exposures explain $91$; the $19$ left
+(Table~\ref{tab:lamost}) lie in single stars, mostly in two of many exposures. The
+strongest, at $241\sigma$ in three exposures of one night of a K dwarf, lies a few
+pixels from a block of pixels at $1800$ times the continuum in all five exposures of
+that night, with the pipeline's variance there inflated a thousandfold: a defect of
+those extractions, absent from the star's $178$ other exposures, against which the
+residual's scatter was measured. The other $18$ are as many as the $17$ coincidences
+of two exposures that chance makes, and read at the peak pixel in every exposure of
+their stars, all $19$ are detector pixels: each rises above half its excess over one or
+two pixels, where the instrumental profile's full width at half maximum is $5.6$ to
+$6.5$ pixels, so no light passing through the spectrograph made it. Six of them sit as
+well on masked, variance-inflated or dead pixels, eight have exposures whose peaks lie
+more than half a resolution element apart, four fill one night and none of the star's
+other nights, and three are single exposures of nights whose other exposures are flat.
+
+\emph{Flux limits.} Table~\ref{tab:limits} gives the line flux at each survey's
+threshold. The near-infrared and the deep DESI coadds reach $2\times10^{-16}$\,erg\,cm$^{-2}$\,s$^{-1}$
+at the median star and the optical surveys of brighter stars $1$ to
+$3\times10^{-15}$; as isotropic luminosities at the stars' distances these are $10^{19}$
+to $2\times10^{20}$\,W, and as transmitters behind a $10$\,m aperture aimed at Earth
+$5$ to $70$\,kW at the median star, $300$\,W at the DESI stars within $20$\,pc and $5$
+to $50$\,W at the nearest star of each survey. The thresholds of Tellis and Marcy's
+search, megawatts for a $10$\,m aperture at their stars' distances~\cite{TellisMarcy2017},
+are reached here at every survey's median star, with the three-to-five-fold completeness
+factor of the previous paragraph still to be applied.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\caption{The line flux at each search's threshold: the median over the stars (for
+GALAH, DESI and LAMOST over the cameras, arms and exposures) of $F$, of the isotropic
+luminosity $L$ at the star's distance and of the power $P_{10\,\rm m}$ of a $10$\,m
+transmitter aimed at Earth; the number of stars within $20$\,pc; and $P_{10\,\rm m}$ at
+the nearest star. The LAMOST row is from the $1163$ stars among a random $1500$
+observations whose headers were read. APOGEE's $P_{10\,\rm m}$ is larger than DESI's at
+a smaller flux because the beam at $1.6$\um\ is five times wider.}
+\label{tab:limits}
+\begin{tabular}{l r r r r r r}
+\toprule
+Survey & Stars & $F$ (erg\,cm$^{-2}$\,s$^{-1}$) & $L$ (W) & $P_{10\,\rm m}$ (W) & $N_{<20\,\rm pc}$ & $P_{10\,\rm m}$, nearest (W) \\
+\midrule
+Gaia DR3 RVS & $2363$ & $2.9\times10^{-15}$ & $1.2\times10^{20}$ & $7\times10^{4}$ & $27$ & $3.5\times10^{4}$ ($7.2$\,pc) \\
+GALAH DR4 & $621$ & $1.3\times10^{-15}$ & $1.1\times10^{20}$ & $3\times10^{4}$ & $4$ & $50$ ($4.3$\,pc) \\
+APOGEE DR17 & $2931$ & $1.6\times10^{-16}$ & $1.1\times10^{19}$ & $2\times10^{4}$ & $4$ & $2.5\times10^{3}$ ($13.8$\,pc) \\
+DESI DR1 & $7718$ & $2.1\times10^{-16}$ & $1.4\times10^{19}$ & $5\times10^{3}$ & $96$ & $5$ ($3.6$\,pc) \\
+LAMOST DR10 MRS & $1163$ & $3.0\times10^{-15}$ & $2.0\times10^{20}$ & $5\times10^{4}$ & $20$ & $4\times10^{3}$ ($16$\,pc) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{5pt}
+\caption{The $19$ LAMOST features that pass the tests against other stars, fibres and
+nights: the star, the arm, the rest and observed wavelengths (air), the exposures
+holding the feature against the star's exposures, the nights they span, and the largest
+single-exposure significance. Each is one or two pixels wide.}
+\label{tab:lamost}
+\begin{tabular}{l l r r r r r}
+\toprule
+Gaia DR3 & Arm & $\lambda_{\rm rest}$ (\AA) & $\lambda_{\rm obs}$ (\AA) & Exposures & Nights & $z$ \\
+\midrule
+4420231361513433344 & B & 4947.67 & 4947.83 & 2/6 & 1 & 9.5 \\
+1407678284339274368 & B & 5102.09 & 5102.55 & 2/8 & 1 & 9.4 \\
+1407678284339274368 & B & 5134.99 & 5135.46 & 2/8 & 1 & 8.3 \\
+608182831000585728 & B & 5269.81 & 5270.60 & 2/30 & 1 & 7.8 \\
+815877833000303488 & B & 5290.17 & 5289.98 & 2/238 & 2 & 9.1 \\
+1295249440828061696 & B & 5331.15 & 5331.32 & 3/160 & 1 & 20.0 \\
+1894835705805757824 & B & 5344.89 & 5345.21 & 2/152 & 2 & 17.8 \\
+64953069592851328 & R & 6307.36 & 6306.18 & 2/124 & 2 & 11.1 \\
+1898531439263850240 & R & 6322.92 & 6323.26 & 5/106 & 1 & 14.5 \\
+814125692502763904 & R & 6335.08 & 6335.53 & 2/214 & 2 & 22.4 \\
+687208343753227520 & R & 6433.52 & 6433.98 & 2/52 & 2 & 28.2 \\
+1547717514092903424 & R & 6551.41 & 6550.29 & 2/196 & 2 & 9.9 \\
+2556424771496343424 & R & 6626.80 & 6626.62 & 2/76 & 2 & 9.0 \\
+1915323176544379520 & R & 6728.65 & 6729.16 & 2/180 & 2 & 11.7 \\
+779262652684989312 & R & 6756.41 & 6756.55 & 2/174 & 2 & 6.5 \\
+3872246689058776832 & R & 6764.64 & 6774.04 & 2/123 & 2 & 33.0 \\
+1386361674454950912 & R & 6772.31 & 6772.58 & 3/183 & 1 & 241.4 \\
+161252970877957632 & R & 6783.43 & 6783.15 & 4/34 & 1 & 7.0 \\
+986071444021690112 & R & 6801.65 & 6802.17 & 4/22 & 1 & 21.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+\emph{Laser searches.} The searches of Section~\ref{sec:intro} use high-resolution
+spectra of radial-velocity programmes~\cite{ReinesMarcy2002,TellisMarcy2015,TellisMarcy2017,Zuckerman2023,FieldsGoodman2025},
+and the HARPS search, the largest of them, ends as this one does with a handful of
+features in stars whose own spectra are the first thing to exclude. We find no earlier
+laser search of Gaia, GALAH, APOGEE, DESI or LAMOST spectra.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No unresolved emission line that a laser aimed at Earth could produce is found in the
+nearby stars of five large spectroscopic surveys, beyond what the surveys' instruments,
+the sky and chance produce. The surveys extend the earlier laser searches to tens of
+thousands of stars, to the near infrared and to the telecommunications band.
+
+The limits are thresholds in each spectrum's noise, turned into fluxes by the stars'
+magnitudes, and apply to lines that are steady in the combined spectra or that recur in
+the exposures available: $10^{19}$ to $10^{20}$\,W isotropic at the median star,
+kilowatts to tens of kilowatts behind a $10$\,m aperture, watts at the nearest stars.
+A line inside a strong stellar line, one in the telluric bands that
+the models fit away, or one that was off when the spectra were taken is not constrained;
+the $62$ per cent of DESI stars with a single exposure need a second, and injecting
+lines into the archival spectra, as the ultraviolet search did, would turn these
+thresholds into completeness limits survey by survey.
+
+\section*{Acknowledgements}
+
+This work uses data from the European Space Agency mission Gaia, processed by the Gaia
+Data Processing and Analysis Consortium; from the GALAH survey, based on observations at
+the Anglo-Australian Telescope; from SDSS-IV's APOGEE; from the Dark Energy Spectroscopic
+Instrument, retrieved through NOIRLab's SPARCL; and from the Large Sky Area Multi-Object
+Fiber Spectroscopic Telescope (LAMOST), funded by the National Development and Reform
+Commission and operated by the National Astronomical Observatories, Chinese Academy of
+Sciences.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{SchwartzTownes1961}
+R.~N. Schwartz and C.~H. Townes, Interstellar and interplanetary communication by
+optical masers, \emph{Nature} \textbf{190}, 205 (1961).
+
+\bibitem{ReinesMarcy2002}
+A.~E. Reines and G.~W. Marcy, Optical search for extraterrestrial intelligence: a
+spectroscopic search for laser emission from nearby stars, \emph{Publ. Astron. Soc.
+Pac.} \textbf{114}, 416 (2002).
+
+\bibitem{TellisMarcy2015}
+N.~K. Tellis and G.~W. Marcy, A search for optical laser emission using Keck HIRES,
+\emph{Publ. Astron. Soc. Pac.} \textbf{127}, 540 (2015).
+
+\bibitem{TellisMarcy2017}
+N.~K. Tellis and G.~W. Marcy, A search for laser emission with megawatt thresholds from
+5600 FGKM stars, \emph{Astron. J.} \textbf{153}, 251 (2017).
+
+\bibitem{Zuckerman2023}
+A.~Zuckerman, Z.~Ko, H.~Isaacson, et al., The Breakthrough Listen search for
+intelligent life: a laser search pipeline for the Automated Planet Finder,
+\emph{Astron. J.} \textbf{165}, 114 (2023).
+
+\bibitem{FieldsGoodman2025}
+B.~Fields and J.~C. Goodman, A 2821 star optical SETI survey using ESO HARPS archival
+data, arXiv:2508.08628 (2025).
+
+\bibitem{Gaia2023}
+Gaia Collaboration, A.~Vallenari, A.~G.~A. Brown, et al., Gaia Data Release 3: summary
+of the content and survey properties, \emph{Astron. Astrophys.} \textbf{674}, A1 (2023).
+
+\bibitem{Katz2023}
+D.~Katz, P.~Sartoretti, A.~Guerrier, et al., Gaia Data Release 3: properties and
+validation of the radial velocities, \emph{Astron. Astrophys.} \textbf{674}, A5 (2023).
+
+\bibitem{Buder2024}
+S.~Buder, J.~Kos, E.~X. Wang, et al., The GALAH survey: data release 4,
+arXiv:2409.19858 (2024).
+
+\bibitem{Majewski2017}
+S.~R. Majewski, R.~P. Schiavon, P.~M. Frinchaboy, et al., The Apache Point Observatory
+Galactic Evolution Experiment (APOGEE), \emph{Astron. J.} \textbf{154}, 94 (2017).
+
+\bibitem{Abdurrouf2022}
+Abdurro'uf, K.~Accetta, C.~Aerts, et al., The seventeenth data release of the Sloan
+Digital Sky Surveys, \emph{Astrophys. J. Suppl.} \textbf{259}, 35 (2022).
+
+\bibitem{DESI2025}
+DESI Collaboration, M.~Abdul-Karim, A.~G. Adame, et al., Data release 1 of the Dark
+Energy Spectroscopic Instrument, arXiv:2503.14745 (2025).
+
+\bibitem{Cooper2023}
+A.~P. Cooper, S.~E. Koposov, C.~Allende Prieto, et al., Overview of the DESI Milky Way
+Survey, \emph{Astrophys. J.} \textbf{947}, 37 (2023).
+
+\bibitem{Cui2012}
+X.-Q. Cui, Y.-H. Zhao, Y.-Q. Chu, et al., The Large Sky Area Multi-Object Fiber
+Spectroscopic Telescope (LAMOST), \emph{Res. Astron. Astrophys.} \textbf{12}, 1197
+(2012).
+
+\bibitem{Liu2020}
+C.~Liu, J.~Fu, J.~Shi, et al., LAMOST medium-resolution spectroscopic survey
+(LAMOST-MRS): scientific goals and survey plan, arXiv:2005.07210 (2020).
+
+\end{thebibliography}
+
+\end{document}

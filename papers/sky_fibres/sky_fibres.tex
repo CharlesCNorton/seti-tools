@@ -1,0 +1,534 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\um}{\,$\mu$m}
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\flux}{erg\,cm$^{-2}$\,s$^{-1}$}
+\newcommand{\mA}{m\AA}
+\newcommand{\sci}[2]{#1\times10^{#2}}
+\newcommand{\ion}[2]{#1\,\textsc{#2}}
+\newcommand{\nuc}[2]{$^{#1}$#2}
+\newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Lines in the Blank Sky: a Search of the SDSS Sky Fibres\\ for Laser Emission, and the Galaxies Behind Them}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Every BOSS and eBOSS plate of the Sloan Digital Sky Survey places some eighty fibres on
+positions with no catalogued source, to measure the sky. A point source of line emission
+too faint in broad bands for the imaging that chose those positions, a transmitter on
+its own or beside a star too faint to catalogue, would appear in one of them as an
+unresolved emission line that the plate's other sky fibres lack. We search the
+$381{,}943$ sky-fibre spectra of the $3853$ plates of DR17, from $3600$ to
+$10400$\,\AA\ at a resolution near $2000$, for such lines: matched-filter peaks at
+$6\sigma$, off the airglow lines, as narrow as the instrument and absent from the plate's
+other sky fibres. Absorption-like dips of the same shape, which no transmitter makes, are
+put through every test the peaks are and serve as the null. A line that one fibre holds
+at one wavelength at other positions on other plates is the detector's: $762$ of $3217$
+clean peaks and $1813$ of $4108$ dips. Two or more peaks at one redshift, at the flux
+ratios a galaxy's spectrum fixes, mark $156$ fibres, where the same test finds $4$ among
+the dips and $12\pm4$ among shuffled peaks: $154$ galaxies at $z=0.02$ to $1.07$, six of
+them seen twice on different plates, $122$ with a Legacy Surveys DR10 source within
+$1.5''$ of median $r=23.1$, and two fibres of Galactic nebular lines. At $8\sigma$, with
+the spectra that hold clean lines of both signs set aside, $485$ peaks and $336$ dips
+remain. Legacy Surveys sources lie within $1.5''$ of $38$ per cent of the peaks against
+$4.4$ per cent at positions $30''$ north, and of the dips less often than at those
+positions, so about $160$ of the peaks are single lines of galaxies, and the other $323$
+fall short of the $336$ dips. Read in each exposure, $359$ peaks and $241$ dips hold
+through the frames, and net of their counterparts the $202$ persistent peaks fall short of
+the $253$ persistent dips. The line that recurs most often at one sky position, at
+$4732.6$\,\AA\ on $54$ plate-nights over seven years, is resolved and alone in the stack
+of the $94$ spectra there: Ly$\alpha$ of a galaxy at $z=2.893$. The median line flux at
+$8\sigma$, $8\times10^{-17}$\,\flux, is that of a transmitter aimed at Earth through a
+$10$\,m aperture at $37$\,W from $10$\,pc and $3.7$\,kW from $100$\,pc, and with $0.68$
+of such lines recovered, the $0.093$\,deg$^2$ the fibres cover bound such transmitters to
+fewer than about $850$ per square degree.
+\end{abstract}
+
+% =============================================================================
+\section{Introduction}\label{sec:intro}
+% =============================================================================
+
+Spectroscopic searches for laser emission look for an unresolved line in the spectrum
+of a star~\cite{ReinesMarcy2002,TellisMarcy2017}, on the reasoning that a transmitter
+lives near one. A transmitter need not: one in free space, or beside a star too faint
+for any catalogue, has no spectrum of its own taken unless a fibre happens to fall on
+it. Large fibre surveys do place fibres on empty sky, to measure the sky they subtract
+from every other spectrum, and the Sloan Digital Sky Survey's BOSS~\cite{Dawson2013} and
+eBOSS~\cite{Dawson2016} spectrographs~\cite{Smee2013} recorded some eighty such
+spectra on each of thousands of plates. Their positions were chosen to hold nothing in
+the survey's imaging, so a source there is fainter in broad bands than that imaging
+reaches, and a line from it stands alone.
+
+The same spectra catch what the imaging missed. A galaxy whose light is mostly in a few
+emission lines is faint in broad bands and bright in its lines, and a sky fibre that
+lands on one records them at one redshift; such lines are the commonest astrophysical
+source a laser search of blank sky must recognise. This paper searches every sky fibre
+of DR17's BOSS and eBOSS plates for unresolved emission lines, separates the galaxies by
+their redshifts and by the sources the imaging holds at the fibres, and measures the rest,
+in the combined spectra and in each exposure, against the same search for dips, put
+through the same tests.
+
+\subsection{Contributions}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item A search of $381{,}943$ sky-fibre spectra on $3853$ plates for unresolved emission
+lines absent from the plate's other sky fibres, with absorption-like dips put through
+every test as the null.
+\item A catalogue of the $154$ galaxies whose lines the search finds at one redshift,
+with their Legacy Surveys counterparts.
+\item A bound on transmitters in blank sky from the excess of lines over the null, drawn
+again on the lines that hold in every exposure, and the per-line data, peaks and dips,
+from which every number here follows.
+\item The lines that recur at one sky position over several plate-nights, among them a
+Ly$\alpha$ emitter at $z=2.893$ found by its recurrence alone.
+\end{enumerate}
+
+% =============================================================================
+\section{Data and method}\label{sec:method}
+% =============================================================================
+
+\emph{Data.} DR17~\cite{Abdurrouf2022} holds, for each BOSS and eBOSS plate and night,
+an spPlate file with the flux, inverse variance and sky-model spectrum of every fibre on
+a common grid of $10^{-4}$ in $\log_{10}\lambda$, and the plug map that names each
+fibre's target type. The fibres of type SKY give the sky spectra, whose rows we read from
+the archive by byte range, one plate at a time: $4131$ files of the $3853$ plates.
+
+\emph{Detection.} Each sky spectrum is scaled to its own robust noise: the flux times
+the square root of the inverse variance, divided by $1.4826$ times its median absolute
+deviation, with pixels the pipeline masks given zero weight. A filter matched to a
+Gaussian of $\sigma=1.1$ pixels, the instrumental profile, gives the significance of a
+line at each pixel, and a peak at $6\sigma$ or more is kept unless one of four tests sets
+it aside: a masked pixel within one of it; an airglow line, where the plate's median
+sky model exceeds three times its running continuum, widened by two pixels; two or more
+other sky fibres of the same plate at $3\sigma$ within a pixel, which marks a residual of
+the sky subtraction; or a width, from the peak's second moment, outside $0.6$ to $2$
+times the profile. A peak that passes all four is clean. The same search run on the
+negated spectra gives dips of the same shape. Each peak and dip that passes the first,
+second and fourth tests is kept with the number of other fibres at $3\sigma$ beside it,
+so the rule of one other fibre, stricter and less complete, is applied to the same
+detections for comparison.
+
+\emph{Tests after detection.} Three tests act on the clean lines of each sign alike. A
+line that the same fibre holds within three pixels on another plate, at a sky position
+more than $1.5''$ away, belongs to the detector; plates of one field can return a fibre
+to the same position, and a line it holds there is the sky's. Two or more lines of one
+fibre within $4\times10^{-4}(1+z)$ of the vacuum wavelengths of
+[O\,\textsc{ii}]~$3727$, H$\beta$, [O\,\textsc{iii}]~$4959$ and $5007$, H$\alpha$,
+[N\,\textsc{ii}]~$6583$, [S\,\textsc{ii}]~$6716$ and $6731$ or Ly$\alpha$ at one redshift
+above $-0.002$, which admits Galactic nebulae, mark a galaxy, provided that one of them is
+[O\,\textsc{ii}], H$\beta$, [O\,\textsc{iii}]~$5007$ or Ly$\alpha$, or H$\alpha$ beside
+one of those, and that [O\,\textsc{iii}]~$4959$ appears only with $5007$ wherever $5007$
+falls in the spectrum, at a flux ratio $5007/4959$ of $1.5$ to $5$ about the $2.98$ of the
+transition probabilities. The dips, which no galaxy makes, measure how often residuals meet
+this test by chance. A spectrum that holds clean lines of both signs outside the first test
+is defective, and its lines of either sign are set aside. Each galaxy's position is
+matched within $1.5''$ to the Legacy Surveys DR10 catalogue~\cite{Dey2019} and to DESI
+DR1's redshifts~\cite{DESI2025} through the Astro Data Lab~\cite{Fitzpatrick2014}.
+
+\emph{Counterparts.} A galaxy too faint in its other lines shows one line, and the
+imaging may hold it. For every line at $8\sigma$ that the tests leave, peaks and dips
+alike, the Legacy Surveys DR10 sources within $1.5''$ of the fibre and of the position
+$30''$ north of it are read from the Astro Data Lab and the Legacy Survey viewer's
+catalogue service; the excess at the fibres over the northern positions counts the lines
+that come from catalogued sources.
+
+\emph{Exposures.} An spPlate spectrum combines several exposures, each recorded in a
+calibrated frame of the blue camera and one of the red. Every line at $8\sigma$ that the
+tests leave, and every galaxy line at $8\sigma$, is measured again in each frame that
+covers it, with a Gaussian of the frames' instrumental profile, $\sigma=1.2$ pixels,
+placed within three pixels of the line's wavelength. A line that one frame carries, at
+$5\sigma$ or more with over $80$ per cent of the summed squared significance, is a cosmic
+ray or a detector event; one at $4\sigma$ in one camera and below $2\sigma$ in the other,
+where the cameras overlap, is that camera's; one at $2.5\sigma$ or more in two or more
+frames is persistent; the rest are unclear, and a line that fewer than two frames cover
+is left unjudged.
+
+\emph{Recurring positions.} A plate observed on several nights keeps its sky fibres where
+they are, and later plates of a field return to some of its positions. Clean lines at one
+position, friends of friends within $1.5''$, recur when they fall on two or more
+plate-nights within $3\times10^{-4}$ in $\log\lambda$; a line that recurs at the same
+wavelength at another position as well is the sky's. The dips, counted the same way, are
+the null.
+
+% =============================================================================
+\section{Results}\label{sec:results}
+% =============================================================================
+
+\subsection{Peaks and dips}
+
+The $381{,}943$ sky spectra hold $115{,}169$ emission-like peaks at $6\sigma$ and
+$75{,}591$ absorption-like dips. The four tests leave $3217$ peaks and $4108$ dips, of
+which $970$ and $1479$ reach $8\sigma$. Table~\ref{tab:counts} follows both signs through
+the tests after detection, under the two-fibre rule and the one-fibre rule.
+
+\begin{table}[t]
+\centering\small
+\caption{Peaks and dips at each stage, under the rule of two other fibres and of one.
+Each later row applies its test to both signs; the counterpart rows give the lines with
+a Legacy Surveys DR10 source within $1.5''$ at the fibre and at the position $30''$
+north, among those the catalogue covers, and the persistent rows the lines of the
+two-fibre rule that hold in two or more of the exposures' frames.}
+\label{tab:counts}
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{Two other fibres} & \multicolumn{2}{c}{One other fibre} \\
+ & Peaks & Dips & Peaks & Dips \\
+\midrule
+Clean at $6\sigma$ & $3217$ & $4108$ & $1633$ & $1874$ \\
+\quad fixed to a fibre & $762$ & $1813$ & $242$ & $847$ \\
+\quad at a galaxy's redshift & $369$ & $22$ & $144$ & $8$ \\
+\quad with lines of both signs & $30$ & $38$ & $17$ & $14$ \\
+\quad the rest & $2056$ & $2235$ & $1230$ & $1005$ \\
+Clean at $8\sigma$ & $970$ & $1479$ & $521$ & $783$ \\
+\quad fixed to a fibre & $287$ & $1114$ & $119$ & $537$ \\
+\quad at a galaxy's redshift & $188$ & $19$ & $78$ & $6$ \\
+\quad with lines of both signs & $10$ & $10$ & $9$ & $4$ \\
+\quad the rest & $485$ & $336$ & $315$ & $236$ \\
+\quad\quad source at the fibre & $181$ & $10$ & $138$ & $6$ \\
+\quad\quad source $30''$ north & $21$ & $28$ & $12$ & $15$ \\
+\quad\quad net of counterparts & $323$ & $354$ & $188$ & $245$ \\
+\quad\quad persistent & $359$ & $241$ & & \\
+\quad\quad\quad net of counterparts & $202$ & $253$ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Lines fixed to a fibre}
+
+A line that one fibre holds on several plates at one wavelength and at different
+positions belongs to the detector, not the sky: $762$ clean peaks, $287$ at $8\sigma$, in
+$131$ fibres, and $1813$ dips, $1114$ at $8\sigma$, recur in the same fibre within three
+pixels on other plates. Fibre $832$ near $9280$\,\AA\ carries $42$ of the peaks, on the red
+camera where the airglow forest is densest, and fibres $10$ at $6600$\,\AA\ and $210$ at
+$4460$\,\AA\ carry $19$ and $17$. The test within a plate cannot find these, since each
+plate holds the fibre once, and three quarters of the dips at $8\sigma$ are of this kind.
+The condition on position keeps on the sky $36$ peaks and one dip that a fibre holds where
+a later plate of the field returns it to the same position.
+
+\subsection{Galaxies}
+
+The redshift test marks $156$ fibres, against $11.6\pm3.5$ when the peaks' wavelengths
+are shuffled among the $325$ fibres that hold two or more, each fibre keeping its count,
+over $200$ realisations, and $4$ among the dips. Without its requirements on H$\alpha$
+and the [O\,\textsc{iii}] ratio it would mark $187$, and $30$ among the dips: H$\alpha$
+with [N\,\textsc{ii}] or [S\,\textsc{ii}] alone ($16$ fibres among the peaks and $11$
+among the dips), [O\,\textsc{iii}]~$4959$ without $5007$ ($11$ and $6$) and the
+[O\,\textsc{iii}] doublet at a ratio outside $1.5$ to $5$ ($4$ and $9$), the forms the
+residuals of the sky subtraction take. Some of the fibres set aside repeat features at
+the same observed wavelengths on other plates, at $9842$ and $10097$\,\AA, $9842$ and
+$9886$\,\AA\ and $9906$ and $10113$\,\AA\ among others, the residuals the subtraction
+leaves between the strong OH lines of the red camera.
+
+Two fibres hold lines at zero redshift, the nebular emission of the Galaxy where a fibre
+crosses it. The other $154$ are galaxies (Table~\ref{tab:galaxies}) at $z=0.016$ to
+$1.069$, median $0.441$ and quartiles $0.33$ and $0.64$, found by
+[O\,\textsc{iii}]~$5007$ in $139$, [O\,\textsc{ii}] in $71$, H$\alpha$ in $56$,
+[O\,\textsc{iii}]~$4959$ in $35$, H$\beta$ in $32$ and [S\,\textsc{ii}] and
+[N\,\textsc{ii}] in one each. The $19$ found by the [O\,\textsc{iii}] doublet alone have
+flux ratios $5007/4959$ of $1.8$ to $4.1$, median $2.7$, about the $2.98$ of the
+transition probabilities. The twelve whose lines all lie above $8300$\,\AA, in the red
+forest, are each H$\beta$ with [O\,\textsc{iii}] or the [O\,\textsc{iii}] doublet. The
+[O\,\textsc{iii}]~$5007$ fluxes run from $3.0\times10^{-17}$ to
+$9.8\times10^{-16}$\,\flux\ with a median of $8.5\times10^{-17}$. Six galaxies were
+observed on two plates or nights, in different fibres, and give the same lines and
+redshift each time.
+
+One hundred and twenty-two of the $154$ have a Legacy Surveys DR10 source within
+$1.5''$, of $r=21.8$ to $24.5$ and median $23.1$: $56$ fitted as round exponentials, $38$
+as point sources, $24$ as exponentials, three as de Vaucouleurs profiles and one as a
+S\'ersic profile. The $32$ without a source lie below the catalogue's depth, so their
+lines are all the imaging and spectroscopy know of them. None has a DESI DR1 redshift
+within $1.5''$: DESI's targets are chosen from the same imaging, and the sky fibres'
+galaxies lie below the selection.
+
+\subsection{What remains}
+
+At $8\sigma$, $10$ peaks and $10$ dips lie in spectra that hold clean lines of both signs,
+and $485$ peaks and $336$ dips are neither fixed to a fibre, at a galaxy's redshift nor in
+such a spectrum. They are single lines in single fibres: a galaxy whose second line falls
+on an airglow line, below threshold or beyond the spectrum, a residual of the sky
+subtraction, or a transmitter would each appear so. Legacy Surveys sources lie within
+$1.5''$ of $181$ of the $480$ peaks the catalogue covers against $21$ at positions $30''$
+north, and of $10$ of the $330$ dips against $28$; scaled to every line, $162$ of the
+peaks are single lines of galaxies the imaging catalogues, while the dips fall at
+catalogued sources less often than at random positions. Net of the counterparts, $323$
+peaks remain against the $336$ dips, or $354$ with the dips' shortfall at sources
+restored, so the peaks fall short of the dips by $13$ to $31$, with an error of $33$.
+Under the one-fibre rule the same counts give $188$ peaks against $236$ to $245$ dips.
+
+The excess of peaks before the counterparts are counted lies at widths of $1.1$ to
+$1.7$ pixels, the instrumental profile and a little wider, $210$ peaks against $101$
+dips, where a galaxy's line falls; below $0.9$ pixels, where a cosmic ray the pipeline
+leaves unmasked would fall, $10$ peaks lie against $13$ dips. The width test alone does
+not set aside a single-pixel spike, since the second moment of the positive part of the
+profile carries the noise beside it: in the package's end-to-end test a one-pixel spike
+at $16\sigma$ on synthetic noise passes at a width of $0.82$ pixels. The dips' tail is
+the longer, $47$ above $16\sigma$ against $27$ peaks, many of them where the blue and
+red cameras' spectra are joined near $6000$\,\AA. Between $6$ and $8\sigma$ the dips
+outnumber the peaks, $1899$ against $1571$, so the residuals do not make the two signs
+equally at low significance, and the comparison is drawn at $8\sigma$, where they do to
+within the counts.
+
+\subsection{Exposure by exposure}
+
+Read in the frames of their exposures, $179$ of the $188$ galaxy lines at $8\sigma$ are
+persistent, seven unclear and two carried by one exposure or one camera, as lines on the
+sky must be, while four of the $19$ dips at a galaxy's redshift are. Of the $485$ peaks
+that remain, $359$ are persistent, $92$ unclear, $25$ carried by one exposure and one by
+one camera, and eight lie on fewer than two frames; of the $336$ dips, $241$ are
+persistent, $35$ unclear, $37$ carried by one exposure and $16$ by one camera, and seven
+lie on fewer than two frames. Legacy Surveys sources lie within $1.5''$ of $175$ of the
+$358$ persistent peaks the catalogue covers against $18$ at the control positions, and of
+$7$ of the $236$ persistent dips against $19$, so net of the counterparts $202$ persistent
+peaks stand against $253$ persistent dips, $52\pm29$ short.
+
+The six strongest peaks that remain, at $36$ to $52\sigma$, have no Legacy Surveys source.
+Four are carried by one exposure and one lies on a single frame. The sixth, at
+$4961.4$\,\AA\ in fibre $562$ of plate $5294$, is [O\,\textsc{iii}]~$4959$ of the
+planetary nebula Abell~31 (PN~G219.1$+$31.2), whose spectrum fills the fibre from
+[Ne\,\textsc{iii}]~$3869$ to [S\,\textsc{iii}]~$9531$ at zero redshift: its brighter lines
+reach $3\sigma$ in two or more of the plate's other sky fibres and are set aside as shared,
+the sky fibres off the nebula hold them as dips where the sky model took in its light, and
+five fainter lines, H$\gamma$, [O\,\textsc{iii}]~$4959$, [Ar\,\textsc{iii}]~$7136$ and
+[S\,\textsc{iii}]~$9069$ and $9531$, remain among the peaks.
+
+\subsection{Lines that recur at one position}
+
+Clean lines fall on two or more plate-nights at one position at $53$ positions among the
+peaks and $28$ among the dips. One line recurs at $37$ of the peak positions and at three
+of the dip positions, and the recurring peaks are $70$ of the $485$ at $8\sigma$, against
+three dips. Five of the $37$, all between $7204$ and $7218$\,\AA, recur at another position
+as well and are the sky's.
+
+The line found most often lies at RA $213.5584^\circ$, Dec $+53.6108^\circ$ in the field
+of the SDSS reverberation-mapping project~\cite{Shen2015}, where plates $7338$, $7339$ and
+$7340$, observed on many nights, and three others put a sky fibre in $94$ spectra between
+2013 and 2020. A line at $4732.6$\,\AA\ is detected in $81$ of them, clean in $54$ and
+among the peaks that remain at $8\sigma$ in $41$, with no Legacy Surveys source at the
+fibre. The $94$ spectra stacked by inverse variance hold it at
+$52\sigma$, centred at $4732.7$\,\AA\ with a flux of $8.5\times10^{-17}$\,\flux\ and a
+width of $287$\,km\,s$^{-1}$ against the $179$\,km\,s$^{-1}$ of the instrumental profile,
+and no other line. Read as [O\,\textsc{ii}] at $z=0.269$, it puts H$\beta$,
+[O\,\textsc{iii}]~$5007$ and H$\alpha$ at $6172$, $6357$ and $8333$\,\AA, where the stack
+holds $-0.02$, $0.00$ and $0.00$ of its flux with errors of $0.01$, while a star-forming
+galaxy's H$\alpha$ is as bright as its [O\,\textsc{ii}] or brighter. Read as
+C\,\textsc{iv} at $z=2.054$, it puts He\,\textsc{ii} and C\,\textsc{iii}] where the stack
+holds $-0.01$ and $0.01\pm0.01$, and read as Mg\,\textsc{ii} at $z=0.690$, it puts
+[O\,\textsc{ii}] and [O\,\textsc{iii}] where the stack holds $-0.06\pm0.03$ and
+$0.05\pm0.02$; an active nucleus would show those lines, and its Mg\,\textsc{ii} is
+broad. Read as Ly$\alpha$ at $z=2.893$, it puts N\,\textsc{v}, C\,\textsc{iv},
+He\,\textsc{ii} and C\,\textsc{iii}] where the stack holds $0.00$ to $0.01\pm0.01$, lines
+that star-forming galaxies at $z\approx3$ show at a few per cent of
+Ly$\alpha$~\cite{Shapley2003}, and its intrinsic width, about $220$\,km\,s$^{-1}$, is that
+of a Ly$\alpha$ emitter: a galaxy at $z=2.893$ below the imaging's depth, resolved where a
+transmitter's line is not.
+
+The second, [O\,\textsc{iii}]~$5007$ at $7775.0$\,\AA, recurs at RA $29.4755^\circ$, Dec
+$+27.5883^\circ$ on all seven plate-nights of plates $7691$ and $10000$ that hold a clean
+line there, with H$\beta$ beside it on one, which places it in
+Table~\ref{tab:galaxies} at $z=0.5525$. The other $35$ positions repeat a line on two or
+three plate-nights, and $15$ of their $26$ lines at $8\sigma$ have a Legacy Surveys source
+within $1.5''$ against one at the control positions.
+
+\subsection{Sensitivity}
+
+The line flux at the $6\sigma$ threshold, read from each clean peak's flux and
+significance, has a median of $6.0\times10^{-17}$\,\flux\ and a $10$--$90$ per cent
+range of $3.4\times10^{-17}$ to $2.7\times10^{-16}$: $6.2\times10^{-17}$ from $3600$ to
+$5000$\,\AA, $5.0\times10^{-17}$ from $5000$ to $7000$, $4.8\times10^{-17}$ from $7000$
+to $9000$ and $1.5\times10^{-16}$ beyond $9000$\,\AA, where the airglow lines crowd. At
+$8\sigma$ the median is $8.0\times10^{-17}$\,\flux. An isotropic source giving that flux
+has a luminosity of $9.5\times10^{16}$\,W at $10$\,pc, $9.5\times10^{18}$\,W at
+$100$\,pc and $9.5\times10^{20}$\,W at $1$\,kpc, and a transmitter aimed at Earth through
+a diffraction-limited $10$\,m aperture at the median wavelength of $7013$\,\AA\ needs
+$37$\,W, $3.7$\,kW and $370$\,kW; its beam is $0.14$\,au wide at $10$\,pc and $1.4$\,au
+at $100$\,pc, so within $100$\,pc it must be held on the Earth's position at arrival,
+and beyond it a beam on the Sun covers the Earth as well.
+
+Lines of the instrumental profile injected into the sky fibres of $40$ plates spread
+through the list, one per fibre at a random unmasked pixel off the airglow lines and
+$1727$ at each strength, are recovered as clean peaks under the two-fibre rule in $56$
+per cent of cases at the threshold and $70$ to $74$ per cent at $1.5$ to $5$ times it,
+and under the one-fibre rule in $30$ and $36$ to $38$ per cent; the loss is the test
+against the other fibres, whose residuals reach $3\sigma$ within a pixel of a given
+position in some fibre often enough to read a line as shared. On synthetic plates of
+white noise the same detector recovers lines at $10\sigma$ in $99$ and $84$ per cent of
+cases under the two rules, so the loss in the data is the residuals'. At $8\sigma$, one
+third above the threshold, the two-fibre rule recovers about $0.68$ of lines.
+
+The fibres are $2''$ across and cover $0.093$\,deg$^2$ in all, so the search bounds the
+density of transmitters on the sky rather than any chosen star. The excess of peaks over
+dips at $8\sigma$, below zero with an error of $33$, puts the number of transmitter lines
+below $54$ at $95$ per cent confidence, the larger of zero and the excess plus $1.645$
+times its error, and with $0.68$ of lines recovered, fewer than about $850$ transmitters
+per square degree give lines above $8\times10^{-17}$\,\flux\ at these wavelengths,
+$3.5\times10^{7}$ over the sky. A transmitter that shines through a plate's exposures
+persists in its frames as $95$ per cent of the galaxies' lines do, which leaves $0.65$ of
+its lines recovered at $8\sigma$, and the persistent peaks, $52\pm29$ short of the
+persistent dips, put fewer than $47$ such lines in the data and fewer than about $790$
+such transmitters on each square degree.
+
+\begin{center}\small
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{lrrr>{\raggedright\arraybackslash}p{3.9cm}rl}
+\caption{The $154$ galaxies and two Galactic fibres: plate, MJD and fibre; the fibre's
+position; the redshift; the lines found at it; the strongest line's signal-to-noise
+ratio; and the Legacy Surveys DR10 source within $1.5''$, with its profile type and
+$r$.}\label{tab:galaxies}\\
+\toprule
+Plate-MJD-fibre & RA & Dec & $z$ & Lines & S/N & Legacy Surveys \\
+\midrule
+\endfirsthead
+\toprule
+Plate-MJD-fibre & RA & Dec & $z$ & Lines & S/N & Legacy Surveys \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\input{table_galaxies}
+\end{longtable}
+\end{center}
+
+% =============================================================================
+\section{Related work}\label{sec:related}
+% =============================================================================
+
+Spectroscopic laser searches have examined stars: $577$ with Keck~\cite{ReinesMarcy2002},
+$5600$ with thresholds of megawatts~\cite{TellisMarcy2017} and the Automated Planet
+Finder's targets~\cite{Zuckerman2023}. Sky fibres serve the surveys as a measure of the
+sky, and their residuals are studied to improve its subtraction~\cite{Bolton2012}; the
+sky spectra themselves have been mined for the diffuse Galactic light, by correlating
+$92{,}000$ SDSS sky spectra with the far-infrared dust emission~\cite{BrandtDraine2012},
+$250{,}000$ BOSS sky spectra~\cite{Chellew2022} and $10.8$ million DESI sky
+fibres~\cite{Saydjari2026}, whose line lists of the airglow and the nebular sky are the
+reference for what a single sky fibre holds. We find no earlier search of sky fibres
+for unresolved lines in single fibres, nor a catalogue of the galaxies they record.
+
+% =============================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =============================================================================
+
+No unresolved emission line in the $381{,}943$ sky-fibre spectra of the BOSS and eBOSS
+plates stands above the residuals of the sky subtraction once every test is applied to
+peaks and dips alike and the single lines of catalogued galaxies are counted: at
+$8\sigma$, $323$ peaks remain against $336$ dips, and of the lines that hold through the
+exposures, $202$ peaks against $253$ dips. Galaxies and nebulae are what the blank sky
+holds: $154$ galaxies found by two or more lines at one redshift where residuals meet the
+same test four times, a fifth of them below the Legacy Surveys' depth, two Galactic fibres,
+the planetary nebula Abell~31, and a Ly$\alpha$ emitter at $z=2.893$ that one sky position
+shows on $54$ plate-nights. The search bounds a transmitter in a sky fibre at a line flux of
+$8\times10^{-17}$\,\flux, kilowatts through a $10$\,m aperture at $100$\,pc, and such
+transmitters to fewer than about $850$ per square degree. The same search runs unchanged
+on the sky fibres of DESI, whose $5000$ fibres place several hundred on blank sky in
+every tile, and on the integral-field cubes of MaNGA and SAMI, which cover blank sky
+around every target; the data behind every number here, each peak and dip with its tests
+and counterparts, are published with the paper.
+
+\section*{Acknowledgements}
+
+This work uses data of the Sloan Digital Sky Survey IV (DR17), the Legacy Surveys DR10
+and DESI DR1, through the SDSS Science Archive Server, NOIRLab's Astro Data Lab and the
+Legacy Survey viewer, and the software NumPy, SciPy and astropy.
+
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
+
+\bibitem{ReinesMarcy2002}
+A.~E. Reines and G.~W. Marcy, Optical search for extraterrestrial intelligence: a
+spectroscopic search for laser emission from nearby stars, \emph{Publ. Astron. Soc. Pac.}
+\textbf{114}, 416 (2002).
+
+\bibitem{TellisMarcy2017}
+N.~K. Tellis and G.~W. Marcy, A search for laser emission with megawatt thresholds from
+5600 FGKM stars, \emph{Astron. J.} \textbf{153}, 251 (2017).
+
+\bibitem{Zuckerman2023}
+A.~Zuckerman, Z.~Ko, H.~Isaacson, et al., The Breakthrough Listen search for
+intelligent life: a laser search pipeline for the Automated Planet Finder,
+\emph{Astron. J.} \textbf{165}, 114 (2023).
+
+\bibitem{BrandtDraine2012}
+T.~D. Brandt and B.~T. Draine, The spectrum of the diffuse Galactic light: the Milky
+Way in scattered light, \emph{Astrophys. J.} \textbf{744}, 129 (2012).
+
+\bibitem{Chellew2022}
+B.~Chellew, T.~D. Brandt, B.~S. Hensley, B.~T. Draine and E.~Matthaey, An optical
+spectrum of the diffuse Galactic light from BOSS and IRIS, \emph{Astrophys. J.}
+\textbf{932}, 112 (2022).
+
+\bibitem{Saydjari2026}
+A.~K. Saydjari, B.~T. Draine, T.~D. Brandt, et al., Spatially-resolved spectra of
+diffuse Galactic light using 10.8\,M DESI sky fibers, arXiv:2608.28740 (2026).
+
+\bibitem{Dawson2013}
+K.~S. Dawson, D.~J. Schlegel, C.~P. Ahn, et al., The Baryon Oscillation Spectroscopic
+Survey of SDSS-III, \emph{Astron. J.} \textbf{145}, 10 (2013).
+
+\bibitem{Dawson2016}
+K.~S. Dawson, J.-P. Kneib, W.~J. Percival, et al., The SDSS-IV extended Baryon
+Oscillation Spectroscopic Survey: overview and early data, \emph{Astron. J.}
+\textbf{151}, 44 (2016).
+
+\bibitem{Smee2013}
+S.~A. Smee, J.~E. Gunn, A.~Uomoto, et al., The multi-object, fiber-fed spectrographs for
+the Sloan Digital Sky Survey and the Baryon Oscillation Spectroscopic Survey,
+\emph{Astron. J.} \textbf{146}, 32 (2013).
+
+\bibitem{Abdurrouf2022}
+Abdurro'uf, K.~Accetta, C.~Aerts, et al., The seventeenth data release of the Sloan
+Digital Sky Surveys: complete release of MaNGA, MaStar, and APOGEE-2 data,
+\emph{Astrophys. J. Suppl.} \textbf{259}, 35 (2022).
+
+\bibitem{Dey2019}
+A.~Dey, D.~J. Schlegel, D.~Lang, et al., Overview of the DESI Legacy Imaging Surveys,
+\emph{Astron. J.} \textbf{157}, 168 (2019).
+
+\bibitem{DESI2025}
+DESI Collaboration, Data Release 1 of the Dark Energy Spectroscopic Instrument,
+arXiv:2503.14745 (2025).
+
+\bibitem{Fitzpatrick2014}
+M.~J. Fitzpatrick, K.~Olsen, F.~Economou, et al., The NOAO Data Laboratory: a conceptual
+overview, \emph{Proc. SPIE} \textbf{9149}, 91491T (2014).
+
+\bibitem{Bolton2012}
+A.~S. Bolton, D.~J. Schlegel, \'E. Aubourg, et al., Spectral classification and redshift
+measurement for the SDSS-III Baryon Oscillation Spectroscopic Survey, \emph{Astron. J.}
+\textbf{144}, 144 (2012).
+
+\bibitem{Shen2015}
+Y.~Shen, W.~N. Brandt, K.~S. Dawson, et al., The Sloan Digital Sky Survey Reverberation
+Mapping Project: technical overview, \emph{Astrophys. J. Suppl.} \textbf{216}, 4 (2015).
+
+\bibitem{Shapley2003}
+A.~E. Shapley, C.~C. Steidel, M.~Pettini and K.~L. Adelberger, Rest-frame ultraviolet
+spectra of $z\sim3$ Lyman break galaxies, \emph{Astrophys. J.} \textbf{588}, 65 (2003).
+
+\end{thebibliography}
+
+\end{document}
