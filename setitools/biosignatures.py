@@ -1608,7 +1608,426 @@ def rockyworlds_cli():
     core.run_cli(rockyworlds_main)
 
 
+shoreline_DOC = r"""Atmospheres of the rocky planets of red dwarfs: every archived high-resolution spectrum taken during a transit of a planet below 1.8 Earth radii of a star cooler than 4000 K within 50 pc (ESO HARPS, ESPRESSO, NIRPS, CRIRES and UVES; CFHT SPIRou through the CADC; Keck NIRSPEC through KOA), each night's out-of-transit spectra as the star, each in-transit residual shifted into the planet's frame along its orbital velocity and weighted by the transit's light curve, and the absorption at He I 10830, H alpha and Na D read against the same statistic from sham transits (every run of consecutive out-of-transit spectra in the transit's number, then random draws) and from the velocity trail reversed, which keeps the star's own transit distortion and loses the planet; the 229 HARPS spectra of the Moon through the Venus transit of 2012 June 6 run as a transiting planet without an exosphere. Each test is one row of the record, its target the planet's followed by # and the instrument and line.
+
+    python -I seti.py biosignatures shoreline plan                          archives queried, transits matched: ROOT/plan.json
+    python -I seti.py biosignatures shoreline fetch [--streams 2] [--planets NAME ...] [--no-venus] [--night-per-in 2]
+    python -I seti.py biosignatures shoreline [record] [--sigma 3] [--half-kms 12] [--inject 0] [--draws 200]"""
+
+shoreline_ROOT = core.data("shoreline")
+# air wavelengths (A): the He I 10830 triplet's two strong components, H alpha, the Na D pair and Ca II H and K
+shoreline_LINES = {"HeI": (10830.25, 10830.34), "Halpha": (6562.80,), "NaD": (5889.95, 5895.92)}
+# sky emission at the telescope's wavelengths (A, air): the sodium nightglow doublet and the OH lines beside the helium triplet
+shoreline_SKY = (5889.95, 5895.92, 10832.10, 10834.33, 10828.05)
+shoreline_VGRID = np.arange(-300.0, 300.001, 0.5)
+shoreline_C = 299792.458
+shoreline_CADC_FILE = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/CFHT/"
+# the Venus transit of 2012 June 5-6 in sunlight off the Moon: mid-transit, duration (h), radius ratio and Venus's line-of-sight speed, near zero at inferior conjunction
+shoreline_VENUS = dict(pl_name="Venus (Moon)", hostname="Moon", pl_tranmid=2456084.563, pl_orbper=224.701, pl_trandur=6.67, pl_ratror=0.0087, pl_orbsmax=0.7233,
+                       st_radv=0.0, mjd_lo=56083.8, mjd_hi=56084.4)
+
+
+def shoreline_planets():
+    """The transiting planets below 1.8 Earth radii of stars cooler than 4000 K within 50 pc with their ephemerides, radius ratios, axes and systemic velocities."""
+    rows = core.exoplanets("SELECT pl_name, hostname, ra, dec, sy_dist, st_teff, st_rad, st_mass, st_radv, pl_rade, pl_ratror, pl_orbsmax, pl_orbper, "
+                           "pl_tranmid, pl_trandur, pl_eqt, sy_vmag, sy_jmag FROM pscomppars WHERE tran_flag = 1 AND pl_rade < 1.8 AND st_teff < 4000 "
+                           "AND sy_dist < 50 ORDER BY sy_dist")
+    out = []
+    for r in rows:
+        p = {k: (r[k] if k in ("pl_name", "hostname") else core.num(r[k])) for k in r}
+        if p["pl_tranmid"] is None or p["pl_orbper"] is None or p["pl_trandur"] is None:
+            continue
+        if p["pl_ratror"] is None and p["pl_rade"] and p["st_rad"]:
+            p["pl_ratror"] = p["pl_rade"] * 6371.0 / (p["st_rad"] * 695700.0)
+        if p["pl_orbsmax"] is None and p["st_mass"]:
+            p["pl_orbsmax"] = (p["st_mass"] * (p["pl_orbper"] / 365.25) ** 2) ** (1.0 / 3.0)
+        out.append(p)
+    return out
+
+
+def shoreline_archive(ra, dec):
+    """Every archived spectrum of a position from the ESO, CADC and KOA archives."""
+    return core.archive_spectra(ra, dec)
+
+
+def shoreline_weight(t0, t1, tc, per, dur, k):
+    """The fraction of the planet's disc in front of the star averaged over an exposure: a trapezoid of the transit's duration (d) with ingress k/(1+k) of it, at the exposure's nearest transit."""
+    t = np.linspace(t0, t1, 24)
+    n = np.round((0.5 * (t0 + t1) - tc) / per)
+    x = np.abs(t - (tc + n * per))
+    tau = dur * k / (1.0 + k)
+    w = np.clip((dur / 2.0 - x) / max(tau, 1e-6), 0.0, 1.0)
+    return float(w.mean()), float(tc + n * per)
+
+
+def shoreline_match(p, rows):
+    """A planet's archived spectra by instrument: those overlapping a transit with their weights and epochs, and those of the same nights outside it."""
+    tc, per, dur, k = p["pl_tranmid"] - 2400000.5, p["pl_orbper"], p["pl_trandur"] / 24.0, p["pl_ratror"] or 0.05
+    out = {}
+    for r in rows:
+        w, t = shoreline_weight(r["t0"], r["t1"], tc, per, dur, k)
+        d = out.setdefault(r["inst"], dict(src=r["src"], inside=[], night=[]))
+        if w > 0:
+            d["inside"].append(dict(r, w=w, epoch=t))
+        elif abs(0.5 * (r["t0"] + r["t1"]) - t) < 0.5:
+            d["night"].append(dict(r, epoch=t))
+    return {i: d for i, d in out.items() if d["inside"]}
+
+
+def shoreline_plan():
+    """The planets with their archived spectra matched to their transits, into ROOT/plan.json, with the archive answers kept in ROOT/archives.json."""
+    os.makedirs(shoreline_ROOT, exist_ok=True)
+    planets = shoreline_planets()
+    hosts = {}
+    for p in planets:
+        hosts.setdefault(p["hostname"], dict(ra=p["ra"], dec=p["dec"]))
+    apath = os.path.join(shoreline_ROOT, "archives.json")
+    arch = json.load(open(apath)) if os.path.exists(apath) else {}
+    today = time.strftime("%Y-%m-%d")
+    for name in arch:
+        arch[name] = [r for r in arch[name] if r["src"] != "CADC" or (r["id"].endswith("t") and (r.get("release") or "")[:10] <= today)]
+    todo = sorted(h for h in hosts if h not in arch)
+
+    def one(name):
+        try:
+            return name, shoreline_archive(hosts[name]["ra"], hosts[name]["dec"]), None
+        except Exception as e:
+            return name, None, str(e)[:200]
+    errors = {}
+    for name, rows, err in core.pmap(one, todo, 4):
+        if rows is None:
+            errors[name] = err
+        else:
+            arch[name] = rows
+    # a host answered before KOA listed its frames is asked KOA alone
+    for name in [h for h in hosts if h in arch and not any(r["src"] == "KOA" for r in arch[h])]:
+        try:
+            arch[name] = arch[name] + core.koa_spectra(hosts[name]["ra"], hosts[name]["dec"])
+        except Exception as e:
+            errors[name] = str(e)[:200]
+    json.dump(arch, open(apath, "w"))
+    plan = []
+    for p in planets:
+        m = shoreline_match(p, arch.get(p["hostname"], []))
+        if m:
+            plan.append(dict(p, instruments=m))
+    venus = dict(shoreline_VENUS, instruments={})
+    moon = [r for r in core.tap("eso", "SELECT dp_id, instrument_name, t_min, t_max, t_exptime, snr FROM ivoa.ObsCore WHERE dataproduct_type = 'spectrum' AND "
+                                       "target_name = 'Moon' AND t_min > %f AND t_min < %f" % (shoreline_VENUS["mjd_lo"], shoreline_VENUS["mjd_hi"]))]
+    venus["instruments"] = shoreline_match(venus, [dict(src="ESO", inst=r["instrument_name"], id=r["dp_id"], t0=float(r["t_min"]), t1=float(r["t_max"]),
+                                                        exp=core.num(r["t_exptime"]), lo=None, hi=None, snr=core.num(r["snr"])) for r in moon])
+    plan.append(venus)
+    json.dump(plan, open(os.path.join(shoreline_ROOT, "plan.json"), "w"), indent=1)
+    print("%d planets of %d stars; %d stars with archived spectra (%d archives not answering); %d planets with a transit covered"
+          % (len(planets), len(hosts), sum(1 for h in hosts if arch.get(h)), len(errors), len(plan) - 1))
+    print("%-16s %-9s %7s %6s %6s   %s" % ("planet", "inst", "transits", "in", "night", "mid-transit MJDs"))
+    for p in plan:
+        for inst, d in sorted(p["instruments"].items()):
+            ep = sorted({round(x["epoch"], 2) for x in d["inside"]})
+            print("%-16s %-9s %7d %6d %6d   %s" % (p["pl_name"], inst, len(ep), len(d["inside"]), len(d["night"]), " ".join("%.2f" % e for e in ep[:6])))
+
+
+def shoreline_path(r):
+    """Where a spectrum lives under ROOT/spectra."""
+    return os.path.join(shoreline_ROOT, "spectra", r["inst"], re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+
+
+def shoreline_fetch(streams=2, planets=(), venus=True, night_per_in=2.0):
+    """The in-transit spectra of every planned planet (or the named ones) with, per transit, the same night's out-of-transit spectra nearest the transit up to NIGHT_PER_IN times their number, from ESO and the CADC, SPIRou as its telluric-corrected product, on STREAMS connections; KOA frames are listed only."""
+    plan = json.load(open(os.path.join(shoreline_ROOT, "plan.json")))
+    want = []
+    for p in plan:
+        if (planets and p["pl_name"] not in planets) or (p["hostname"] == "Moon" and not venus):
+            continue
+        for inst, d in p["instruments"].items():
+            inside = [r for r in d["inside"] if r["src"] in ("ESO", "CADC")]
+            want += inside
+            for epoch in sorted({r["epoch"] for r in inside}):
+                n = sum(1 for r in inside if r["epoch"] == epoch)
+                night = sorted((r for r in d["night"] if r["src"] in ("ESO", "CADC") and r["epoch"] == epoch), key=lambda r: abs(0.5 * (r["t0"] + r["t1"]) - epoch))
+                want += night[:max(int(night_per_in * n), 4)]
+    seen, todo = set(), []
+    for r in want:
+        if r["id"] not in seen and not os.path.exists(shoreline_path(r)):
+            seen.add(r["id"])
+            todo.append(r)
+
+    def one(r):
+        path = shoreline_path(r)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        try:
+            if r["src"] == "ESO":
+                return core.eso_download(r["id"], path)
+            b = core.get(shoreline_CADC_FILE + r["id"] + ".fits", timeout=600, soft=True)
+            if b and b[:6] == b"SIMPLE":
+                open(path + ".tmp", "wb").write(b)
+                os.replace(path + ".tmp", path)
+                return True
+        except Exception:
+            pass
+        return False
+    got = sum(1 for ok in core.pmap(one, todo, streams) if ok)
+    print("%d spectra wanted, %d already here, %d fetched, %d failed" % (len(want), len(want) - len(todo), got, len(todo) - got))
+
+
+def shoreline_load(path):
+    """A spectrum as air wavelengths (A) in the barycentric frame, flux and error, with its mid-time (MJD), the pipeline's stellar velocity (km/s) where the header holds one, and its instrument."""
+    from astropy.io import fits
+    from setitools import science
+    with fits.open(path) as h:
+        H = h[0].header
+        inst = str(H.get("INSTRUME", "")).strip()
+        mjd = float(H.get("MJD-OBS", np.nan)) + float(H.get("EXPTIME", 0)) / 172800.0
+        rv, rv_ob = None, None
+        # the pipeline's own velocity where the product carries one; the observing block's target velocity kept apart, since observers leave it
+        # at zero, at 99999 or at a guess
+        for key in ("HIERARCH ESO QC CCF RV", "HIERARCH ESO DRS CCF RVC", "HIERARCH ESO DRS CCF RV"):
+            if key in H and np.isfinite(float(H[key])):
+                rv = float(H[key])
+                break
+        ob = core.num(H.get("HIERARCH ESO TEL TARG RADVEL"))
+        if ob is not None and 0.0 < abs(ob) < 500.0:
+            rv_ob = ob
+        if inst.upper().startswith("SPIROU") or "SPIROU" in str(H.get("INSTRUME", "")).upper() or len(h) > 1 and h[1].name in ("FluxA", "FLUXA"):
+            # the CADC t product: per-order flux (telluric corrected), wavelength (nm, vacuum) and blaze in image extensions
+            ext = {x.name.upper(): x for x in h[1:]}
+            f = np.asarray(ext["FLUXA"].data if "FLUXA" in ext else h[1].data, float)
+            w = np.asarray(ext["WAVEA"].data, float) * 10.0
+            bl = np.asarray(ext["BLAZEA"].data, float) if "BLAZEA" in ext else np.ones_like(f)
+            with np.errstate(all="ignore"):
+                f = f / bl
+            e = np.sqrt(np.abs(f))
+            order = np.argsort(w.ravel())
+            w, f, e = w.ravel()[order], f.ravel()[order], e.ravel()[order]
+            w = science.vac_to_air(w)
+            # the product's wavelengths are the observatory's; the barycentric correction and the order 35 signal-to-noise sit in the
+            # image extensions' headers, the primary carrying only the observing block's values
+            H1 = h[1].header if len(h) > 1 else {}
+            berv = next((float(x[k]) for x in (H, H1) for k in ("BERV",) if k in x and np.isfinite(float(x[k]))), None)
+            if berv is None:
+                berv = science.barycentric_correction(float(H["RA_DEG"]), float(H["DEC_DEG"]), mjd, "CFHT") if "RA_DEG" in H else 0.0
+            w = w * (1.0 + berv / shoreline_C)
+            rv = rv if rv is not None else next((float(x[k]) for x in (H, H1) for k in ("CCFRV",) if k in x and np.isfinite(float(x[k]))), None)
+            snr = next((float(x[k]) for x in (H1, H) for k in ("EXTSN035", "SNR35", "SPEMSNR") if k in x and np.isfinite(float(x[k]))), np.nan)
+            return w, f, e, dict(mjd=mjd, rv=rv, inst="SPIRou", snr=snr, berv=berv, ra=core.num(H.get("RA_DEG")), dec=core.num(H.get("DEC_DEG")))
+        t = h[1].data
+        names = {n.upper(): n for n in t.columns.names}
+        wname = names.get("WAVE_AIR") or names.get("WAVE") or t.columns.names[0]
+        w = np.asarray(t[wname][0], float)
+        f = np.asarray(t[names["FLUX"]][0] if "FLUX" in names else t[t.columns.names[1]][0], float)
+        e = np.asarray(t[names["ERR"]][0], float) if "ERR" in names else np.sqrt(np.abs(f))
+        if not np.any(np.isfinite(e) & (e > 0)):
+            # a product without errors (the older HARPS reductions) takes the photon-counting proxy
+            e = np.sqrt(np.abs(f))
+        ucd = str(h[1].header.get("TUCD%d" % (t.columns.names.index(wname) + 1), ""))
+        unit = str(h[1].header.get("TUNIT%d" % (t.columns.names.index(wname) + 1), "")).strip().lower()
+        spec = str(H.get("SPECSYS", h[1].header.get("SPECSYS", ""))).upper()
+        berv = None
+        for key in ("HIERARCH ESO QC BERV", "HIERARCH ESO DRS BERV"):
+            if key in H:
+                berv = float(H[key])
+                break
+        if berv is None:
+            site = "Paranal" if inst.upper() in ("ESPRESSO", "UVES", "CRIRES", "XSHOOTER") else "LaSilla"
+            berv = science.barycentric_correction(float(H["RA"]), float(H["DEC"]), mjd, site)
+        snr = float(H.get("SNR", np.nan))
+        ra, dec = core.num(H.get("RA")), core.num(H.get("DEC"))
+    if unit == "nm":
+        w = w * 10.0
+    elif unit in ("um", "micron", "micrometer", "micrometre") or w.max() < 100:
+        w = w * 1e4
+    if "obs.atmos" not in ucd and wname.upper() != "WAVE_AIR":
+        w = science.vac_to_air(w)
+    if not spec.startswith("BARY"):
+        w = w * (1.0 + berv / shoreline_C)
+    return w, f, e, dict(mjd=mjd, rv=rv, rv_ob=rv_ob, inst=inst, snr=snr, berv=berv, ra=ra, dec=dec)
+
+
+def shoreline_window(w, f, e, line, vsys, berv=0.0):
+    """A spectrum's flux and error around a line on the velocity grid in the star's frame, each normalised by its median, NaN where the spectrum has no sample and within 6 km/s of a sky emission line at the telescope's wavelength."""
+    lam = line * (1.0 + vsys / shoreline_C)
+    wl = lam * (1.0 + shoreline_VGRID / shoreline_C)
+    j = (w > wl[0] - 1.0) & (w < wl[-1] + 1.0) & np.isfinite(f) & (f > 0)
+    if j.sum() < 20:
+        return None, None
+    fi = np.interp(wl, w[j], f[j], left=np.nan, right=np.nan)
+    ei = np.interp(wl, w[j], e[j], left=np.nan, right=np.nan)
+    m = np.nanmedian(fi)
+    if not np.isfinite(m) or m <= 0:
+        return None, None
+    for sky in shoreline_SKY:
+        v = shoreline_C * (sky * (1.0 + berv / shoreline_C) / lam - 1.0)
+        if abs(v) < 320.0:
+            fi[np.abs(shoreline_VGRID - v) < 6.0] = np.nan
+    return fi / m, ei / m
+
+
+def shoreline_trail(R, E, v, half):
+    """The weighted mean of residual windows each shifted into a frame moving at v (km/s), the mean within +-half of the line, the mean of the side bands 30-80 km/s away, and their difference: absorption when positive."""
+    acc, wsum = np.zeros_like(shoreline_VGRID), np.zeros_like(shoreline_VGRID)
+    for r, e, vi, wi in zip(R, E, v, half[1]):
+        s = np.interp(shoreline_VGRID, shoreline_VGRID - vi, r, left=np.nan, right=np.nan)
+        se = np.interp(shoreline_VGRID, shoreline_VGRID - vi, e, left=np.nan, right=np.nan)
+        ok = np.isfinite(s) & np.isfinite(se) & (se > 0)
+        wt = np.where(ok, wi / np.where(ok, se, 1.0) ** 2, 0.0)
+        acc += np.where(ok, s, 0.0) * wt
+        wsum += wt
+    with np.errstate(all="ignore"):
+        T = acc / wsum
+    core_ = np.abs(shoreline_VGRID) <= half[0]
+    side = (np.abs(shoreline_VGRID) >= 30.0) & (np.abs(shoreline_VGRID) <= 80.0)
+    return T, float(np.nanmean(T[side]) - np.nanmean(T[core_]))
+
+
+def shoreline_planet(p, inst, d, half_kms, draws, inject, rng):
+    """One planet and instrument: the absorption at each line in the planet's frame from its in-transit spectra against the night's (else the star's) out-of-transit ones, the null from sham transits and random draws, and the trail reversed."""
+    tc, per, k = p["pl_tranmid"] - 2400000.5, p["pl_orbper"], p["pl_ratror"] or 0.05
+    kp = 2 * np.pi * (p["pl_orbsmax"] or 0.02) * 1.495978707e8 / (per * 86400.0)
+    spectra = []
+    for r in d["inside"] + d["night"]:
+        path = shoreline_path(r)
+        if not os.path.exists(path):
+            continue
+        try:
+            w, f, e, meta = shoreline_load(path)
+        except Exception:
+            continue
+        inside = "w" in r
+        spectra.append(dict(w=w, f=f, e=e, meta=meta, inside=inside, weight=r.get("w", 0.0), epoch=r["epoch"]))
+    n_in = sum(1 for s in spectra if s["inside"])
+    n_out = len(spectra) - n_in
+    # fewer than four spectra on either side give neither a trail, a master nor a null
+    if n_in < 4 or n_out < 4:
+        return None, n_in, n_out
+    rvs = [s["meta"]["rv"] for s in spectra if s["meta"]["rv"] is not None]
+    vsys = float(np.median(rvs)) if rvs else (p.get("st_radv") or 0.0)
+    out = {}
+    for name, lines in shoreline_LINES.items():
+        res = []
+        for line in lines:
+            W = [shoreline_window(s["w"], s["f"], s["e"], line, vsys, s["meta"].get("berv", 0.0)) for s in spectra]
+            if any(x[0] is None for x in W):
+                continue
+            F = np.array([x[0] for x in W])
+            E = np.array([x[1] for x in W])
+            ins = np.array([s["inside"] for s in spectra])
+            master = np.nanmedian(F[~ins], axis=0)
+            with np.errstate(all="ignore"):
+                R, ER = F / master, E / master
+            # each night's slow drift, a line in time fitted per velocity bin to its out-of-transit residuals, taken out of every spectrum
+            epochs = np.array([s["epoch"] for s in spectra])
+            mjds = np.array([s["meta"]["mjd"] for s in spectra])
+            for ep in np.unique(epochs):
+                night, outs_n = epochs == ep, (epochs == ep) & ~ins
+                if outs_n.sum() >= 4:
+                    x = mjds[night] - ep
+                    xo = mjds[outs_n] - ep
+                    Ro = R[outs_n]
+                    trend = np.ones((night.sum(), R.shape[1]))
+                    for b in range(R.shape[1]):
+                        good = np.isfinite(Ro[:, b])
+                        if good.sum() > 2:
+                            trend[:, b] = np.polyval(np.polyfit(xo[good], Ro[good, b], 1), x)
+                    R[night] = R[night] / np.where(np.isfinite(trend) & (trend > 0), trend, 1.0)
+            phase = np.array([(s["meta"]["mjd"] - s["epoch"]) / per for s in spectra])
+            vp = kp * np.sin(2 * np.pi * phase)
+            wt = np.array([s["weight"] for s in spectra])
+            if inject:
+                # an absorption of depth INJECT at the line in the planet's frame laid into the in-transit residuals before the test
+                for i in np.where(ins)[0]:
+                    R[i] *= 1.0 - inject * wt[i] * np.exp(-0.5 * ((shoreline_VGRID - vp[i]) / 4.0) ** 2)
+            T, a = shoreline_trail(R[ins], ER[ins], vp[ins], (half_kms, wt[ins]))
+            _, a_rev = shoreline_trail(R[ins], ER[ins], -vp[ins], (half_kms, wt[ins]))
+            span = float(vp[ins].max() - vp[ins].min())
+            # the null: every block of consecutive out-of-transit spectra in the transit's number, a sham transit carrying the night's drifts, then random draws
+            null = []
+            outs = np.where(~ins)[0]
+            order = outs[np.argsort([spectra[i]["meta"]["mjd"] for i in outs])]
+            for j in range(0, len(order) - n_in + 1):
+                null.append(shoreline_trail(R[order[j:j + n_in]], ER[order[j:j + n_in]], vp[ins], (half_kms, wt[ins]))[1])
+            for _ in range(draws):
+                pick = rng.choice(outs, size=n_in, replace=len(outs) < n_in)
+                null.append(shoreline_trail(R[pick], ER[pick], vp[ins], (half_kms, wt[ins]))[1])
+            null = np.array(null)
+            res.append(dict(line=line, a=a, a_rev=a_rev, span=span, null_sd=float(np.std(null)), null_mean=float(np.mean(null)), p=float(np.mean(null >= a))))
+        if res:
+            a = float(np.mean([r["a"] for r in res]))
+            sd = float(np.sqrt(np.mean([r["null_sd"] ** 2 for r in res]) / len(res)))
+            out[name] = dict(a=a, a_rev=float(np.mean([r["a_rev"] for r in res])), sd=sd, z=a / sd if sd > 0 else 0.0,
+                             p=float(np.mean([r["p"] for r in res])), span=res[0]["span"], lines=res)
+    return dict(vsys=vsys, kp=kp, n_in=n_in, n_out=n_out, lines=out), n_in, n_out
+
+
+def shoreline_main(record=False, sigma=3.0, half_kms=12.0, inject=0.0, draws=200, planets=[]):
+    plan = json.load(open(os.path.join(shoreline_ROOT, "plan.json")))
+    rng = np.random.default_rng(1)
+    rows, found, tested, controls = [], [], set(), 0
+    print("%-16s %-9s %4s %4s  %s" % ("planet", "inst", "in", "out", "absorption (per cent) and sigma at each line; reversed trail in brackets"))
+    for p in plan:
+        if planets and p["pl_name"] not in planets:
+            continue
+        for inst, d in sorted(p["instruments"].items()):
+            r, n_in, n_out = shoreline_planet(p, inst, d, half_kms, draws, inject, rng)
+            if r is None:
+                if n_in:
+                    print("%-16s %-9s %4d %4d  fewer than four %s spectra" % (p["pl_name"], inst, n_in, n_out, "in-transit" if n_in < 4 else "out-of-transit"))
+                continue
+            cells, hits = [], []
+            for name, x in r["lines"].items():
+                cells.append("%s %+.3f +- %.3f (%+.3f) %.1f sigma" % (name, 100 * x["a"], 100 * x["sd"], 100 * x["a_rev"], x["z"]))
+                # a claim needs the reversed trail to fall short of the planet's by the threshold, which a trail moving less than the
+                # window's width cannot give, so the shortest transits yield limits alone
+                if x["z"] >= sigma and x["a"] - x["a_rev"] >= sigma * x["sd"]:
+                    hits.append(name)
+            print("%-16s %-9s %4d %4d  %s%s" % (p["pl_name"], inst, n_in, n_out, "; ".join(cells), "  HIT " + ",".join(hits) if hits else ""))
+            k = p["pl_ratror"] or 0.05
+            for name, x in r["lines"].items():
+                # the reversed trail's residual is the star's and the sky's share at the same place, added to the null's scatter as the systematic floor
+                limit = max(x["a"], 0.0) + sigma * np.hypot(x["sd"], x["a_rev"])
+                if p["hostname"] == "Moon":
+                    controls += 1
+                else:
+                    tested.add(p["pl_name"])
+                rows.append(dict(target="planet:%s#%s %s" % (p["pl_name"], inst, name), stat=x["z"], p=x["p"], upper_limit=100 * limit, unit="per cent absorption at %s in the planet's frame (%s, %d in-transit spectra)" % (name, inst, n_in),
+                                 vet=None if name in hits else ("control" if p["hostname"] == "Moon" else None),
+                                 note="%s: %+.3f +- %.3f per cent, trail reversed %+.3f; %d out-of-transit; effective radius below %.2f planet radii" % (
+                                     inst, 100 * x["a"], 100 * x["sd"], 100 * x["a_rev"], n_out, np.sqrt(1.0 + limit / k ** 2))))
+                if name in hits:
+                    found.append((p["pl_name"], inst, name, x))
+    print("%d planet-instrument-line tests; %d above %g sigma in the planet's frame and over the reversed trail" % (len(rows), len(found), sigma))
+    if record:
+        core.record_run(
+            "rocky_dwarfs_shoreline", "Atmospheres of the rocky planets of red dwarfs",
+            "ESO Phase 3 (HARPS, ESPRESSO, NIRPS, CRIRES, UVES), CADC (CFHT SPIRou), KOA (Keck NIRSPEC); NASA Exoplanet Archive pscomppars",
+            "every archived spectrum overlapping a transit of a planet below 1.8 Earth radii of a star cooler than 4000 K within 50 pc, with the same nights' out-of-transit spectra; the Moon through the Venus transit of 2012 June 6",
+            os.path.abspath(__file__), "shoreline", len(tested), "planets", dict(sigma=sigma, half_kms=half_kms, draws=draws, inject=inject),
+            "out-of-transit spectra drawn in the in-transit spectra's number, shifted along the planet's trail and weighted as they are; the trail reversed",
+            "the %g sigma limit on the absorption in the planet's frame at each line, per planet and instrument" % sigma,
+            "%d tests of %d planets and %d of the Moon through the transit of Venus; %d above %g sigma" % (len(rows) - controls, len(tested), controls, len(found), sigma), rows)
+        print("recorded")
+
+
+def shoreline_cli():
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "plan":
+        core.quiet_warnings()
+        shoreline_plan()
+    elif len(sys.argv) > 1 and sys.argv[1] == "fetch":
+        import argparse
+        core.quiet_warnings()
+        p = argparse.ArgumentParser(prog="seti.py biosignatures shoreline fetch")
+        p.add_argument("--streams", type=int, default=2)
+        p.add_argument("--planets", nargs="*", default=[])
+        p.add_argument("--no-venus", action="store_true")
+        p.add_argument("--night-per-in", type=float, default=2.0)
+        a = p.parse_args(sys.argv[2:])
+        shoreline_fetch(a.streams, a.planets, not a.no_venus, a.night_per_in)
+    else:
+        core.run_cli(shoreline_main)
+
+
 APPROACHES = {
+    "shoreline": (shoreline_cli, shoreline_DOC),
     "disequilibrium": (lambda: core.run_cli(disequilibrium_main), disequilibrium_DOC),
     "rockyworlds": (rockyworlds_cli, rockyworlds_DOC),
     "atlas": (atlas_cli, atlas_DOC),

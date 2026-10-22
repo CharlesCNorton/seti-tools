@@ -26,7 +26,7 @@ SITES = {
     "SSO": (149.0661, -31.2770, 1164.0), "APO": (-105.8203, 32.7802, 2788.0), "LCO": (-70.6926, -29.0146, 2380.0),
     "ALMA": (-67.7552, -23.0234, 5058.0), "MWA": (116.6708, -26.7033, 377.0), "ASKAP": (116.6371, -26.6969, 361.0),
     "LOFAR": (6.8689, 52.9153, 15.0), "ATA": (-121.4733, 40.8178, 1043.0),
-    "KPNO": (-111.5997, 31.9634, 2120.0),
+    "KPNO": (-111.5997, 31.9634, 2120.0), "CFHT": (-155.4681, 19.8253, 4204.0),
 }
 
 
@@ -685,6 +685,164 @@ def header(url, coarse_channels=()):
     json.dump(meta, open(tmp, "w"))
     os.replace(tmp, path)
     return meta
+
+
+class RangeFile:
+    """A read-only file over HTTP for h5py: each read is served from 64 KB blocks fetched by byte range through core.get, whose timeouts and retries hold against a stalled connection."""
+
+    BLOCK = 1 << 16
+
+    def __init__(self, url):
+        import urllib.request
+        self.url, self.pos, self.blocks, self.size = url, 0, {}, 0
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=60) as r:
+                    self.size = int(r.headers.get("Content-Length", 0))
+                break
+            except Exception:
+                if attempt == 2:
+                    raise
+
+    def _block(self, i):
+        if i not in self.blocks:
+            self.blocks[i] = core.get(self.url, byte_range=(i * self.BLOCK, (i + 1) * self.BLOCK - 1), timeout=120)
+        return self.blocks[i]
+
+    def read(self, n=-1):
+        if n < 0:
+            raise IOError("whole-file reads are not served")
+        out, pos = [], self.pos
+        while n > 0:
+            i, off = divmod(pos, self.BLOCK)
+            b = self._block(i)[off:off + n]
+            if not b:
+                break
+            out.append(b)
+            pos += len(b)
+            n -= len(b)
+        self.pos = pos
+        return b"".join(out)
+
+    def readinto(self, buf):
+        b = self.read(len(buf))
+        buf[:len(b)] = b
+        return len(b)
+
+    def seek(self, off, whence=0):
+        if whence == 0:
+            self.pos = off
+        elif whence == 1:
+            self.pos += off
+        else:
+            self.pos = (self.size or 0) + off
+        return self.pos
+
+    def tell(self):
+        return self.pos
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def writable(self):
+        return False
+
+    def flush(self):
+        pass
+
+    def close(self):
+        self.blocks = {}
+
+
+def chunk_table(url, threads=32, coarse_channels=None):
+    """Every chunk's (byte offset, size) of a file's "data" dataset by time step and chunk column, read from the HDF5 version 1 chunk B-tree directly: the dataset's layout message gives the tree's root, and each level's nodes are fetched THREADS at a time by byte range; with COARSE_CHANNELS the walk descends only into the branches holding those channels' chunks and the table holds zeros elsewhere; the metadata (fch1, foff, tsamp, tstart, nt, nch, cw) comes with it."""
+    import struct
+    import h5py
+    with h5py.File(RangeFile(url), "r") as f:
+        d = f["data"]
+        meta = dict(fch1=float(d.attrs["fch1"]), foff=float(d.attrs["foff"]), tsamp=float(d.attrs["tsamp"]), tstart=float(d.attrs["tstart"]),
+                    nt=int(d.shape[0]), nch=int(d.shape[2]), cw=int(d.chunks[2]),
+                    src=[float(d.attrs.get("src_raj", np.nan)), float(d.attrs.get("src_dej", np.nan))], spans={})
+        # the hard link's value is the dataset's object header address; an object-info call would walk the whole chunk index
+        addr, rank = f.id.links.get_info(b"data").u, len(d.shape)
+    cw = meta["cw"]
+    wanted = None
+    if coarse_channels is not None:
+        wanted = set()
+        for k in coarse_channels:
+            wanted |= set(range((k * COARSE) // cw, ((k + 1) * COARSE - 1) // cw + 1))
+
+    def read(off, n):
+        return core.get(url, byte_range=(off, off + n - 1), timeout=120)
+
+    # the dataset's object header: version 1 messages until the layout message (type 8, version 3, chunked) names the tree's root
+    def layout(addr):
+        h = read(addr, 16)
+        if h[0] != 1:
+            raise IOError("object header version %d" % h[0])
+        nmsg, size = struct.unpack("<H", h[2:4])[0], struct.unpack("<I", h[8:12])[0]
+        todo, seen = [(addr + 16, size)], 0
+        while todo:
+            start, length = todo.pop(0)
+            b = read(start, length)
+            p = 0
+            while p + 8 <= len(b) and seen < nmsg:
+                mtype, msize = struct.unpack("<HH", b[p:p + 4])
+                body = b[p + 8:p + 8 + msize]
+                p += 8 + msize
+                seen += 1
+                if mtype == 0x10:
+                    todo.append(struct.unpack("<QQ", body[:16]))
+                elif mtype == 0x08 and body[0] == 3 and body[1] == 2:
+                    return struct.unpack("<Q", body[3:11])[0]
+        raise IOError("no chunked layout message")
+    root = layout(addr)
+    klen = 8 + 8 * (rank + 1)
+    table = {}
+
+    def node(off):
+        """A node's level and entries (key coordinates, chunk size, child address), each entry carrying the next key as its upper bound."""
+        b = read(off, 24 + 65 * klen + 64 * 8)
+        if b[:4] != b"TREE" or b[4] != 1:
+            raise IOError("not a chunk tree node at %d" % off)
+        level, used = b[5], struct.unpack("<H", b[6:8])[0]
+        keys, children = [], []
+        p = 24
+        for i in range(used + 1):
+            size = struct.unpack("<I", b[p:p + 4])[0]
+            keys.append((struct.unpack("<%dQ" % (rank + 1), b[p + 8:p + klen]), size))
+            p += klen
+            if i < used:
+                children.append(struct.unpack("<Q", b[p:p + 8])[0])
+                p += 8
+        return level, [(keys[i][0], keys[i][1], children[i], keys[i + 1][0]) for i in range(used)]
+
+    def needed(lo, hi):
+        """Whether a subtree keyed from chunk coordinate lo up to hi holds a wanted chunk column."""
+        if wanted is None:
+            return True
+        (ta, ja), (tb, jb) = (lo[0], lo[2] // cw), (hi[0], hi[2] // cw)
+        if ta < tb:
+            return True
+        return any(ja <= j < jb for j in wanted)
+    level, entries = node(root)
+    while True:
+        if level == 0:
+            for offs, size, child, _ in entries:
+                if wanted is None or offs[2] // cw in wanted:
+                    table[(offs[0], offs[2] // cw)] = (child, size)
+            break
+        branch = [e for e in entries if needed(e[0], e[3])]
+        children = core.pmap(lambda e: node(e[2]), branch, threads)
+        level, entries = children[0][0], [x for _, es in children for x in es]
+    nj = -(-meta["nch"] // cw)
+    chunks = np.zeros((meta["nt"], nj, 2), np.int64)
+    for (t, j), (off, size) in table.items():
+        chunks[t, j] = (off, size)
+    return meta, chunks
 
 
 def _decompress(blobs, nt, nj, cw):

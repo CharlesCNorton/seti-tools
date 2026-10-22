@@ -612,6 +612,45 @@ def eso_spectra(ra, dec, collection, radius_deg=0.0083, covers=None):
     return tap("eso", q)
 
 
+def archive_spectra(ra, dec, radius_deg=0.01):
+    """Every archived spectrum of a position: ESO Phase 3 products, CFHT SPIRou planes through the CADC and Keck NIRSPEC frames through KOA, each with its source, instrument, identifier, time span (MJD), exposure (s) and wavelength span (m)."""
+    rows = []
+    q = ("SELECT dp_id, instrument_name, t_min, t_max, t_exptime, em_min, em_max, snr FROM ivoa.ObsCore WHERE dataproduct_type = 'spectrum' AND "
+         "CONTAINS(POINT('ICRS', s_ra, s_dec), CIRCLE('ICRS', %.5f, %.5f, %g)) = 1" % (ra, dec, radius_deg))
+    for r in tap("eso", q):
+        rows.append(dict(src="ESO", inst=r["instrument_name"], id=r["dp_id"], t0=float(r["t_min"]), t1=float(r["t_max"]), exp=num(r["t_exptime"]),
+                         lo=num(r["em_min"]), hi=num(r["em_max"]), snr=num(r["snr"])))
+    q = ("SELECT p.productID, p.time_bounds_lower, p.time_bounds_upper, p.time_exposure, p.energy_bounds_lower, p.energy_bounds_upper, p.dataRelease "
+         "FROM caom2.Observation o JOIN caom2.Plane p ON o.obsID = p.obsID WHERE o.collection = 'CFHT' AND o.instrument_name = 'SPIRou' AND "
+         "o.intent = 'science' AND INTERSECTS(CIRCLE('ICRS', %.5f, %.5f, %g), p.position_bounds) = 1" % (ra, dec, radius_deg))
+    # one plane per exposure, the telluric-corrected product (t), and public ones alone
+    for r in tap(CADC_TAP, q, method="POST", maxrec=20000):
+        t0, t1 = num(r["time_bounds_lower"]), num(r["time_bounds_upper"])
+        if t0 is not None and t1 is not None and r["productID"].endswith("t") and (r.get("dataRelease") or "")[:10] <= time.strftime("%Y-%m-%d"):
+            rows.append(dict(src="CADC", inst="SPIRou", id=r["productID"], t0=t0, t1=t1, exp=num(r["time_exposure"]),
+                             lo=num(r["energy_bounds_lower"]), hi=num(r["energy_bounds_upper"]), snr=None, release=r.get("dataRelease")))
+    return rows + koa_spectra(ra, dec, radius_deg)
+
+
+def koa_spectra(ra, dec, radius_deg=0.01):
+    """Keck NIRSPEC spectrograph frames of a position through KOA, object frames of the spectrograph camera alone, each with its start (MJD), exposure (s) and wavelength span (m)."""
+    q = ("SELECT koaid, mjd, elaptime, waveblue, wavered FROM koa_nirspec WHERE camera = 'spec' AND koaimtyp = 'object' AND "
+         "CONTAINS(POINT('icrs', ra, dec), CIRCLE('icrs', %.5f, %.5f, %g)) = 1" % (ra, dec, radius_deg))
+    rows = []
+    for r in tap(KOA_TAP, q, method="POST", maxrec=20000):
+        t0, exp = num(r["mjd"]), num(r["elaptime"]) or 0.0
+        if t0 is None:
+            continue
+        lo, hi = num(r["waveblue"]), num(r["wavered"])
+        rows.append(dict(src="KOA", inst="NIRSPEC", id=r["koaid"], t0=t0, t1=t0 + exp / 86400.0, exp=exp, lo=lo * 1e-6 if lo else None,
+                         hi=hi * 1e-6 if hi else None, snr=None))
+    return rows
+
+
+CADC_TAP = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/argus/sync"
+KOA_TAP = "https://koa.ipac.caltech.edu/TAP/sync"
+
+
 def eso_download(dp_id, path):
     """Download one public ESO product to path; True when a FITS file arrived."""
     b = get("https://dataportal.eso.org/dataportal_new/file/" + dp_id, timeout=300)
@@ -1696,22 +1735,26 @@ def clear_targets(search_id, db=None):
         db.close()
 
 
+# a run that tests one target several ways (instruments, lines, channels) keys each test as the target's identifier followed by # and the facet
+FACETED = "(c.target = ? OR substr(c.target, 1, length(?) + 1) = ? || '#')"
+
+
 def card(target, db=None):
-    """Every run covering a target with its result."""
+    """Every run covering a target with its result, its faceted rows among them, each with the row's own target last."""
     db = db or connect()
-    q = ("SELECT s.approach, s.archive, s.release, c.stat, c.p, c.upper_limit, c.unit, c.vet, c.note, s.id "
-         "FROM coverage c JOIN searches s ON c.search_id = s.id WHERE c.target = ? ORDER BY s.finished")
-    return db.execute(q, (target,)).fetchall()
+    q = ("SELECT s.approach, s.archive, s.release, c.stat, c.p, c.upper_limit, c.unit, c.vet, c.note, s.id, c.target "
+         "FROM coverage c JOIN searches s ON c.search_id = s.id WHERE " + FACETED + " ORDER BY s.finished, c.target")
+    return db.execute(q, (target, target, target)).fetchall()
 
 
 def covered(target, approach=None, db=None):
-    """Run ids covering a target, optionally for one approach."""
+    """Run ids covering a target, its faceted rows included, optionally for one approach."""
     db = db or connect()
     if approach:
-        q = ("SELECT c.search_id FROM coverage c JOIN searches s ON c.search_id = s.id "
-             "WHERE c.target = ? AND s.approach = ?")
-        return [r[0] for r in db.execute(q, (target, approach))]
-    return [r[0] for r in db.execute("SELECT search_id FROM coverage WHERE target = ?", (target,))]
+        q = ("SELECT DISTINCT c.search_id FROM coverage c JOIN searches s ON c.search_id = s.id "
+             "WHERE " + FACETED + " AND s.approach = ?")
+        return [r[0] for r in db.execute(q, (target, target, target, approach))]
+    return [r[0] for r in db.execute("SELECT DISTINCT c.search_id FROM coverage c WHERE " + FACETED, (target, target, target))]
 
 
 def summary(db=None):

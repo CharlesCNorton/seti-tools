@@ -1,0 +1,653 @@
+% !TEX program = pdflatex
+\documentclass[11pt]{article}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+\setlength{\textheight}{9in}
+\setlength{\topmargin}{0pt}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
+\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[tableposition=top]{caption}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+\emergencystretch=3em
+
+% ---- notation ---------------------------------------------------------------
+\newcommand{\kms}{km\,s$^{-1}$}
+\newcommand{\Msun}{M$_\odot$}
+\newcommand{\Kone}{$K_1$}
+\newcommand{\Ktwo}{$K_2$}
+\newcommand{\dvsys}{$\Delta v_\mathrm{sys}$}
+
+% ---- front matter -----------------------------------------------------------
+\title{Double-Lined from the Archive:\\ Independent Dynamical Masses of M Dwarfs in Eclipsing Binaries\\ from Public HARPS and ESPRESSO Spectra}
+\author{Charles C. Norton}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+An eclipsing binary of a solar-type star and an M dwarf gives model-independent masses for both
+stars once the M dwarf's own lines are measured, at optical flux ratios near $10^{-3}$. This paper
+measures them from public ESO archive spectra with an analysis built independently of the published
+ones. Each spectrum's velocity is measured against a template and the primary's orbit fitted to
+those velocities; the spectra are placed on one velocity grid in the primary's frame and divided by
+their series' median; the residuals are cross-correlated by inverse variance with an empirical
+M1\,V spectrum; the star's pattern, the sky's pattern and five principal components are removed;
+and the rows are summed along the companion's track over its semi-amplitude \Ktwo\ and its systemic
+offset, against nulls with the orbit's phase moved and with whole nights shuffled. From 260
+ESPRESSO spectra of TOI-1338/BEBOP-1, 114 HARPS spectra of EBLM J0310$-$31 and 35 HARPS spectra of
+HD\,4875 the companions stand at 19.3, 19.2 and $13.3\sigma$, with \Ktwo\ $= 77.27$, $88.12$ and
+$75.29$\,\kms\ against published values of $77.16 \pm 0.48$, $88.27 \pm 0.46$ and $75.13 \pm
+0.16$\,\kms, and masses within 0.5 per cent of the published dynamical masses; HD\,4875's
+companion had been measured only in the near-infrared. In all three the companion's lines sit
+$+1.05$ to $+1.25$\,\kms\ from the primary's systemic velocity, and holding that offset at zero
+moves \Ktwo\ by up to $0.55$\,\kms. Across the 35 searchable EBLM binaries with archived HARPS
+series, six companions stand above $5\sigma$, four of them without a published semi-amplitude: EBLM
+J2101$-$45 at $15.0\sigma$, whose 75 spectra give \Ktwo\ $= 65.41$\,\kms\ and minimum masses of
+$1.431$ and $0.556$\,\Msun, and J0649$-$27, J0825$-$67 and J1141$-$37 at 6.7, 6.4 and
+$5.2\sigma$.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Masses and radii of M dwarfs set the properties inferred for the planets that orbit them, and
+the empirical relations behind those inferences rest on stars whose masses are measured
+without models. Detached double-lined eclipsing binaries provide such masses, but few are
+known below the fully convective boundary near 0.35\,\Msun~\cite{Torres2010,Southworth2015},
+since an M dwarf paired with a solar-type star contributes about a thousandth of the optical
+light and its lines are lost in the primary's. The EBLM project has characterised hundreds of
+these single-lined eclipsing binaries~\cite{Triaud2013,Triaud2017,Maxted2023}, measuring the
+primary's spectroscopic orbit and the eclipses and taking the primary's mass or radius from
+stellar models. The BEBOP survey for circumbinary planets has added years of precise velocities
+of the same stars with HARPS and SOPHIE~\cite{Martin2019,Standing2022,Triaud2022}.
+
+The secondary's lines can nonetheless be recovered. High-resolution cross-correlation, developed
+to detect molecules in exoplanet atmospheres~\cite{Snellen2010,Brogi2012}, sums a weak spectrum
+along a known orbit after the stationary spectrum has been removed. Sebastian et al.\ applied it
+to the circumbinary planet host TOI-1338/BEBOP-1~\cite{Kostov2020,Standing2023} and detected its
+M dwarf at $11\sigma$ in 103 ESPRESSO spectra, measuring \Ktwo\ $= 77.16 \pm 0.48$\,\kms\ and
+masses of $1.098 \pm 0.017$ and $0.307 \pm 0.003$\,\Msun~\cite{Sebastian2024b}, with the
+Saltire model of the cross-correlation map~\cite{Sebastian2024a}. The method has since been
+applied to Kepler-16 with SOPHIE~\cite{Sebastian2025b}, to BEBOP-3~\cite{Baycroft2025} and to
+five more EBLM binaries, among them EBLM J0310$-$31~\cite{Stevenson2026}. In the near-infrared,
+where the M dwarf is relatively brighter, the secondary's semi-amplitude has been measured with
+SPIRou~\cite{Maxted2022}, CRIRES+~\cite{Sebastian2025a} and NIRPS~\cite{Adshead2026,Hahlin2026}.
+
+These measurements share a small number of analysis designs, and their accuracy has been tested
+by splitting each dataset in time and by simulation~\cite{Sebastian2024b,Stevenson2026}. An
+analysis built independently, with a different template, a different removal of the primary's
+spectrum and a different measure of significance, tests that accuracy from outside. The public
+archives also hold more spectra of these stars than the published analyses used: the ESO archive
+holds 114 HARPS spectra of EBLM J0310$-$31 above a signal-to-noise ratio of 10, against the 71 of
+ref.~\cite{Stevenson2026}, and 264 ESPRESSO spectra of TOI-1338, against 103.
+
+This paper describes such an analysis, the binaries approach of the seti-tools package, which
+shares its spectra machinery with the package's planet-frame and free-orbit companion searches and
+their orbitlight release~\cite{orbitlight}, and applies it to public products of the ESO Science
+Archive alone. Section~\ref{sec:data} selects the targets and spectra,
+Section~\ref{sec:method} describes the method, Section~\ref{sec:validation} compares its results
+for three systems with published dynamical masses, Section~\ref{sec:survey} applies it to the
+southern EBLM binaries with HARPS series, and Section~\ref{sec:discussion} discusses what the
+comparison shows.
+
+\section{Targets and spectra}\label{sec:data}
+
+The targets are the single-lined spectroscopic binaries with archived high-resolution spectra.
+The Gaia DR3 non-single-star catalogue~\cite{GaiaNSS2023} gives 203\,121 single-lined orbits
+(solution types SB1, SB1C and AstroSpectroSB1) for stars brighter than $G = 13$, and the SB9
+catalogue~\cite{Pourbaix2004} 3\,426 single-lined orbits. Each was matched within
+10\,arcsec to the ESO archive's series of 20 or more spectra of one target from HARPS, ESPRESSO,
+NIRPS, UVES or FEROS, giving 140 series of 126 stars. A series is searched when its orbit has a
+period below 100\,d covered three or more times, the series holds 30 or more spectra, and the
+mass function allows a companion of 0.07\,\Msun\ or more around a primary of 1\,\Msun. That
+leaves 68 series. Among them are the HARPS series of 37 EBLM binaries, named here by their EBLM
+designations, which this paper searches, and TOI-1338's ESPRESSO series; the others belong to O and
+B stars, interacting binaries with compact companions, and solar-type binaries observed mostly with
+UVES or FEROS.
+
+The spectra are the archive's Phase 3 one-dimensional products, with barycentric wavelengths and
+the pipeline's flux and error. For each series, every product with a signal-to-noise ratio above
+10 is taken, up to 300 spread evenly over the series' span.
+
+\section{Method}\label{sec:method}
+
+\subsection{The primary's velocities and orbit}
+
+Each spectrum is placed on a grid uniform in velocity at 1\,\kms\ from 3800 to 7880\,\AA,
+divided by its running median over 501 samples, with the telluric bands removed. Its velocity is
+the peak of its cross-correlation over $\pm 200$\,\kms\ with the line depths of a G0\,V template,
+one minus the median of EBLM J0310$-$31's 114 HARPS spectra placed at their velocities on its
+Gaia orbit, refined by a parabola through the three highest samples. The primary's orbit is fitted
+to these velocities in two steps. A grid over period (within 0.4 per cent of the catalogue's, in
+steps that move the last epoch by a fiftieth of an orbit), phase (in hundredths), eccentricity (to
+0.6) and argument of periastron (in $20^\circ$ steps) is searched with \Kone\ and the systemic
+velocity $\gamma$ solved linearly at each point, and the best point starts a least-squares fit with
+a soft loss in period, time of periastron, $\sqrt{e}\cos\omega$, $\sqrt{e}\sin\omega$, \Kone\ and
+$\gamma$. The grid makes the fit independent of errors in the catalogue orbit, which for
+TOI-1338 put the period 0.021\,d long and $\omega$ $58^\circ$ away.
+
+\subsection{Residuals in the primary's frame}
+
+Each spectrum is then moved into the primary's frame at its own measured velocity, placed on the
+same grid, divided by its running median and by the series' median spectrum, and a cubic in
+wavelength is removed. A residual shift of a spectrum against the median of 0.5\,\kms\ or more is
+taken out before the division. The telluric bands and the sodium sky lines at their telescope
+wavelengths are masked. Each wavelength's scatter across the series, floored at a tenth of its
+median, weights the cross-correlation.
+
+\subsection{Cross-correlation with an M-dwarf template}
+
+The template is an empirical M1\,V spectrum: the line depths, one minus the median, of the archived
+HARPS spectra of GJ\,367~\cite{Lam2021} in its own frame, negative values set to zero. Each
+residual is cross-correlated with it by inverse variance over $\pm 300$\,\kms\ at 1\,\kms, the
+result normalised so that a residual of unit noise gives unit scatter. Each cross-correlation row
+then loses three patterns that are not the companion's: the star's own residual pattern, the
+median row fitted to each row within 40\,\kms\ of the star and subtracted; the sky's pattern, the
+rows' median in the telluric frame fitted back to each row; and five principal components of the
+rows, which carry the shapes the star's pattern takes from night to night. Each row is weighted by
+the inverse square of its robust scatter more than 50\,\kms\ from the star.
+
+\subsection{The sum along the companion's track}
+
+The companion's barycentric velocity at time $t$ is
+\begin{equation}
+v_2(t) = \gamma + \Delta v_\mathrm{sys} - K_2\left[\cos(\nu + \omega) + e\cos\omega\right],
+\end{equation}
+with $\nu$, $\omega$ and $e$ from the primary's fitted orbit and \dvsys\ the offset of the
+companion's lines from the primary's systemic velocity. Each row is read at $v_2$ less the
+velocity at which its spectrum was placed, by linear interpolation, and the weighted mean of the
+readings is the trail's value. Readings within 30\,\kms\ of the primary's lines or within
+10\,\kms\ of the row's telluric velocity are left out, and a value needs readings from at least
+a fifth of the rows and no fewer than ten. The map of the trail over \Ktwo\ from \Kone\ to
+160\,\kms\ and over \dvsys\ from $-30$ to $+30$\,\kms, both at 0.5\,\kms, gives the peak, refined
+on grids of 0.1 and then 0.05\,\kms.
+
+\subsection{Significance, uncertainty and masses}
+
+The significance is that of the summit of the trail over \Ktwo\ at the peak's \dvsys, against the
+summits of the same curve with the orbit's phase moved by a uniform 0.1 to 0.9 of a period and
+with whole nights moved to other nights' dates, 300 of each. The lower of the two is quoted, so
+that what is tied to the orbital phase and what is tied to the hour or the night both stay in a
+null. The uncertainty of the peak comes from 300 draws of whole nights with replacement, each
+cleaned again and its peak found on grids of 0.25 and then 0.05\,\kms; the 16th, 50th and 84th
+percentiles are quoted. The masses follow from
+\begin{equation}
+M_{1,2}\sin^3 i = 1.0361\times10^{-7}\,(1-e^2)^{3/2}\,(K_1+K_2)^2\,K_{2,1}\,P ,
+\end{equation}
+with the velocities in \kms, the period in days and the masses in \Msun, divided by $\sin^3 i$ at
+the published inclination from the eclipses.
+
+\section{Three systems with published dynamical masses}\label{sec:validation}
+
+Three of the binaries have published measurements of the secondary's semi-amplitude from other
+data or other methods: TOI-1338 (EBLM J0608$-$59), measured from ESPRESSO spectra with
+Saltire~\cite{Sebastian2024b}; EBLM J0310$-$31, measured from HARPS spectra with
+Saltire~\cite{Stevenson2026}; and HD\,4875 (EBLM J0050$-$18), measured from NIRPS spectra by
+cross-correlation with a synthetic M-dwarf spectrum~\cite{Hahlin2026}. The archive holds 264
+ESPRESSO spectra of TOI-1338 above the signal-to-noise cut, of which 260 load, 114 HARPS spectra of
+J0310$-$31 and 35 of HD\,4875.
+
+\subsection{Orbits}
+
+The orbits fitted to the measured velocities (Table~\ref{tab:orbits}) leave a scatter of 14, 15
+and 29\,m\,s$^{-1}$, which is the precision of a cross-correlation velocity against a template
+built from one star's spectra, and they agree with the published orbits to within
+$0.012$\,\kms\ in \Kone\ and $0.0003$ in eccentricity. The systemic velocities differ from the
+published ones by 0.01 to 0.14\,\kms, the offset between the template's zero point and those of the
+published analyses, which enters the companion's track only through \dvsys.
+
+\begin{table}[t]
+\centering
+\caption{The primary's orbits fitted to the velocities measured here, against the published orbits.
+$\omega$ is the primary's argument of periastron; rms is the scatter of the velocities about the
+fit.}\label{tab:orbits}
+\begin{tabular}{llrrrrr}
+\toprule
+System & Source & $P$ (d) & \Kone\ (\kms) & $e$ & $\omega$ ($^\circ$) & rms (m\,s$^{-1}$)\\
+\midrule
+TOI-1338  & this work & 14.608560 & 21.616 & 0.1556 & 117.86 & 14\\
+          & ref.~\cite{Sebastian2024b} & 14.6085579 & 21.604 & 0.1555 & 117.77 & \\
+J0310$-$31 & this work & 12.642791 & 27.868 & 0.3089 & 185.83 & 15\\
+          & ref.~\cite{Stevenson2026} & 12.6427926 & 27.875 & 0.3087 & 185.85 & \\
+HD\,4875  & this work & 13.635615 & 29.736 & 0.1814 & 251.71 & 29\\
+          & ref.~\cite{Hahlin2026} & 13.6355611 & 29.739 & 0.1811 & 252.03 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The companions}
+
+The companion stands out in each system's map (Fig.~\ref{fig:maps}) at the published \Ktwo\ and
+just redward of the primary's systemic velocity, and the trail over \Ktwo\ at that offset rises
+alone above the nulls (Fig.~\ref{fig:curves}). Table~\ref{tab:k2} sets the results against the
+published ones. The semi-amplitudes agree within $0.16$\,\kms: $77.27$ against $77.16 \pm
+0.48$\,\kms\ for TOI-1338, $88.12$ against $88.27 \pm 0.46$ for J0310$-$31, and $75.29$ against
+$75.13 \pm 0.16$ for HD\,4875, whose published value comes from near-infrared spectra alone. At the
+published inclinations, the masses agree within 0.5 per cent for the primaries and 0.5 per cent
+for the secondaries. The significances, 19.3, 19.2 and 13.3$\sigma$, are each the lower of the
+two nulls' (Table~\ref{tab:k2}); the null with whole nights shuffled is the stricter one for
+J0310$-$31, and the null with the phase moved for TOI-1338 and HD\,4875. The profile of the
+summed rows in the companion's frame (Fig.~\ref{fig:profiles}) is a single line 5 to 6\,\kms\
+wide at half maximum, and nothing beyond 15\,\kms\ of it rises above three times the profile's
+scatter.
+
+\begin{table}[t]
+\centering
+\caption{The secondary's semi-amplitude, the companion's systemic offset, the significance against
+each null and the masses, against the published values. Ranges are the 16th to 84th percentiles of
+300 draws of whole nights; the masses use the published inclinations, $89.639^\circ$,
+$86.531^\circ$~\cite{Stevenson2026} and $89.057^\circ$~\cite{Hahlin2026}.}\label{tab:k2}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccc}
+\toprule
+ & TOI-1338 & J0310$-$31 & HD\,4875\\
+\midrule
+Spectra (nights), instrument & 260 (255), ESPRESSO & 114 (114), HARPS & 35 (33), HARPS\\
+Span (d) & 2231 & 3031 & 1376\\
+\Ktwo\ (\kms) & 77.27 (77.17--77.37) & 88.12 (87.97--88.33) & 75.29 (74.89--75.49)\\
+\dvsys\ (\kms) & $+1.05$ ($+1.00$ to $+1.15$) & $+1.10$ ($+1.00$ to $+1.25$) & $+1.25$ ($+0.75$ to $+1.25$)\\
+Significance, phase moved & 19.3 & 20.5 & 13.3\\
+Significance, nights shuffled & 26.2 & 19.2 & 14.5\\
+$M_1$ (\Msun) & 1.102 (1.099--1.106) & 1.345 (1.338--1.351) & 1.113 (1.102--1.124)\\
+$M_2$ (\Msun) & 0.3084 (0.3078--0.3090) & 0.4252 (0.4238--0.4264) & 0.4400 (0.4375--0.4426)\\
+\midrule
+Published \Ktwo\ (\kms) & $77.16 \pm 0.48$ & $88.27 \pm 0.46$ & $75.13 \pm 0.16$\\
+Published $M_1$ (\Msun) & $1.098 \pm 0.017$ & $1.350 \pm 0.017$ & $1.1150 \pm 0.0066$\\
+Published $M_2$ (\Msun) & $0.307 \pm 0.003$ & $0.426 \pm 0.003$ & $0.4405 \pm 0.0015$\\
+Spectra used & 103, ESPRESSO & 71, HARPS & 15 nights, NIRPS\\
+Reference & \cite{Sebastian2024b} & \cite{Stevenson2026} & \cite{Hahlin2026}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{data/maps.png}
+\caption{The mean of the cleaned rows along the companion's track over \Ktwo\ and the companion's
+systemic offset from the primary's, in units of the map's scatter away from the peak. The dashed
+line marks the published \Ktwo, the dotted line zero offset and the cross the peak.}\label{fig:maps}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{groupplot}[group style={group size=3 by 1, horizontal sep=1.1cm}, width=0.345\textwidth, height=5cm,
+  xlabel={\Ktwo\ (\kms)}, ymin=-8, ymax=22, grid=major, grid style={gray!20}]
+\nextgroupplot[title={TOI-1338 (ESPRESSO)}, ylabel={significance ($\sigma$)}, xmin=37, xmax=117]
+\addplot[thick, no markers] table[x=k2, y=z, col sep=comma]{data/ESPRESSO_J0608-59_k2curve.csv};
+\addplot[gray, dashed] coordinates {(77.16,-8) (77.16,22)};
+\nextgroupplot[title={EBLM J0310$-$31 (HARPS)}, xmin=48, xmax=128]
+\addplot[thick, no markers] table[x=k2, y=z, col sep=comma]{data/HARPS_J0310-31_k2curve.csv};
+\addplot[gray, dashed] coordinates {(88.27,-8) (88.27,22)};
+\nextgroupplot[title={HD\,4875 (HARPS)}, xmin=35, xmax=115]
+\addplot[thick, no markers] table[x=k2, y=z, col sep=comma]{data/HARPS_J0050-18_k2curve.csv};
+\addplot[gray, dashed] coordinates {(75.13,-8) (75.13,22)};
+\end{groupplot}
+\end{tikzpicture}
+\caption{The trail over \Ktwo\ at the peak's systemic offset, measured against the summits of the
+stricter null, so that the summit's height is its significance. The dashed line marks the
+published \Ktwo.}\label{fig:curves}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[width=0.7\textwidth, height=5.5cm, xlabel={offset from the companion's track (\kms)},
+  ylabel={mean / scatter}, xmin=-100, xmax=100, ymin=-5, ymax=26, grid=major, grid style={gray!20},
+  legend pos=north east, legend style={font=\small, draw=none, fill=white, fill opacity=0.8}]
+\addplot[thick, no markers] table[x=offset, y=snr, col sep=comma]{data/ESPRESSO_J0608-59_profile.csv};
+\addlegendentry{TOI-1338}
+\addplot[thick, dashed, no markers] table[x=offset, y=snr, col sep=comma]{data/HARPS_J0310-31_profile.csv};
+\addlegendentry{J0310$-$31}
+\addplot[thick, dotted, no markers] table[x=offset, y=snr, col sep=comma]{data/HARPS_J0050-18_profile.csv};
+\addlegendentry{HD\,4875}
+\end{axis}
+\end{tikzpicture}
+\caption{The cleaned rows summed in the companion's frame at the peak's \Ktwo\ and systemic
+offset, in units of the profile's scatter beyond 30\,\kms.}\label{fig:profiles}
+\end{figure}
+
+\subsection{The companion's systemic offset}
+
+The companion's lines sit $+1.05$, $+1.10$ and $+1.25$\,\kms\ from the primary's systemic velocity
+in the three systems. The published analyses, which leave the secondary's systemic velocity free
+and use the pipelines' M2 line mask, found the same sign and size: $+1.40 \pm 0.06$\,\kms\ in the
+ESPRESSO spectra of TOI-1338~\cite{Sebastian2024b} and $+1.20 \pm 0.10$\,\kms\ for
+J0310$-$31~\cite{Stevenson2026}. The offset collects the difference between the two templates' zero points, the primary's G0 template
+on the scale of its Gaia orbit and GJ\,367's spectrum placed at its pipeline velocities, and the
+two stars' differences in gravitational redshift and convective blueshift, which for J0310$-$31's
+radii~\cite{Stevenson2026} amount to about 0.1\,\kms\ in gravitational redshift. Held at zero
+instead, the offset moves the summit to $77.62$, $88.37$ and $74.74$\,\kms, by $+0.35$, $+0.25$ and
+$-0.55$\,\kms, since a constant velocity error of the track projects onto \Ktwo\ through the phases
+the spectra sample. At this precision the offset is a parameter of the fit.
+
+\subsection{Consistency within each series}
+
+Each series divided in two by date, and into alternate nights, gives the semi-amplitudes of
+Table~\ref{tab:splits}. The halves of TOI-1338 and J0310$-$31 agree within $0.35$\,\kms, close to
+the published uncertainties of 0.48 and 0.46\,\kms, which are dominated by splits by observing
+season~\cite{Sebastian2024b,Stevenson2026}. The first half of HD\,4875's series, 17 spectra, gives
+the companion at $5.2\sigma$ and $74.24$\,\kms, and the second half $75.99$\,\kms; the alternate sets
+agree within $0.15$\,\kms.
+
+\begin{table}[t]
+\centering
+\caption{The semi-amplitude and significance from each half of a series by date and from
+alternate nights, each half cleaned and measured on its own.}\label{tab:splits}
+\begin{tabular}{lccc}
+\toprule
+Subset & TOI-1338 & J0310$-$31 & HD\,4875\\
+\midrule
+First half by date  & 77.17 (15.9$\sigma$) & 88.02 (8.9$\sigma$) & 74.24 (5.2$\sigma$)\\
+Second half by date & 77.52 (14.8$\sigma$) & 88.32 (14.4$\sigma$) & 75.99 (10.2$\sigma$)\\
+Alternate nights, one set   & 77.02 (13.1$\sigma$) & 87.97 (12.0$\sigma$) & 75.34 (9.3$\sigma$)\\
+Alternate nights, other set & 77.17 (17.9$\sigma$) & 87.97 (13.7$\sigma$) & 75.19 (11.6$\sigma$)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Two HARPS series below the threshold}
+
+The 73 archived HARPS spectra of TOI-1338 do not show the companion on their own: the trail's
+summit over \Ktwo\ stands $0.0\sigma$ above the nulls. Read at the published \Ktwo\ and the offset
+of $+1.0$\,\kms, they give $2.8\sigma$, with 21 of 2000 null draws as high, as the published
+analysis of HARPS spectra gave about $3\sigma$~\cite{Sebastian2024b}. For J1928$-$38, whose
+companion of $0.276$\,\Msun\ was measured at a signal-to-noise ratio of 3.65 in 73 HARPS
+spectra~\cite{Stevenson2026}, the 74 archived HARPS spectra give no summit above the nulls and
+$0.3\sigma$ at the published \Ktwo, with 715 of 2000 draws as high. At its brightness, $V = 11.2$,
+and its companion's mass, this method does not reach J1928$-$38's secondary in HARPS spectra.
+
+\section{The southern EBLM binaries}\label{sec:survey}
+
+The same analysis was applied to the 37 EBLM binaries with archived HARPS series, with the
+companion's systemic offset held at $+1.0$\,\kms, the value the three systems of
+Section~\ref{sec:validation} share, so that each search runs over \Ktwo\ alone. Two series cannot
+be searched: J2126$-$28 has 17 spectra above the signal-to-noise cut and J0543$-$57 has 21 spectra
+on six nights. Table~\ref{tab:survey} lists the other 35. Six stand above $5\sigma$: J0310$-$31
+and HD\,4875 of Section~\ref{sec:validation}, and four whose companions have no published
+semi-amplitude, EBLM J2101$-$45 at $15.0\sigma$, J0649$-$27 at $6.7\sigma$, J0825$-$67 at
+$6.4\sigma$ and J1141$-$37 at $5.2\sigma$.
+
+Table~\ref{tab:new} gives the four measured as in Section~\ref{sec:validation}, with the offset free
+and the peak bootstrapped over nights. The masses are $m\sin^3 i$; the binaries eclipse, and with
+the primaries' Gaia DR3 radii the eclipses require $\sin^3 i > 0.993$ for J2101$-$45 and
+J0825$-$67 and $\sin^3 i > 0.96$ for the two with periods near 5\,d. J2101$-$45 is the clearest:
+each half of its 75 spectra by date, and each set of alternate nights, finds the companion at
+8.8 to $15.3\sigma$ within 1\,\kms\ of the full series' \Ktwo, and its companion of
+$0.556$\,\Msun\ orbits a primary of $1.43$\,\Msun\ whose Gaia radius of $2.67$\,R$_\odot$ places
+it above the main sequence. The model-based masses of ref.~\cite{Triaud2017} for J2101$-$45, $1.29
+\pm 0.10$ and $0.523 \pm 0.043$\,\Msun, J0649$-$27, $1.45 \pm 0.13$ and $0.371 \pm 0.061$\,\Msun,
+and J1141$-$37, $1.22 \pm 0.10$ and $0.354 \pm 0.050$\,\Msun, agree with the dynamical ones within
+their uncertainties. J0825$-$67 and J1141$-$37 rest on 27 and 30 spectra, too few to divide, and
+their orbits fit the measured velocities to 0.15 and 0.13\,\kms, ten times the scatter of the
+brighter systems. The halves of J0649$-$27 and J1141$-$37 by date and by alternate nights each
+return \Ktwo\ within 4.5\,\kms\ of the full series', at 0.9 to $5.5\sigma$ apiece.
+
+Below the threshold, three summits fall at semi-amplitudes that give an F or G primary and an
+M-dwarf companion: J0415$-$16 at $4.5\sigma$ ($1.07$ and $0.32$\,\Msun), J0057$-$21 at
+$4.4\sigma$ ($1.30$ and $0.37$\,\Msun) and J0621$-$50 at $2.8\sigma$ ($1.23$ and
+$0.42$\,\Msun), the last at the \Ktwo\ of $109.9$\,\kms\ that its model-based masses
+predict~\cite{Triaud2017}. The summits of the remaining binaries imply primaries from 0.02 to
+5.4\,\Msun, as the highest of the noise over a wide range of \Ktwo\ does.
+
+\begin{table}[!htbp]
+\centering
+\caption{The 35 searchable EBLM binaries with archived HARPS series: the spectra (nights), the
+span, the primary's orbit fitted to the measured velocities, the summit of the trail over \Ktwo\ at
+a systemic offset of $+1.0$\,\kms\ and its lower significance against the two nulls. Summits of
+$5\sigma$ and more are in bold.}\label{tab:survey}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+EBLM & Spectra & Span (d) & $P$ (d) & \Kone\ (\kms) & $e$ & \Ktwo\ (\kms) & $\sigma$\\
+\midrule
+J0035$-$69 & 27 (27) & 949 & 8.4147 & 17.33 & 0.244 & 98.33 & 0.1\\
+J0050$-$18 & 35 (33) & 1376 & 13.6356 & 29.74 & 0.181 & \textbf{75.24} & \textbf{13.9}\\
+J0055$-$00 & 83 (80) & 2771 & 11.3918 & 21.16 & 0.058 & 118.91 & -0.9\\
+J0057$-$21 & 35 (35) & 2288 & 32.3014 & 17.87 & 0.220 & 63.37 & 4.4\\
+J0104$-$38 & 35 (35) & 1910 & 8.2561 & 20.65 & 0.000 & 100.40 & 2.1\\
+J0110$-$40 & 43 (43) & 1740 & 28.7816 & 10.23 & 0.092 & 26.98 & -1.0\\
+J0310$-$31 & 114 (114) & 3031 & 12.6428 & 27.87 & 0.309 & \textbf{88.37} & \textbf{19.0}\\
+J0353$-$16 & 120 (100) & 3960 & 11.7612 & 16.64 & 0.006 & 83.14 & 1.0\\
+J0415$-$16 & 48 (47) & 1390 & 51.7026 & 15.21 & 0.239 & 50.46 & 4.5\\
+J0418$-$53 & 91 (91) & 2909 & 13.6993 & 10.36 & 0.000 & 109.11 & -0.8\\
+J0503$-$25 & 40 (39) & 1968 & 15.2652 & 7.80 & 0.091 & 78.80 & 0.6\\
+J0525$-$55 & 61 (61) & 1885 & 4.8001 & 25.18 & 0.000 & 118.18 & -0.3\\
+J0526$-$34 & 85 (84) & 2345 & 10.1909 & 23.60 & 0.126 & 94.60 & 2.7\\
+J0608$-$59 & 73 (73) & 1818 & 14.6085 & 21.62 & 0.156 & 77.62 & -0.1\\
+J0621$-$50 & 43 (43) & 1778 & 4.9638 & 37.58 & 0.000 & 109.83 & 2.8\\
+J0623$-$27 & 36 (36) & 2493 & 5.7780 & 28.05 & 0.056 & 190.30 & -0.4\\
+J0627$-$67 & 41 (41) & 1813 & 9.4689 & 17.27 & 0.159 & 42.27 & -1.5\\
+J0649$-$27 & 43 (42) & 1797 & 4.3080 & 32.55 & 0.002 & \textbf{119.55} & \textbf{6.7}\\
+J0759$-$69 & 81 (79) & 1988 & 17.0043 & 16.26 & 0.413 & 23.51 & 0.1\\
+J0825$-$67 & 27 (27) & 1234 & 10.0669 & 29.43 & 0.052 & \textbf{78.43} & \textbf{6.4}\\
+J0925$-$03 & 61 (61) & 2168 & 14.7748 & 16.60 & 0.330 & 83.10 & -0.3\\
+J0946$-$29 & 39 (38) & 1234 & 10.4511 & 20.82 & 0.161 & 56.82 & -0.9\\
+J0954$-$45 & 32 (32) & 2262 & 8.0727 & 27.83 & 0.295 & 112.58 & 0.2\\
+J1119$-$39 & 36 (36) & 2257 & 4.2136 & 11.13 & 0.004 & 29.63 & 1.6\\
+J1141$-$37 & 30 (30) & 1718 & 5.1477 & 32.23 & 0.000 & \textbf{116.23} & \textbf{5.2}\\
+J1201$-$36 & 65 (65) & 2284 & 9.1131 & 8.74 & 0.153 & 28.99 & -0.7\\
+J1219$-$39 & 62 (62) & 2175 & 6.7600 & 10.83 & 0.056 & 72.33 & -1.2\\
+J1305$-$31 & 41 (41) & 2123 & 10.6191 & 22.40 & 0.038 & 82.65 & 0.1\\
+J1613$-$76 & 39 (39) & 1308 & 14.3087 & 22.90 & 0.068 & 82.40 & 0.4\\
+J1630+10 & 37 (37) & 1872 & 10.9638 & 19.44 & 0.183 & 84.94 & -0.5\\
+J1928$-$38 & 74 (73) & 2271 & 23.3230 & 17.26 & 0.073 & 111.76 & -1.4\\
+J1959$-$56 & 40 (40) & 1864 & 29.7492 & 17.71 & 0.365 & 100.71 & -0.9\\
+J2040$-$41 & 45 (44) & 1901 & 14.4562 & 12.45 & 0.226 & 31.95 & -0.9\\
+J2101$-$45 & 75 (75) & 2298 & 25.5768 & 25.51 & 0.091 & \textbf{65.76} & \textbf{15.0}\\
+J2207$-$41 & 56 (55) & 2308 & 14.7750 & 8.70 & 0.069 & 44.70 & 0.6\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{The four companions without a published semi-amplitude, measured with the offset free.
+Ranges are the 16th to 84th percentiles of 300 draws of whole nights; the significances are against
+the null with the phase moved and the null with whole nights shuffled; the masses are
+$m\sin^3 i$.}\label{tab:new}
+\footnotesize\setlength{\tabcolsep}{1.9pt}
+\begin{tabular}{lcccccc}
+\toprule
+EBLM & Spectra & \Ktwo\ (\kms) & \dvsys\ (\kms) & $\sigma$ & $m_1\sin^3 i$ (\Msun) & $m_2\sin^3 i$ (\Msun)\\
+\midrule
+J2101$-$45 & 75 (75) & 65.41 (65.36--66.01) & $+1.45$ ($+1.10$, $+1.65$) & 15.6, 20.6 & 1.431 (1.412--1.447) & 0.556 (0.551--0.559)\\
+J0649$-$27 & 43 (42) & 119.40 (117.80--121.85) & $+1.35$ ($-0.67$, $+2.21$) & 8.4, 6.8 & 1.230 (1.188--1.296) & 0.335 (0.328--0.346)\\
+J0825$-$67 & 27 (27) & 78.18 (76.98--78.73) & $+1.25$ ($+0.45$, $+2.05$) & 7.8, 6.6 & 0.936 (0.905--0.957) & 0.353 (0.346--0.358)\\
+J1141$-$37 & 30 (30) & 114.68 (113.87--117.18) & $+0.15$ ($-0.40$, $+1.70$) & 8.1, 5.5 & 1.351 (1.296--1.395) & 0.376 (0.367--0.384)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}\label{sec:discussion}
+
+The semi-amplitudes measured here differ from the published ones by $-0.15$ to $+0.16$\,\kms,
+within the published uncertainties, although the analysis makes its own choice at each step. The
+template
+is an observed M1\,V spectrum rather than a line mask or a synthetic spectrum; the primary's
+spectrum is removed by division by the series' median in the primary's frame and by principal
+components of the cross-correlation rows, rather than by a singular value decomposition of the
+spectra; the significance is measured against nulls built from the same rows rather than from a fit
+to the map; and the uncertainty comes from resampling whole nights. The agreement indicates that
+the published dynamical masses of TOI-1338 and EBLM J0310$-$31 do not depend on those analysis
+choices at the level of their quoted uncertainties, and that the near-infrared semi-amplitude of
+HD\,4875's companion holds in the optical.
+
+The archive's own completeness matters as much as the method. It holds 114 HARPS spectra of
+J0310$-$31 above a signal-to-noise ratio of 10, against the 71 of the published analysis, and 260
+usable ESPRESSO spectra of TOI-1338, two and a half times the published set. A detection's
+significance grows with the square root of the number of spectra at fixed quality.
+
+The method has the limits of any optical analysis of these binaries. Toward 0.1\,\Msun\ the
+companion's optical flux falls to $10^{-4}$ of the primary's and below, and the HARPS series of
+J1928$-$38 and of the lowest-mass companions do not reach them. The near-infrared
+carries a larger share of the companion's light, and the archive holds NIRPS series of nine of the
+EBLM binaries considered here, taken alongside their HARPS spectra.
+
+\section{Conclusion}\label{sec:conclusion}
+
+An analysis of public ESO archive spectra, independent of the published pipelines, recovers the
+M-dwarf companions of TOI-1338, EBLM J0310$-$31 and HD\,4875 at 19.3, 19.2 and $13.3\sigma$ and
+measures their semi-amplitudes as $77.27$, $88.12$ and $75.29$\,\kms, within $0.16$\,\kms\ of the
+published values, with masses within 0.5 per cent of the published dynamical masses. HD\,4875's
+companion, measured before in the near-infrared alone, is detected here in the optical. The
+companion's lines sit $+1.05$ to
+$+1.25$\,\kms\ from the primary's systemic velocity in all three, and leaving that offset free is
+needed for accuracy at the tenth of a kilometre per second. Across the 35 searchable southern EBLM
+binaries with archived HARPS series, the companions of EBLM J2101$-$45, J0649$-$27, J0825$-$67 and
+J1141$-$37 are measured for the first time, J2101$-$45's at $15.0\sigma$ with minimum masses of
+$1.431$ and $0.556$\,\Msun.
+
+\section*{Acknowledgements}
+
+Based on data obtained from the ESO Science Archive Facility, from ESO programmes
+092.D-0261(A), 095.C-0367(A), 099.C-0138(A), 099.C-0138(B), 0101.C-0510(C), 103.2024.001,
+106.212H.001, 106.212H.007, 106.212H.009, 106.212H.010, 106.216B.001, 106.216B.002, 106.216B.003,
+106.21TJ.001, 1101.C-0721(A), 112.25GZ.001, 112.25GZ.002, 112.25GZ.003, 112.25GZ.004,
+112.25KP.001, 112.25UD.001, 113.26NT.001, 115.27V0.001, 115.27V0.002, 116.28LH.001, 116.28LL.001
+and 116.28LL.002.
+This work has made use of data from the European Space Agency mission Gaia, processed by the Gaia
+Data Processing and Analysis Consortium, funded by national institutions, in particular the
+institutions participating in the Gaia Multilateral Agreement; of the SIMBAD database and the
+VizieR catalogue access tool, operated at CDS, Strasbourg, France; and of the SB9 catalogue of
+spectroscopic binary orbits.
+
+\section*{Data availability}
+
+The spectra are public in the ESO Science Archive. The analysis is the binaries approach of the
+seti-tools package that holds this paper (\texttt{seti.py composition binaries}), whose coverage
+store records the run as \texttt{binaries\_eblm\_known\_orbits}; the measurements, the maps and
+the survey's results are in the paper's data folder.
+
+\begin{thebibliography}{99}\small\raggedright
+
+\bibitem{Torres2010}
+G.~Torres, J.~Andersen and A.~Gim\'enez, Accurate masses and radii of normal stars: modern
+results and applications, \emph{Astron. Astrophys. Rev.} \textbf{18}, 67 (2010).
+
+\bibitem{Southworth2015}
+J.~Southworth, DEBCat: a catalogue of detached eclipsing binary stars, in \emph{Living Together:
+Planets, Host Stars and Binaries}, ASP Conf. Ser. \textbf{496}, 164 (2015).
+
+\bibitem{Triaud2013}
+A.~H.~M.~J. Triaud et al., The EBLM project I. Physical and orbital parameters, including
+spin-orbit angles, of two low-mass eclipsing binaries on opposite sides of the brown dwarf limit,
+\emph{Astron. Astrophys.} \textbf{549}, A18 (2013).
+
+\bibitem{Triaud2017}
+A.~H.~M.~J. Triaud et al., The EBLM Project IV. Spectroscopic orbits of over 100 eclipsing M
+dwarfs masquerading as transiting hot-Jupiters, \emph{Astron. Astrophys.} \textbf{608}, A129
+(2017).
+
+\bibitem{Maxted2023}
+P.~F.~L. Maxted, A.~H.~M.~J. Triaud and D.~V. Martin, The EBLM Project: from false positives to
+benchmark stars and circumbinary exoplanets, \emph{Universe} \textbf{9}, 498 (2023).
+
+\bibitem{Martin2019}
+D.~V. Martin et al., The BEBOP radial-velocity survey for circumbinary planets I. Eight years of
+CORALIE observations of 47 single-line eclipsing binaries and abundance constraints on the masses
+of circumbinary planets, \emph{Astron. Astrophys.} \textbf{624}, A68 (2019).
+
+\bibitem{Standing2022}
+M.~R. Standing et al., BEBOP II: sensitivity to sub-Saturn circumbinary planets using
+radial-velocities, \emph{Mon. Not. R. Astron. Soc.} \textbf{511}, 3571 (2022).
+
+\bibitem{Triaud2022}
+A.~H.~M.~J. Triaud et al., BEBOP III. Observations and an independent mass measurement of
+Kepler-16 (AB) b, the first circumbinary planet detected with radial velocities, \emph{Mon. Not.
+R. Astron. Soc.} \textbf{511}, 3561 (2022).
+
+\bibitem{Snellen2010}
+I.~A.~G. Snellen, R.~J. de Kok, E.~J.~W. de Mooij and S.~Albrecht, The orbital motion, absolute
+mass and high-altitude winds of exoplanet HD\,209458b, \emph{Nature} \textbf{465}, 1049 (2010).
+
+\bibitem{Brogi2012}
+M.~Brogi et al., The signature of orbital motion from the dayside of the planet $\tau$ Bo\"otis b,
+\emph{Nature} \textbf{486}, 502 (2012).
+
+\bibitem{Kostov2020}
+V.~B. Kostov et al., TOI-1338: TESS' first transiting circumbinary planet, \emph{Astron. J.}
+\textbf{159}, 253 (2020).
+
+\bibitem{Standing2023}
+M.~R. Standing et al., Radial-velocity discovery of a second planet in the TOI-1338/BEBOP-1
+circumbinary system, \emph{Nat. Astron.} \textbf{7}, 702 (2023).
+
+\bibitem{Sebastian2024b}
+D.~Sebastian et al., The EBLM project XIII. The absolute dynamical masses of the circumbinary
+planet host TOI-1338/BEBOP-1, \emph{Mon. Not. R. Astron. Soc.} \textbf{530}, 2572 (2024).
+
+\bibitem{Sebastian2024a}
+D.~Sebastian, A.~H.~M.~J. Triaud and M.~Brogi, Saltire: a model to measure dynamical masses for
+high-contrast binaries and exoplanets with high-resolution spectroscopy, \emph{Mon. Not. R.
+Astron. Soc.} \textbf{527}, 10921 (2024).
+
+\bibitem{Sebastian2025b}
+D.~Sebastian et al., EBLM XV. Revised dynamical masses for the circumbinary planet host Kepler-16
+AB, using the SOPHIE spectrograph, \emph{Mon. Not. R. Astron. Soc.} \textbf{540}, 2914 (2025).
+
+\bibitem{Baycroft2025}
+T.~A. Baycroft et al., BEBOP VII. SOPHIE discovery of BEBOP-3b, a circumbinary giant planet on an
+eccentric orbit, \emph{Mon. Not. R. Astron. Soc.} \textbf{541}, 2801 (2025).
+
+\bibitem{Stevenson2026}
+A.~T. Stevenson et al., The EBLM project XX. Absolute dynamical masses of five low-mass eclipsing
+binaries, and an evaluation of mass estimation methods, \emph{Mon. Not. R. Astron. Soc.}, in press
+(2026), doi:10.1093/mnras/stag1904, arXiv:2610.18339.
+
+\bibitem{Maxted2022}
+P.~F.~L. Maxted et al., Fundamental effective temperature measurements for eclipsing binary
+stars III. SPIRou near-infrared spectroscopy and CHEOPS photometry of the benchmark G0V star EBLM
+J0113+31, \emph{Mon. Not. R. Astron. Soc.} \textbf{513}, 6042 (2022).
+
+\bibitem{Sebastian2025a}
+D.~Sebastian, A.~H.~M.~J. Triaud, P.~F.~L. Maxted and M.~Brogi, Accurate dynamical masses from
+binaries with extreme brightness ratios, \emph{Contrib. Astron. Obs. Skalnat\'e Pleso}
+\textbf{55}, 412 (2025).
+
+\bibitem{Adshead2026}
+N.~J. Adshead, P.~F.~L. Maxted and A.~Hahlin, Fundamental effective temperature measurements for
+eclipsing binary stars VIII. NIRPS spectroscopy of CD$-$27\,2812, \emph{Mon. Not. R. Astron.
+Soc.}, in press (2026), arXiv:2604.13631.
+
+\bibitem{Hahlin2026}
+A.~Hahlin et al., Fundamental effective temperature measurements for eclipsing binary stars IX.
+Characterisation of 5 solar-type eclipsing binaries with M-dwarf companions, \emph{Mon. Not. R.
+Astron. Soc.}, in press (2026), arXiv:2609.01033.
+
+\bibitem{orbitlight}
+orbitlight: planets, their atmospheres and the companions of their stars read out of archived
+high-resolution spectra, https://huggingface.co/datasets/phanerozoic/orbitlight (2026).
+
+\bibitem{GaiaNSS2023}
+Gaia Collaboration, F.~Arenou et al., Gaia Data Release 3. Stellar multiplicity, a teaser for the
+hidden treasure, \emph{Astron. Astrophys.} \textbf{674}, A34 (2023).
+
+\bibitem{Pourbaix2004}
+D.~Pourbaix et al., SB9: the ninth catalogue of spectroscopic binary orbits, \emph{Astron.
+Astrophys.} \textbf{424}, 727 (2004).
+
+\bibitem{Lam2021}
+K.~W.~F. Lam et al., GJ 367b: a dense, ultrashort-period sub-Earth planet transiting a nearby
+red dwarf star, \emph{Science} \textbf{374}, 1271 (2021).
+
+\bibitem{Mayor2003}
+M.~Mayor et al., Setting new standards with HARPS, \emph{The Messenger} \textbf{114}, 20 (2003).
+
+\bibitem{Pepe2021}
+F.~Pepe et al., ESPRESSO at VLT: on-sky performance and first results, \emph{Astron. Astrophys.}
+\textbf{645}, A96 (2021).
+
+\end{thebibliography}
+
+\end{document}

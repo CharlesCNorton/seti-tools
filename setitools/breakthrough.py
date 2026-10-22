@@ -2447,7 +2447,506 @@ def shgb_main(record=False, target="gj83.1", line_mhz=SHGB_HI, window_mhz=0.5, r
         print("recorded")
 
 
+waterhole_DOC = r"""The hydrogen line and the OH main lines in every L-band Breakthrough Listen cadence: one cadence a star, the stars the rest-frame track search covered set aside; each ON scan's 3 Hz spectrogram read only in the coarse channels that hold the line's arrival frequency for a sender at rest in the CMB, the Galaxy, the Solar System barycentre or its own star (SIMBAD's radial velocity), widened by 100 km/s either way for the sender's own uncorrected motion; hydrogen for every star first, nearest first, then OH, within a byte budget and a deadline; each channel dedrifted at every rate from -10 to +10 Hz/s in steps of one channel over the scan, and peaks at 10 times the robust noise kept; a tone at one frequency and drift in two or more ON scans is read again in the cadence's OFF scans and stands when they lack it.
+
+    python -I seti.py breakthrough waterhole plan                       (ROOT/plan.json from the high-drift plan's cadences and the sessions' holding directories)
+    python -I seti.py breakthrough waterhole fetch [--hours 7] [--budget-gb 300] [--workers 30]"""
+
+waterhole_ROOT = os.environ.get("WATERHOLE_ROOT", core.data("waterhole"))
+# the lines of each group, MHz at rest; a group's window covers all its lines
+waterhole_LINES = {"HI": (frames_LINES["HI"],), "OH": (frames_LINES["OH1665"], frames_LINES["OH1667"])}
+waterhole_MARGIN = 100.0  # km/s either side of the frames' arrival frequencies, for a sender's own uncorrected motion
+waterhole_TSAMP, waterhole_NT = 18.253611, 16  # the 3 Hz product's spectra
+
+
+def waterhole_holding(session):
+    """The 3 Hz files of a session's holding directory, the listing kept under ROOT/holding; None when the directory does not answer."""
+    path = os.path.join(waterhole_ROOT, "holding", session + ".json")
+    if not os.path.exists(path):
+        page = core.get(highdrift_PIPE + session + "/holding/", timeout=120, retries=3, soft=True)
+        if page is None:
+            return None
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        json.dump(sorted(set(re.findall(r'href="([^"/]+\.gpuspec\.0000\.h5)"', page.decode(errors="replace")))), open(path, "w"))
+    return set(json.load(open(path)))
+
+
+def waterhole_stars(names):
+    """SIMBAD's position, proper motion, parallax, radial velocity and Gaia DR3 identifier of each target name, its catalogue prefix and number written as SIMBAD writes them."""
+    def ident(n):
+        m = re.match(r"^(HIP|HD|GJ|LHS|TIC|HR|LTT|LP|Wolf|Ross|G|BD)[ _-]?([0-9+\-].*)$", n.strip(), re.I)
+        if not m:
+            return n.strip()
+        pre = {"wolf": "Wolf", "ross": "Ross"}.get(m.group(1).lower(), m.group(1).upper())
+        return "%s%s%s" % (pre, "" if pre == "BD" else " ", m.group(2))
+    ids = {n: ident(n) for n in names}
+    out, keys = {}, sorted(set(ids.values()))
+    for i in range(0, len(keys), 200):
+        part = ",".join("'%s'" % k.replace("'", "''") for k in keys[i:i + 200])
+        rows = core.simbad("SELECT i.id, b.oid, b.ra, b.dec, b.pmra, b.pmdec, b.plx_value, b.rvz_radvel, b.rvz_err, b.rvz_type, b.sp_type, b.otype "
+                           "FROM ident AS i JOIN basic AS b ON b.oid = i.oidref WHERE i.id IN (%s)" % part)
+        oids = {r["oid"]: r for r in rows}
+        gaia = {}
+        if oids:
+            for g in core.simbad("SELECT oidref, id FROM ident WHERE id LIKE 'Gaia DR3 %%' AND oidref IN (%s)" % ",".join(str(o) for o in oids)):
+                gaia[g["oidref"]] = g["id"].split()[-1]
+        for r in rows:
+            out[r["id"]] = dict(ra=r["ra"], dec=r["dec"], pmra=r["pmra"] or 0.0, pmdec=r["pmdec"] or 0.0, plx=r["plx_value"] or np.nan,
+                                rv=r["rvz_radvel"] if r["rvz_radvel"] is not None and r["rvz_type"] in ("v", None) else np.nan,
+                                rv_err=r["rvz_err"] if r["rvz_err"] is not None else np.nan, gaia=gaia.get(r["oid"]),
+                                sp=(r["sp_type"] or "").strip(), otype=(r["otype"] or "").strip())
+    return {n: out.get(ids[n]) for n in names}
+
+
+# Earth's transit zone: the band within which an observer sees Earth cross the Sun's disc (Heller and Pudritz 2016)
+waterhole_ETZ_DEG = 0.264
+# light from our first strong radio leakage (1936) there and a reply back by now: 45 light years
+waterhole_REPLY_PC = 13.8
+
+
+def waterhole_hz_hosts():
+    """Positions and distances of the NASA Exoplanet Archive's hosts within 60 pc of a planet at 0.2-2 Earth insolations or 175-320 K."""
+    rows = core.exoplanets("SELECT hostname, ra, dec, sy_dist, pl_name FROM pscomppars WHERE sy_dist < 60 AND "
+                           "((pl_insol >= 0.2 AND pl_insol <= 2.0) OR (pl_eqt >= 175 AND pl_eqt <= 320))")
+    return [(float(r["ra"]), float(r["dec"]), core.num(r["sy_dist"]), r["pl_name"]) for r in rows if core.num(r["ra"]) is not None]
+
+
+def waterhole_tier(st, hz):
+    """A star's tier as the host of a deliberate beacon, with the reasons, or None with the reason it is set aside: white dwarfs, young stars, O, B and A stars and giants have had no long stable main sequence; tier 1 are stars in Earth's transit zone, hosts of temperate planets and dwarfs within our radio reply radius, tier 2 Sun-like F5-K5 dwarfs within 50 pc, tier 3 other dwarfs within 30 pc."""
+    sp, ot = st.get("sp") or "", st.get("otype") or ""
+    d = 1000.0 / st["plx"] if st.get("plx") and st["plx"] > 0 else None
+    if ot.startswith("WD") or sp.startswith("D"):
+        return None, ["white dwarf"]
+    if ot in ("Y*O", "Y*?", "TT*", "TT?", "Ae*", "Or*", "YSO"):
+        return None, ["young star"]
+    if re.match(r"^(O|B|A)", sp):
+        return None, ["%s type, a short main sequence" % sp[:1]]
+    lum = re.search(r"(?<![A-Z])(Ia|Ib|II|III|IV|V)(?![I])", sp.replace("IV-V", "V").replace("IV/V", "V"))
+    if lum and lum.group(1) in ("Ia", "Ib", "II", "III"):
+        return None, ["giant (%s)" % sp]
+    if d is None or d > 50:
+        return None, ["beyond 50 pc or no parallax"]
+    beta = abs(float(science.ecliptic_lon_lat(st["ra"], st["dec"])[1]))
+    why = []
+    if beta < waterhole_ETZ_DEG:
+        why.append("Earth transit zone (|beta| %.3f deg)" % beta)
+    # 20 arcsec holds a fast star's motion between the catalogues' epochs and leaves out a wide companion's planet (16 Cyg A and B lie 40 arcsec apart)
+    host = [h for h in hz if core.sep_arcsec(st["ra"], st["dec"], h[0], h[1]) < 20 and (h[2] is None or abs(h[2] - d) < 0.2 * d)]
+    if host:
+        why.append("temperate planet %s" % ", ".join(sorted({h[3] for h in host})))
+    subgiant = bool(lum and lum.group(1) == "IV")
+    if d <= waterhole_REPLY_PC and not subgiant:
+        why.append("within the radio reply radius (%.1f pc)" % d)
+    if why:
+        return 1, why
+    m = re.match(r"^([FGKM])(\d(?:\.\d)?)?", sp)
+    sub = float(m.group(2)) if m and m.group(2) else 5.0
+    if m and not subgiant and ((m.group(1) == "F" and sub >= 5) or m.group(1) == "G" or (m.group(1) == "K" and sub <= 5)):
+        return 2, ["Sun-like %s dwarf at %.1f pc" % (sp, d)]
+    if d <= 30:
+        return 3, ["%s at %.1f pc" % (sp or "unclassified star", d)]
+    return None, ["%s beyond 30 pc" % (sp or "unclassified star")]
+
+
+def waterhole_windows(st, mjd0):
+    """Each line group's window (MHz at the telescope): the arrival frequencies of its lines for a sender at rest in the CMB, the Galaxy, the barycentre or its star, over a cadence from mjd0, widened by the margin."""
+    from setitools.science import frame_rest_velocity
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+    st = {k: (np.nan if v is None else v) for k, v in st.items()}
+    lines = {"%s_%d" % (g, i): f for g, fs in waterhole_LINES.items() for i, f in enumerate(fs)}
+    # eight instants across the cadence's six scans bound the predictions as well as every spectrum would
+    tr, _ = frames_tracks(st, mjd0, 6 * waterhole_NT * waterhole_TSAMP / 8.0, 8, lines)
+    g = SkyCoord(st["ra"] * u.deg, st["dec"] * u.deg).galactic
+    v_gsr = float(frame_rest_velocity("gsr", g.l.deg, g.b.deg)[0])
+    out = {}
+    for grp, fs in waterhole_LINES.items():
+        lo, hi = [], []
+        for i, f0 in enumerate(fs):
+            frames = tr["%s_%d" % (grp, i)]
+            obs = frames["ssb"] / f0
+            preds = [np.asarray(v) for v in frames.values()] + [f0 / (1.0 + v_gsr / frames_C) * obs]
+            pad = f0 * waterhole_MARGIN / frames_C
+            lo.append(min(float(np.min(p)) for p in preds) - pad)
+            hi.append(max(float(np.max(p)) for p in preds) + pad)
+        out[grp] = (min(lo), max(hi))
+    return out
+
+
+def waterhole_plan():
+    """Each star's ABACAD cadences of the high-drift plan whose band is L or not yet known, most recent first, with their ON and OFF scans' 3 Hz files as the session's holding directory lists them; stars nearest first, those the rest-frame track search covered and those SIMBAD does not resolve set aside."""
+    from concurrent.futures import ThreadPoolExecutor
+    cads = json.load(open(os.path.join(highdrift_ROOT, "plan.json")))
+    # the high-drift results' receiver band of each cadence, keyed by session and first scan
+    bpath = os.path.join(waterhole_ROOT, "bands.json")
+    bands = json.load(open(bpath)) if os.path.exists(bpath) else {}
+    sessions = sorted({c["session"] for c in cads})
+    with ThreadPoolExecutor(8) as ex:
+        hold = dict(zip(sessions, ex.map(waterhole_holding, sessions)))
+    per = {}
+    for c in cads:
+        band = bands.get(c["session"] + "|" + c["scans"][0]["file"].split("/")[-1])
+        if band not in (None, "L"):
+            continue
+        files = hold.get(c["session"]) or set()
+        scans = []
+        for s in c["scans"]:
+            name = s["file"].split("/")[-1].replace(".gpuspec.0002.h5", ".gpuspec.0000.h5")
+            scans.append(dict(url=highdrift_PIPE + c["session"] + "/holding/" + name, mjd=s["mjd"], target=s["target"], on=s["on"], listed=name in files))
+        if sum(s["on"] and s["listed"] for s in scans) >= 2:
+            per.setdefault(c["target"], []).append(dict(session=c["session"], band=band, scans=scans))
+    stars = waterhole_stars(sorted(per))
+    import sqlite3
+    done = {t for (t,) in sqlite3.connect(core.COVERAGE).execute("SELECT target FROM coverage WHERE search_id = 'bl_rest_frame_tracks'")}
+    plan, skipped, unresolved = [], [], []
+    for name, cs in sorted(per.items()):
+        st = stars.get(name)
+        hip = re.match(r"^hip[ _-]?(\d+)$", name, re.I)
+        if (hip and "hip:%s" % hip.group(1) in done) or (st and st.get("gaia") and "gaia_dr3:%s" % st["gaia"] in done):
+            skipped.append(name)
+        elif st is None:
+            unresolved.append(name)
+        else:
+            plan.append(dict(target=name, star={k: (None if isinstance(v, float) and not np.isfinite(v) else v) for k, v in st.items()}, cadences=cs))
+    # one star under several spellings of its name (GJ905, Gj905) is planned once, its cadences pooled
+    merged = {}
+    for p in plan:
+        key = p["star"].get("gaia") or "%.4f %+.4f" % (p["star"]["ra"], p["star"]["dec"])
+        if key in merged:
+            merged[key]["cadences"] += p["cadences"]
+            merged[key]["names"].append(p["target"])
+        else:
+            merged[key] = dict(p, names=[p["target"]])
+    plan = list(merged.values())
+    import collections
+    hz = waterhole_hz_hosts()
+    tiers, aside = collections.Counter(), collections.Counter()
+    for p in plan:
+        p["cadences"].sort(key=lambda c: (c["band"] != "L", -max(s["mjd"] for s in c["scans"])))
+        p["tier"], p["why"] = waterhole_tier(p["star"], hz)
+        tiers[p["tier"]] += 1
+        if p["tier"] is None:
+            w = p["why"][0]
+            aside["giants" if w.startswith("giant") else "O, B and A stars" if "short main sequence" in w else "not Sun-like beyond 30 pc"
+                  if w.endswith("beyond 30 pc") else w] += 1
+    plan.sort(key=lambda p: (p["tier"] is None, p["tier"] or 9, -(p["star"]["plx"] or 0.0)))
+    os.makedirs(waterhole_ROOT, exist_ok=True)
+    json.dump(plan, open(os.path.join(waterhole_ROOT, "plan.json"), "w"), indent=1)
+    print("%d sessions listed (%d not answering); %d stars with an L-band or unknown-band cadence of two or more listed ON scans; %d searched before and %d "
+          "unresolved set aside; %d stars: tier 1 %d, tier 2 %d, tier 3 %d; set aside %s"
+          % (len(sessions), sum(1 for v in hold.values() if v is None), len(per), len(skipped), len(unresolved), len(plan), tiers[1], tiers[2], tiers[3],
+             ", ".join("%s %d" % kv for kv in aside.most_common())))
+    for p in plan:
+        if p["tier"] == 1:
+            print("  tier 1 %-12s %s" % (p["target"], "; ".join(p["why"])))
+
+
+def waterhole_blob(url, meta, k, streams):
+    """One coarse channel's compressed chunks into the cache that science.cached_channel reads, unless there already; the bytes fetched."""
+    name = url.rstrip("/").split("/")[-1]
+    path = os.path.join(core.CACHE, "blob", "%s.k%d.bin" % (name, k))
+    spans = [tuple(x) for row in meta["spans"][str(k)][2] for x in row]
+    size = sum(s for _, s in spans)
+    if os.path.exists(path) and os.path.getsize(path) == size:
+        return 0
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    # chunks that follow one another in the file come down in one request, the bytes split by their sizes afterwards
+    runs = []
+    for off, n in spans:
+        if runs and runs[-1][0] + runs[-1][1] == off:
+            runs[-1][1] += n
+        else:
+            runs.append([off, n])
+    raw = b"".join(core.pmap(lambda q: core.get(url, byte_range=(q[0], q[0] + q[1] - 1), timeout=600), runs, streams))
+    if len(raw) != size:
+        raise IOError("%s channel %d: %d bytes for %d" % (name, k, len(raw), size))
+    with open(path + ".%d.tmp" % os.getpid(), "wb") as fh:
+        fh.write(raw)
+    os.replace(path + ".%d.tmp" % os.getpid(), path)
+    return size
+
+
+def waterhole_channels(meta, window):
+    """The coarse channels a window (MHz) overlaps in a file."""
+    n = meta["nch"] // science.COARSE
+    j = sorted((f - meta["fch1"]) / meta["foff"] for f in window)
+    return [k for k in range(max(int(j[0] // science.COARSE), 0), min(int(j[1] // science.COARSE), n - 1) + 1)]
+
+
+def waterhole_band(url):
+    """The centre frequency (MHz) of a 3 Hz file from its header."""
+    meta = science.header(url)
+    return meta["fch1"] + meta["foff"] * meta["nch"] / 2.0
+
+
+def waterhole_header(url, window):
+    """A 3 Hz file's metadata with the chunk spans of the coarse channels a window overlaps, kept where science.header keeps it: (metadata, channels); the spans of channels not yet indexed come from a walk of the file's chunk tree into those channels' branches alone."""
+    import threading
+    name = url.rstrip("/").split("/")[-1]
+    path = os.path.join(core.CACHE, "idx", name + ".json")
+    try:
+        meta = json.load(open(path)) if os.path.exists(path) else None
+    except ValueError:
+        # a file a power cut left unwritten is read again from the archive
+        meta = None
+    if meta is not None and all(str(k) in meta["spans"] for k in waterhole_channels(meta, window)):
+        return meta, waterhole_channels(meta, window)
+    if meta is None:
+        meta, _ = science.chunk_table(url, threads=8, coarse_channels=[])
+    ks = waterhole_channels(meta, window)
+    missing = [k for k in ks if str(k) not in meta["spans"]]
+    if missing:
+        _, chunks = science.chunk_table(url, threads=8, coarse_channels=missing)
+        cw = meta["cw"]
+        for k in missing:
+            j0, j1 = (k * science.COARSE) // cw, ((k + 1) * science.COARSE - 1) // cw
+            meta["spans"][str(k)] = [j0, j1, chunks[:, j0:j1 + 1].tolist()]
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = "%s.%d.%d.tmp" % (path, os.getpid(), threading.get_ident())
+    json.dump(meta, open(tmp, "w"))
+    os.replace(tmp, path)
+    return meta, ks
+
+
+waterhole_ORDER = ((1, "HI"), (1, "OH"), (2, "HI"), (3, "HI"), (2, "OH"), (3, "OH"))
+
+
+def waterhole_fetch(hours=7.0, budget_gb=300.0, workers=30):
+    """The tiered stars' ON scans, hydrogen and OH of tier 1, then hydrogen of tiers 2 and 3, then their OH, each tier nearest first: each star's first L-band cadence (the band read from a header where the plan has none), and for each ON scan the coarse channels within the group's window, one connection a scan on WORKERS threads, until the deadline or the byte budget; ROOT/fetched.jsonl logs the chosen cadences and every scan fetched, which a later run passes over."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, FIRST_COMPLETED, wait
+    plan = [p for p in json.load(open(os.path.join(waterhole_ROOT, "plan.json"))) if p.get("tier")]
+    log_path = os.path.join(waterhole_ROOT, "fetched.jsonl")
+    recs = [json.loads(x) for x in open(log_path)] if os.path.exists(log_path) else []
+    chosen = {r["target"]: r["session"] for r in recs if r.get("chosen")}
+    done = {(r["url"], r["group"]) for r in recs if r.get("url") and r.get("bytes") is not None}
+    done |= {(s["url"], r["group"]) for r in recs if r.get("done") for s in r.get("scans", []) if "error" not in s}
+    lock = threading.Lock()
+    deadline, budget, got, t0 = time.time() + hours * 3600.0, budget_gb * 1e9, [0, 0], time.time()
+
+    def log(rec):
+        with lock:
+            open(log_path, "a").write(json.dumps(rec) + "\n")
+
+    def choose(p):
+        if p["target"] in chosen:
+            return
+        for c in p["cadences"]:
+            s = next(s for s in c["scans"] if s["on"] and s["listed"])
+            try:
+                band = c["band"] or ("L" if 1100.0 < waterhole_band(s["url"]) < 1900.0 else "other")
+            except Exception:
+                continue
+            if band == "L":
+                chosen[p["target"]] = c["session"]
+                log(dict(target=p["target"], session=c["session"], chosen=True))
+                return
+    with ThreadPoolExecutor(workers) as ex:
+        list(ex.map(choose, plan))
+    tasks = []
+    for tier, g in waterhole_ORDER:
+        for p in [p for p in plan if p["tier"] == tier and p["target"] in chosen]:
+            c = next(c for c in p["cadences"] if c["session"] == chosen[p["target"]])
+            tasks += [dict(target=p["target"], group=g, session=c["session"], url=s["url"], star=p["star"], mjd0=c["scans"][0]["mjd"])
+                      for s in c["scans"] if s["on"] and s["listed"] and (s["url"], g) not in done]
+    print("%d of %d tiered stars with an L-band cadence; %d scans to fetch" % (len(chosen), len(plan), len(tasks)), flush=True)
+    windows = {}
+    for t in tasks:
+        key = (t["target"], t["group"])
+        if key not in windows:
+            windows[key] = waterhole_windows(t["star"], t["mjd0"])[t["group"]]
+        t["window"] = windows[key]
+
+    def one(t):
+        try:
+            meta, ks = waterhole_header(t["url"], t["window"])
+            b = sum(waterhole_blob(t["url"], meta, k, 1) for k in ks)
+            log(dict(target=t["target"], group=t["group"], session=t["session"], url=t["url"], window=t["window"], channels=ks, bytes=b))
+        except Exception as exc:
+            b = 0
+            log(dict(target=t["target"], group=t["group"], session=t["session"], url=t["url"], error=repr(exc)[:200]))
+        with lock:
+            got[0] += b
+            got[1] += 1
+            if got[1] % 30 == 0:
+                print("%d scans, %.1f GB in %.0f min (%.1f MB/s)" % (got[1], got[0] / 1e9, (time.time() - t0) / 60, got[0] / 1e6 / max(time.time() - t0, 1)), flush=True)
+    pending, it = set(), iter(tasks)
+    with ThreadPoolExecutor(workers) as ex:
+        while True:
+            while len(pending) < workers and time.time() < deadline and got[0] < budget:
+                t = next(it, None)
+                if t is None:
+                    break
+                pending.add(ex.submit(one, t))
+            if not pending:
+                break
+            finished, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for f in finished:
+                if f.exception():
+                    print("  a scan failed: %r" % f.exception(), flush=True)
+    print("stopped: %d scans, %.1f GB in %.1f h; %s" % (got[1], got[0] / 1e9, (time.time() - t0) / 3600,
+                                                     "deadline" if time.time() >= deadline else "budget" if got[0] >= budget else "every scan fetched"))
+
+
+waterhole_SNR = 7.0
+waterhole_DRIFT = 20.0
+waterhole_TOL = 3
+
+
+def waterhole_fetched():
+    """Every fetched star and line group from ROOT/fetched.jsonl: {(target, group): {session, window, scans: [{url, channels}]}}, each scan once."""
+    out = {}
+    for line in open(os.path.join(waterhole_ROOT, "fetched.jsonl")):
+        r = json.loads(line)
+        if r.get("channels") and r.get("bytes") is not None:
+            scans = [dict(url=r["url"], channels=r["channels"])]
+        elif r.get("done"):
+            scans = [dict(url=s["url"], channels=s["channels"]) for s in r.get("scans", []) if "error" not in s and s.get("channels")]
+        else:
+            continue
+        if not scans or not r.get("window"):
+            continue
+        d = out.setdefault((r["target"], r["group"]), dict(session=r.get("session"), window=r["window"], scans=[]))
+        for s in scans:
+            if all(s["url"] != x["url"] for x in d["scans"]):
+                d["scans"].append(s)
+    return out
+
+
+def waterhole_load(url, channels):
+    """One scan's cached coarse channels side by side: the spectrogram, its first channel's frequency (MHz) and the metadata, or None when any is not cached."""
+    name = url.rstrip("/").split("/")[-1]
+    parts = []
+    for k in sorted(channels):
+        got = science.cached_channel(name, k)
+        if got is None:
+            return None
+        parts.append(got[0])
+    meta = got[1]
+    return np.concatenate(parts, axis=1), meta["fch1"] + meta["foff"] * min(channels) * science.COARSE, meta
+
+
+def waterhole_scan_search(x, meta, f0, window, dev, snr_thr=waterhole_SNR, dmax=waterhole_DRIFT):
+    """Hits of one scan within the window: the spectrogram flattened and standardised, each drift's track summed over the sixteen spectra after each spectrum is summed over the channels the track crosses in one step, so a fast drift keeps its power, and the best sum per channel at or above the threshold kept as hits, one per 2 TOL channels; with the best-sum array and the drift step (Hz/s)."""
+    import torch
+    nt, nch = x.shape
+    tsamp, foff = meta["tsamp"], meta["foff"] * 1e6
+    z = np.clip(science.flatten(x), -50, 50).astype(np.float32)
+    step = abs(foff) / (nt * tsamp)
+    drifts = step * np.arange(-int(dmax / step), int(dmax / step) + 1)
+    t = (np.arange(nt) - (nt - 1) / 2.0) * tsamp
+    zt = torch.as_tensor(z, device=dev)
+    base = torch.arange(nch, device=dev)
+    best = torch.full((nch,), -1e9, device=dev)
+    bestd = torch.zeros(nch, dtype=torch.long, device=dev)
+    # the channels a track crosses within one spectrum, the same for every drift of that spread
+    widths = np.maximum(1, np.ceil(np.abs(drifts) * tsamp / abs(foff))).astype(int)
+    cum = torch.cumsum(torch.nn.functional.pad(zt, (1, 0)), dim=1)
+    for w in np.unique(widths):
+        lo, hi = w // 2, w - w // 2
+        idx_hi = (base + hi).clamp(0, nch)
+        idx_lo = (base - lo).clamp(0, nch)
+        box = (cum[:, idx_hi] - cum[:, idx_lo]) / math.sqrt(w)
+        for i in np.nonzero(widths == w)[0]:
+            sh = torch.as_tensor(np.round(drifts[i] * t / foff).astype(np.int64), device=dev)
+            idx = (base[None, :] + sh[:, None]).clamp_(0, nch - 1)
+            acc = box.gather(1, idx).sum(0) / math.sqrt(nt)
+            better = acc > best
+            best = torch.where(better, acc, best)
+            bestd = torch.where(better, torch.full_like(bestd, int(i)), bestd)
+    snr, di = best.cpu().numpy(), bestd.cpu().numpy()
+    edge = int(np.ceil(dmax * nt * tsamp / abs(foff))) + 2
+    snr[:edge] = -1e9
+    snr[nch - edge:] = -1e9
+    c_lo, c_hi = sorted(int(round((f - f0) / meta["foff"])) for f in window)
+    hits = []
+    taken = np.zeros(nch, bool)
+    for c in np.argsort(-snr):
+        if snr[c] < snr_thr:
+            break
+        if c < c_lo or c > c_hi or taken[c]:
+            continue
+        taken[max(c - 2 * waterhole_TOL, 0):c + 2 * waterhole_TOL + 1] = True
+        hits.append(dict(chan=int(c), freq_mhz=float(f0 + meta["foff"] * c), drift=float(drifts[di[c]]), snr=float(snr[c]), width=int(widths[di[c]])))
+    return hits, snr, step
+
+
+def waterhole_events(scans, step):
+    """Hits present in every ON scan along one drift: each first-scan hit carried to the others at its drift, matched within TOL channels and 2.5 drift steps."""
+    foff = scans[0]["meta"]["foff"] * 1e6
+    events = []
+    for h in scans[0]["hits"]:
+        chain = [h]
+        for s in scans[1:]:
+            dt = (s["mjd"] - scans[0]["mjd"]) * 86400.0
+            c = h["chan"] + h["drift"] * dt / foff + (s["c0"] - scans[0]["c0"])
+            m = [g for g in s["hits"] if abs(g["chan"] - c) <= waterhole_TOL and abs(g["drift"] - h["drift"]) <= 2.5 * step]
+            if not m:
+                break
+            chain.append(max(m, key=lambda g: g["snr"]))
+        if len(chain) == len(scans):
+            events.append(dict(freq_mhz=h["freq_mhz"], drift=h["drift"], snr=[g["snr"] for g in chain], chans=[g["chan"] for g in chain]))
+    return events
+
+
+def waterhole_search(limit=0, snr=waterhole_SNR, drift=waterhole_DRIFT, redo=False):
+    """Every fetched star and line group with two or more ON scans cached: each ON scan searched on the GPU, hits recurring in every ON scan along one drift kept as events, the result written to ROOT/results/TARGET.GROUP.json and a line printed; a group with a result is passed over unless redo."""
+    import torch
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    os.makedirs(os.path.join(waterhole_ROOT, "results"), exist_ok=True)
+    done, n_events, n = 0, 0, 0
+    for (target, group), d in sorted(waterhole_fetched().items()):
+        path = os.path.join(waterhole_ROOT, "results", "%s.%s.json" % (re.sub(r"[^A-Za-z0-9+_.-]", "_", target), group))
+        if os.path.exists(path) and not redo:
+            continue
+        scans = []
+        for s in d["scans"]:
+            got = waterhole_load(s["url"], s["channels"])
+            if got is None:
+                continue
+            x, f0, meta = got
+            hits, best, step = waterhole_scan_search(x, meta, f0, d["window"], dev, snr, drift)
+            c0 = int(round((d["window"][1] - f0) / meta["foff"]))
+            scans.append(dict(url=s["url"], mjd=meta["tstart"] + meta["nt"] * meta["tsamp"] / 172800.0, hits=hits, meta=dict(foff=meta["foff"], tsamp=meta["tsamp"]),
+                              c0=c0, best_in_window=float(np.max(best[max(c0, 0):])) if c0 < len(best) else None))
+        if len(scans) < 2:
+            continue
+        scans.sort(key=lambda s: s["mjd"])
+        events = waterhole_events(scans, step)
+        json.dump(dict(target=target, group=group, session=d["session"], window=d["window"], snr=snr, drift=drift,
+                       scans=[{k: v for k, v in s.items() if k != "best"} for s in scans], events=events), open(path, "w"), indent=1)
+        done += 1
+        n_events += len(events)
+        print("%-12s %-3s %d ON scans, hits %s, events %d%s" % (target, group, len(scans), [len(s["hits"]) for s in scans], len(events),
+                                                            "; strongest %.4f MHz %+.2f Hz/s S/N %s" % (events[0]["freq_mhz"], events[0]["drift"], [round(v, 1) for v in events[0]["snr"]]) if events else ""), flush=True)
+        n += 1
+        if limit and n >= limit:
+            break
+    print("%d star-groups searched, %d events" % (done, n_events))
+
+
+def waterhole_cli():
+    p = argparse.ArgumentParser(prog="seti.py breakthrough waterhole")
+    p.add_argument("mode", choices=("plan", "fetch", "search"))
+    p.add_argument("--hours", type=float, default=7.0)
+    p.add_argument("--budget-gb", type=float, default=300.0)
+    p.add_argument("--workers", type=int, default=30)
+    p.add_argument("--limit", type=int, default=0)
+    p.add_argument("--snr", type=float, default=waterhole_SNR)
+    p.add_argument("--drift", type=float, default=waterhole_DRIFT)
+    p.add_argument("--redo", action="store_true")
+    a = p.parse_args()
+    quiet_warnings()
+    if a.mode == "plan":
+        waterhole_plan()
+    elif a.mode == "fetch":
+        waterhole_fetch(a.hours, a.budget_gb, a.workers)
+    else:
+        waterhole_search(a.limit, a.snr, a.drift, a.redo)
+
+
 APPROACHES = {
+    "waterhole": (waterhole_cli, waterhole_DOC),
     "shgb": (lambda: core.run_cli(shgb_main), shgb_DOC),
     "highdrift": (highdrift_cli, highdrift_DOC),
     "soi": (soi_cli, soi_DOC),

@@ -3018,7 +3018,1964 @@ def combs_main(record=False, ghz_min=20.0, ghz_max=1000.0, ratio_min=30.0, twins
         print("recorded")
 
 
+giants_DOC = r"""Planet-frame compositions of the giant planets: every archived high-resolution spectrum (ESO HARPS, ESPRESSO, NIRPS, CRIRES and UVES; CFHT SPIRou; Keck NIRSPEC) of the hosts of giant planets brighter than V 11, each spectrum placed on the planet's orbit from the archive's ephemeris (transit, secondary eclipse, dayside or other phase); the transits cross-correlated in the planet's frame with templates of nine atoms in the optical and of CO and H2O in the near-infrared, summed on a map over K_p and rest velocity and read against a sham of out-of-transit rows; reflected starlight of the planets without a transit, the star's own spectrum as the template; dayside emission in SPIRou spectra.
+
+    python -I seti.py composition giants plan [--vmax 11]         archives queried, spectra placed on the orbits: ROOT/plan.json
+    python -I seti.py composition giants fetch [--streams 4] [--planets NAME ...] [--instruments INST ...] [--min-in 4] [--night-per-in 2]
+    python -I seti.py composition giants search [--planets NAME ...] [--instruments INST ...] [--species ...] [--sigma 4] [--temp K] [--sysrem 0] [--weight log|sqrt|linear] [--inject 0] [--no-whiten] [--no-shadow] [--redo]
+    python -I seti.py composition giants reflected [--planets NAME ...] [--max-spectra 300] [--components 5] [--probe 1e-4] [--redo]
+    python -I seti.py composition giants emission [--planets NAME ...] [--species CO H2O] [--sysrem 6] [--components 0] [--probe 3e-4] [--redo]
+    python -I seti.py composition giants record [--sigma 4]"""
+
+giants_ROOT = core.data("giants")
+
+
+def giants_planets(vmax=11.0):
+    """The giant planets (0.1 Jupiter masses or 0.5 Jupiter radii and more) of hosts brighter than V VMAX with their ephemerides, the time of inferior conjunction of a radial-velocity planet taken from its periastron and argument of periastron."""
+    rows = core.exoplanets("SELECT pl_name, hostname, ra, dec, sy_dist, st_teff, st_rad, st_mass, st_radv, st_vsin, pl_bmassj, pl_radj, pl_ratror, pl_orbsmax, "
+                           "pl_orbper, pl_orbeccen, pl_orblper, pl_orbtper, pl_tranmid, pl_trandur, pl_eqt, sy_vmag, sy_kmag, tran_flag FROM pscomppars WHERE "
+                           "(pl_bmassj >= 0.1 OR pl_radj >= 0.5) AND sy_vmag < %g AND pl_orbper IS NOT NULL ORDER BY sy_vmag" % vmax)
+    out = []
+    # hosts the archive lists without a systemic velocity take SIMBAD's
+    missing = sorted({r["hostname"] for r in rows if core.num(r["st_radv"]) is None})
+    simbad = {}
+    for i in range(0, len(missing), 100):
+        names = "', '".join(n.replace("'", "''") for n in missing[i:i + 100])
+        try:
+            for s in core.tap("simbad", "SELECT ident.id, basic.rvz_radvel FROM basic JOIN ident ON ident.oidref = basic.oid WHERE ident.id IN ('%s')" % names):
+                if core.num(s["rvz_radvel"]) is not None:
+                    simbad[s["id"]] = core.num(s["rvz_radvel"])
+        except Exception:
+            pass
+    for r in rows:
+        p = {k: (r[k] if k in ("pl_name", "hostname") else core.num(r[k])) for k in r}
+        if p["st_radv"] is None:
+            p["st_radv"] = simbad.get(p["hostname"])
+        if p["pl_tranmid"] is None and p["pl_orbtper"] is not None and p["pl_orblper"] is not None:
+            # inferior conjunction follows periastron by (90 - omega) degrees of mean anomaly on a near-circular orbit
+            p["pl_tranmid"] = p["pl_orbtper"] + p["pl_orbper"] * ((90.0 - p["pl_orblper"]) % 360.0) / 360.0
+        if p["pl_tranmid"] is None:
+            continue
+        if p["pl_trandur"] is None and p["st_rad"] and p["pl_orbsmax"]:
+            # a central transit's duration from the star's radius and the orbit's size
+            p["pl_trandur"] = 24.0 * p["pl_orbper"] / math.pi * math.asin(min(p["st_rad"] * 0.00465047 / p["pl_orbsmax"], 1.0))
+        out.append(p)
+    return out
+
+
+def giants_place(p, rows):
+    """A planet's archived spectra by instrument with each spectrum's orbital phase and place: transit, eclipse, day (phase 0.3-0.7) or other."""
+    tc, per = p["pl_tranmid"] - 2400000.5, p["pl_orbper"]
+    half = (p["pl_trandur"] or 3.0) / 48.0
+    out = {}
+    for r in rows:
+        mid = 0.5 * (r["t0"] + r["t1"])
+        phase = ((mid - tc) / per) % 1.0
+        d = min(phase, 1.0 - phase) * per
+        place = "transit" if d < half and p.get("tran_flag") else "eclipse" if abs(phase - 0.5) * per < half and p.get("tran_flag") else "day" if 0.3 < phase < 0.7 else "other"
+        out.setdefault(r["inst"], []).append(dict(r, phase=round(phase, 4), place=place))
+    return out
+
+
+def giants_plan(vmax=11.0):
+    """The giant planets with their archived spectra placed on their orbits, into ROOT/plan.json, the archive answers kept in ROOT/archives.json."""
+    os.makedirs(giants_ROOT, exist_ok=True)
+    planets = giants_planets(vmax)
+    hosts = {}
+    for p in planets:
+        hosts.setdefault(p["hostname"], dict(ra=p["ra"], dec=p["dec"]))
+    apath = os.path.join(giants_ROOT, "archives.json")
+    arch = json.load(open(apath)) if os.path.exists(apath) else {}
+    todo = sorted(h for h in hosts if h not in arch)
+
+    def one(name):
+        try:
+            return name, core.archive_spectra(hosts[name]["ra"], hosts[name]["dec"]), None
+        except Exception as e:
+            return name, None, str(e)[:200]
+    errors = {}
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(4) as ex:
+        # answers are kept as they arrive, so a run cut short keeps what it had
+        for i, (name, rows, err) in enumerate(ex.map(one, todo)):
+            if rows is None:
+                errors[name] = err
+            else:
+                arch[name] = rows
+            if (i + 1) % 25 == 0:
+                json.dump(arch, open(apath, "w"))
+    json.dump(arch, open(apath, "w"))
+    plan = []
+    for p in planets:
+        placed = giants_place(p, arch.get(p["hostname"], []))
+        if placed:
+            plan.append(dict(p, instruments=placed))
+    json.dump(plan, open(os.path.join(giants_ROOT, "plan.json"), "w"), indent=1)
+    print("%d giant planets of %d hosts brighter than V %g; %d hosts with archived spectra (%d archives not answering); %d planets with spectra"
+          % (len(planets), len(hosts), vmax, sum(1 for h in hosts if arch.get(h)), len(errors), len(plan)))
+    print("%-18s %-9s %7s %7s %5s %5s" % ("planet", "inst", "transit", "eclipse", "day", "other"))
+    for p in plan:
+        for inst, rows in sorted(p["instruments"].items()):
+            c = {k: sum(1 for r in rows if r["place"] == k) for k in ("transit", "eclipse", "day", "other")}
+            if c["transit"] or c["eclipse"] or c["day"] >= 5:
+                print("%-18s %-9s %7d %7d %5d %5d" % (p["pl_name"], inst, c["transit"], c["eclipse"], c["day"], c["other"]))
+
+
+giants_SPECIES = ("Fe I", "Fe II", "Ti I", "V I", "Cr I", "Na I", "Ca I", "Mg I", "K I")
+giants_MOLECULES = ("H2O", "CO")
+# the two bands: the optical spectrographs and the near-infrared ones, each with its grid's span (A) and the telluric bands left out
+giants_BANDS = {"optical": dict(lo=3800.0, hi=7880.0, telluric=((6270.0, 6330.0), (6440.0, 6620.0), (6860.0, 6970.0), (7150.0, 7360.0), (7580.0, 7720.0)),
+                                instruments=("ESPRESSO", "HARPS", "UVES")),
+                "nir": dict(lo=9500.0, hi=25000.0, telluric=((11050.0, 11700.0), (13300.0, 14900.0), (17900.0, 19700.0), (24000.0, 25000.0)),
+                            instruments=("SPIRou", "NIRPS", "CRIRES", "NIRSPEC"))}
+# sky emission at the telescope's wavelengths (A, air): the sodium nightglow doublet, masked 6 km/s either side in every spectrum
+giants_SKY = (5889.95, 5895.92)
+giants_LOGGRID = {}
+
+
+def giants_band(inst):
+    """The band an instrument's spectra belong to."""
+    return next(b for b, d in giants_BANDS.items() if inst in d["instruments"])
+
+
+def giants_grid(band="optical"):
+    """A band's common wavelength grid (A, air), uniform in velocity at 1 km/s."""
+    if band not in giants_LOGGRID:
+        lo, hi = giants_BANDS[band]["lo"], giants_BANDS[band]["hi"]
+        n = int(np.log(hi / lo) * 299792.458)
+        giants_LOGGRID[band] = lo * np.exp(np.arange(n) / 299792.458)
+    return giants_LOGGRID[band]
+
+
+giants_KURUCZ = os.path.join(giants_ROOT, "lines", "gfall08oct17.dat")
+giants_CODES = {"Fe I": "26.00", "Fe II": "26.01", "Ti I": "22.00", "Ti II": "22.01", "V I": "23.00", "Cr I": "24.00", "Cr II": "24.01", "Mn I": "25.00",
+                "Ni I": "28.00", "Co I": "27.00", "Na I": "11.00", "Ca I": "20.00", "Ca II": "20.01", "Mg I": "12.00", "K I": "19.00", "Sc II": "21.01",
+                "Y II": "39.01", "Ba II": "56.01", "Sr II": "38.01", "Li I": "3.00"}
+
+
+def giants_kurucz(species, band="optical"):
+    """A species' lines within a band's span from Kurucz's gfall list (air wavelengths above 200 nm): wavelengths (A), log gf and lower-level energies (cm^-1), parsed once into ROOT/lines/<species>_<band>.npz."""
+    cache = os.path.join(giants_ROOT, "lines", species.replace(" ", "_") + ("" if band == "optical" else "_" + band) + ".npz")
+    if os.path.exists(cache):
+        d = np.load(cache)
+        return d["lam"], d["loggf"], d["elow"]
+    code = giants_CODES[species]
+    lo, hi = giants_BANDS[band]["lo"], giants_BANDS[band]["hi"]
+    lam, loggf, elow = [], [], []
+    with open(giants_KURUCZ, encoding="ascii", errors="replace") as fh:
+        for line in fh:
+            if line[18:24].strip() != code:
+                continue
+            try:
+                w, gf, e = float(line[0:11]) * 10.0, float(line[11:18]), abs(float(line[24:36]))
+            except ValueError:
+                # a line of the list's other layouts
+                continue
+            if lo <= w <= hi:
+                lam.append(w)
+                loggf.append(gf)
+                elow.append(e)
+    lam, loggf, elow = np.array(lam), np.array(loggf), np.array(elow)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez(cache, lam=lam, loggf=loggf, elow=elow)
+    return lam, loggf, elow
+
+
+giants_WEIGHT = "log"
+
+
+giants_HITRAN = "https://hitran.org/lbl/api"
+giants_HITRAN_ISO = {"H2O": 1, "CO": 26, "CH4": 32, "CO2": 7, "NH3": 45, "HCN": 23}
+
+
+def giants_hitran(gas, lo_a=9500.0, hi_a=25000.0, step=100.0):
+    """A gas's HITRAN lines of its main isotopologue between two wavelengths (A): wavenumber (cm^-1), intensity at 296 K and lower-level energy (cm^-1), read page by page per wavenumber range until a page comes back empty, kept in ROOT/lines/<gas>_hitran.npz."""
+    import http.client
+    import time
+    import urllib.error
+    import urllib.request
+    cache = os.path.join(giants_ROOT, "lines", gas + "_hitran.npz")
+    if os.path.exists(cache):
+        d = np.load(cache)
+        return d["nu"], d["sw"], d["elow"]
+
+    def page(lo, hi):
+        url = giants_HITRAN + "?" + urllib.parse.urlencode(dict(iso_ids_list=giants_HITRAN_ISO[gas], numin="%.6f" % lo, numax="%.6f" % hi, request_params="nu,sw,elower"))
+        for attempt in range(4):
+            try:
+                body = urllib.request.urlopen(urllib.request.Request(url, headers=core.UA), timeout=300).read()
+            except http.client.IncompleteRead as e:
+                body = e.partial
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    return np.zeros((0, 3))
+                time.sleep(5 * (attempt + 1))
+                continue
+            except OSError:
+                time.sleep(5 * (attempt + 1))
+                continue
+            rows = [r.split(",") for r in body.decode("ascii", "replace").split() if r.count(",") == 2]
+            return np.array(rows[:-1] if len(rows) > 1 else rows, dtype=float).reshape(-1, 3)
+        raise IOError("HITRAN did not answer for %s %g-%g" % (gas, lo, hi))
+
+    def one(lo):
+        hi, parts = lo + step, []
+        while hi - lo > 1e-3:
+            a = page(lo, hi)
+            if not len(a):
+                break
+            parts.append(a)
+            lo = a[-1, 0] + 1e-6
+        return np.concatenate(parts) if parts else np.zeros((0, 3))
+    starts = np.arange(1e8 / hi_a, 1e8 / lo_a, step)
+    a = np.concatenate([x for x in core.pmap(one, starts, 4) if len(x)])
+    a = np.unique(a, axis=0)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez(cache, nu=a[:, 0], sw=a[:, 1], elow=a[:, 2])
+    return a[:, 0], a[:, 1], a[:, 2]
+
+
+giants_KURUCZ_MOL = {}
+
+
+def giants_kurucz_mol(gas, band="nir"):
+    """A molecule's lines within a band's span from Kurucz's molecular lists (Goorvitch's CO, Partridge and Schwenke's water as Kurucz fixed it; wavelengths in nm, air above 200 nm, log gf and the lower level's energy in cm^-1), parsed once into ROOT/lines/<gas>_<band>.npz."""
+    cache = os.path.join(giants_ROOT, "lines", gas + "_" + band + ".npz")
+    if os.path.exists(cache):
+        d = np.load(cache)
+        return d["lam"], d["loggf"], d["elow"]
+    lo, hi = giants_BANDS[band]["lo"], giants_BANDS[band]["hi"]
+    lam, loggf, elow = [], [], []
+    with open(os.path.join(giants_ROOT, "lines", giants_KURUCZ_MOL[gas]), encoding="ascii", errors="replace") as fh:
+        for line in fh:
+            try:
+                w = float(line[0:10]) * 10.0
+            except ValueError:
+                continue
+            if lo <= w <= hi:
+                try:
+                    gf, e = float(line[10:17]), abs(float(line[22:32]))
+                except ValueError:
+                    continue
+                lam.append(w)
+                loggf.append(gf)
+                elow.append(e)
+    lam, loggf, elow = np.array(lam), np.array(loggf), np.array(elow)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez(cache, lam=lam, loggf=loggf, elow=elow)
+    return lam, loggf, elow
+
+
+giants_PRT = os.path.join(giants_ROOT, "opacities")
+giants_PRT_NAMES = {"CO": "CO_main_iso", "H2O": "H2O_main_iso", "CH4": "CH4_main_iso", "CO2": "CO2_main_iso"}
+giants_PRT_TEMPS = (81.14, 109.6, 148.0, 200.0, 270.0, 365.0, 493.0, 666.0, 900.0, 1215.0, 1641.0, 2217.0, 2995.0)
+
+
+def giants_prt_array(path):
+    """A petitRADTRANS line-by-line file as float64 values: a Fortran unformatted record's markers stripped where the size says there are some, else the raw array."""
+    b = open(path, "rb").read()
+    if (len(b) - 8) % 8 == 0 and len(b) % 8 != 0 or (len(b) >= 16 and int.from_bytes(b[:4], "little") == len(b) - 8):
+        b = b[4:-4]
+    return np.frombuffer(b, dtype="<f8")
+
+
+def giants_template_prt(gas, t_k, band="nir", pressure="0.001000bar"):
+    """A molecule's transmission template on a band's grid from petitRADTRANS's line-by-line cross-sections (wavelengths in cm, sigma in cm2 at the grid temperature nearest T_K and PRESSURE): the cross-section binned to the grid, each sample within three decades of the strongest weighted by its decade, the strongest one; air wavelengths."""
+    from setitools import science
+    folder = os.path.join(giants_PRT, giants_PRT_NAMES[gas])
+    t_grid = min(giants_PRT_TEMPS, key=lambda t: abs(t - t_k))
+    sig_file = next((f for f in os.listdir(folder) if f.startswith("sigma_") and "_%d.K_" % round(t_grid) in f and pressure in f), None)
+    if sig_file is None:
+        return np.zeros(len(giants_grid(band)))
+    w = giants_prt_array(os.path.join(folder, "wlen.dat")) * 1e8
+    s = giants_prt_array(os.path.join(folder, sig_file))
+    n = min(len(w), len(s))
+    w, s = science.vac_to_air(w[:n]), s[:n]
+    g = giants_grid(band)
+    lo, hi = giants_BANDS[band]["lo"], giants_BANDS[band]["hi"]
+    keep = (w >= lo) & (w <= hi) & (s > 0)
+    i = np.clip(np.round(np.log(w[keep] / g[0]) * 299792.458).astype(int), 0, len(g) - 1)
+    binned = np.zeros(len(g))
+    np.maximum.at(binned, i, s[keep])
+    out = np.zeros(len(g))
+    pos = binned > 0
+    if not pos.any():
+        return out
+    out[pos] = np.clip(np.log10(binned[pos] / binned[pos].max()) + 3.0, 0.0, None) / 3.0
+    return out
+
+
+def giants_template(species, t_k, weight=None, band="optical"):
+    """A species' transmission template on a band's grid at a temperature: an atom's lines from Kurucz's list where it is held (NIST's otherwise) weighted by gf exp(-E_low/kT), a molecule's from HITRAN's main isotopologue with its 296 K intensities carried to the temperature through the lower level's Boltzmann factor and the stimulated-emission term; each line a Gaussian of 3 km/s, the weights by decade of strength (log), their square root (sqrt) or capped at the 99.5th percentile (linear), the strongest one; air wavelengths."""
+    from setitools import science
+    g = giants_grid(band)
+    lo, hi = giants_BANDS[band]["lo"], giants_BANDS[band]["hi"]
+    out = np.zeros(len(g))
+    # the lower level energy in cm^-1; Boltzmann's constant in eV/K, 1.2398e-4 eV per cm^-1 and the second radiation constant 1.4388 cm K
+    k_ev = 8.617333e-5
+    rows = []
+    if species in giants_PRT_NAMES and os.path.isdir(os.path.join(giants_PRT, giants_PRT_NAMES[species])):
+        return giants_template_prt(species, t_k, band)
+    if species in giants_KURUCZ_MOL and os.path.exists(os.path.join(giants_ROOT, "lines", giants_KURUCZ_MOL[species])):
+        lam, loggf, elow = giants_kurucz_mol(species, band)
+        rows = list(zip(lam, 10.0 ** loggf * np.exp(-elow * 1.2398e-4 / (k_ev * t_k))))
+    elif species in giants_HITRAN_ISO:
+        nu, sw, elow = giants_hitran(species, lo, hi)
+        s = sw * np.exp(-1.4388 * elow * (1.0 / t_k - 1.0 / 296.0)) * (1.0 - np.exp(-1.4388 * nu / t_k)) / (1.0 - np.exp(-1.4388 * nu / 296.0))
+        rows = list(zip(science.vac_to_air(1e8 / nu), s))
+    elif os.path.exists(giants_KURUCZ) and species in giants_CODES:
+        for lam, loggf, elow in zip(*giants_kurucz(species, band)):
+            rows.append((lam, 10.0 ** loggf * np.exp(-elow * 1.2398e-4 / (k_ev * t_k))))
+    else:
+        for ln in core.nist_lines(species, lo, hi):
+            lam, aki, elow = core.num(ln.get("lam")), core.num(ln.get("aki")), core.num(ln.get("ei"))
+            if lam and aki and elow is not None:
+                rows.append((science.vac_to_air(np.array([lam]))[0], aki * lam ** 2 * np.exp(-elow * 1.2398e-4 / (k_ev * t_k))))
+    if not rows:
+        return out
+    weight = weight or giants_WEIGHT
+    if weight == "sqrt":
+        rows = [(lam, np.sqrt(s)) for lam, s in rows]
+    elif weight == "log":
+        # saturated lines: every line within three decades of the strongest carries its decade's share, as the curve of growth flattens depth
+        smax = max(s for _, s in rows)
+        rows = [(lam, max(np.log10(s / smax) + 3.0, 0.0) / 3.0) for lam, s in rows]
+    else:
+        strengths = np.array([s for _, s in rows])
+        keep = strengths >= 1e-4 * strengths.max()
+        cap = np.percentile(strengths[keep], 99.5)
+        rows = [(lam, min(s, cap)) for lam, s in rows]
+    top = max(s for _, s in rows)
+    g0 = g[0]
+    for lam, s in rows:
+        if s < 1e-3 * top:
+            continue
+        i = int(round(np.log(lam / g0) * 299792.458))
+        a, b = max(i - 10, 0), min(i + 11, len(g))
+        if b > a:
+            v = (np.arange(a, b) - np.log(lam / g0) * 299792.458)
+            out[a:b] += s / top * np.exp(-0.5 * (v / 3.0) ** 2)
+    return out
+
+
+def giants_residuals(spectra, vsys, whiten=True, band="optical"):
+    """Each spectrum on the band's grid in the star's frame divided by its running median over 501 samples, then by the out-of-transit median spectrum, a cubic in wavelength taken out of each, the band's telluric regions and the samples beyond the spectrum NaN: (residuals, errors, each wavelength's out-of-transit scatter)."""
+    from scipy.ndimage import median_filter
+    g = giants_grid(band)
+    F, E = [], []
+    for w, f, e, meta, inside in spectra:
+        wl = w / (1.0 + vsys / 299792.458)
+        ok = np.isfinite(f) & (f > 0)
+        fi = np.interp(g, wl[ok], f[ok], left=np.nan, right=np.nan)
+        ei = np.interp(g, wl[ok], e[ok], left=np.nan, right=np.nan)
+        cont = median_filter(np.nan_to_num(fi, nan=np.nanmedian(fi)), size=501, mode="nearest")
+        for sky in giants_SKY:
+            # the sky line's place on the grid in the star's frame, from its telescope wavelength through this spectrum's barycentric correction
+            lam = sky * (1.0 + meta.get("berv", 0.0) / 299792.458) / (1.0 + vsys / 299792.458)
+            i = int(round(np.log(lam / g[0]) * 299792.458))
+            if 0 <= i < len(g):
+                fi[max(i - 6, 0):i + 7] = np.nan
+        with np.errstate(all="ignore"):
+            F.append(fi / cont)
+            E.append(ei / cont)
+    F, E = np.array(F), np.array(E)
+    ins = np.array([s[4] for s in spectra])
+    master = np.nanmedian(F[~ins], axis=0)
+    with np.errstate(all="ignore"):
+        R, ER = F / master, E / master
+    x = (np.arange(len(g)) - len(g) / 2.0) / len(g)
+    for i in range(len(R)):
+        good = np.isfinite(R[i])
+        if good.sum() > 100:
+            R[i] = R[i] / np.polyval(np.polyfit(x[good], R[i][good], 3), x)
+    for lo, hi in giants_BANDS[band]["telluric"]:
+        R[:, (g > lo) & (g < hi)] = np.nan
+    R = R - 1.0
+    # each wavelength's out-of-transit scatter, the weight of the inverse-variance cross-correlation, floored at a tenth of its median
+    sd = np.nanstd(R[~ins], axis=0)
+    floor = np.nanmedian(sd)
+    sd = np.where(np.isfinite(sd) & (sd > 0), np.maximum(sd, 0.1 * floor), floor)
+    return R, ER, (sd if whiten else np.ones_like(sd))
+
+
+def giants_sysrem(R, sd, n=3):
+    """SysRem (Tamuz et al. 2005) over the residual matrix: N rank-one systematics, each the product of a per-spectrum and a per-wavelength factor fitted by alternation weighted by each wavelength's scatter SD, taken out of every spectrum, NaN left as it is."""
+    X = np.nan_to_num(R, nan=0.0)
+    with np.errstate(all="ignore"):
+        W = np.where(np.isfinite(R), 1.0 / np.maximum(np.broadcast_to(sd, R.shape), 1e-12) ** 2, 0.0)
+    for _ in range(n):
+        a = np.ones(X.shape[0])
+        c = np.zeros(X.shape[1])
+        for _ in range(6):
+            with np.errstate(all="ignore"):
+                c = (W * X * a[:, None]).sum(0) / np.maximum((W * a[:, None] ** 2).sum(0), 1e-30)
+                a = (W * X * c[None, :]).sum(1) / np.maximum((W * c[None, :] ** 2).sum(1), 1e-30)
+        X = X - a[:, None] * c[None, :]
+    return np.where(np.isfinite(R), X, np.nan)
+
+
+def giants_ccf(R, T, sd=None, vmax=300):
+    """Inverse-variance cross-correlation of each residual row with a template over -VMAX..VMAX km/s (one sample a km/s on the grid), each sample weighted by its scatter SD, the sum normalised by the weighted template's norm so a row of unit noise gives unit scatter: absorption positive; on the GPU where torch has one, by FFT in numpy where torch is absent."""
+    try:
+        import torch
+    except ImportError:
+        return giants_ccf_fft(R, T, sd, vmax)
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    n = R.shape[1]
+    w = 1.0 / (sd if sd is not None else np.ones(n))
+    Rt = torch.as_tensor(np.nan_to_num(R * w[None, :], nan=0.0), dtype=torch.float32, device=dev)
+    Wt = torch.as_tensor(np.where(np.isfinite(R).all(0), w, 0.0), dtype=torch.float32, device=dev)
+    Tt = torch.as_tensor(T, dtype=torch.float32, device=dev)
+    out = torch.zeros((R.shape[0], 2 * vmax + 1), device=dev)
+    for j, v in enumerate(range(-vmax, vmax + 1)):
+        if v >= 0:
+            tw = Tt[:n - v] * Wt[v:]
+            out[:, j] = -(Rt[:, v:] * tw).sum(1) / torch.sqrt((tw ** 2).sum().clamp(min=1e-30))
+        else:
+            tw = Tt[-v:] * Wt[:n + v]
+            out[:, j] = -(Rt[:, :n + v] * tw).sum(1) / torch.sqrt((tw ** 2).sum().clamp(min=1e-30))
+    return out.cpu().numpy()
+
+
+def giants_ccf_fft(R, T, sd=None, vmax=300):
+    """The same cross-correlation by FFT in numpy: each row, whitened and weighted, correlated with the template at every lag, and each lag normalised by the norm of the template under the weights it meets there, so that the result matches the torch form sample for sample."""
+    n = R.shape[1]
+    w = 1.0 / (sd if sd is not None else np.ones(n))
+    Wt = np.where(np.isfinite(R).all(0), w, 0.0)
+    X = np.nan_to_num(R * w[None, :], nan=0.0) * Wt[None, :]
+    Tt = np.asarray(T, float)
+    m = 1 << int(np.ceil(np.log2(2 * n)))
+    ft = np.conj(np.fft.rfft(Tt, m))
+    den = np.fft.irfft(np.fft.rfft(Wt ** 2, m) * np.conj(np.fft.rfft(Tt ** 2, m)), m)
+    # a correlation at lag k holds sum_j X[j + k] T[j]: lag k >= 0 at index k, lag k < 0 at index m + k
+    pick = np.concatenate([np.arange(m - vmax, m), np.arange(0, vmax + 1)])
+    norm = np.sqrt(np.maximum(den[pick], 1e-30))
+    out = np.zeros((R.shape[0], 2 * vmax + 1))
+    for i in range(R.shape[0]):
+        out[i] = -np.fft.irfft(np.fft.rfft(X[i], m) * ft, m)[pick] / norm
+    return out
+
+
+def giants_shadow(ccf, vp_true, vsini, vmax=300):
+    """The star's Doppler shadow taken out of each in-transit cross-correlation: a Gaussian fitted within the star's projected rotation (centre within +-VSINI, width from 3 km/s to half of it, 15 at least, amplitude within three times the window's largest value) with 12 km/s either side of the planet's own velocity left out of the fit, and subtracted; rows the fit cannot reach are left as they are."""
+    from scipy.optimize import curve_fit
+    v = np.arange(-vmax, vmax + 1, dtype=float)
+    out = ccf.copy()
+    wmax = max(15.0, vsini / 2.0)
+    for k in range(ccf.shape[0]):
+        fit = (np.abs(v) <= vsini + 20) & (np.abs(v - vp_true[k]) > 12)
+        if fit.sum() < 10:
+            continue
+        y = ccf[k, fit]
+        # the amplitude is held within three times the largest value in the fit window, so a window emptied by the exclusion cannot
+        # return a Gaussian larger than anything the row holds
+        amax = 3.0 * max(float(np.abs(y).max()), 1e-6)
+        try:
+            popt, _ = curve_fit(lambda x, a, c, s: a * np.exp(-0.5 * ((x - c) / s) ** 2), v[fit], y, p0=(min(max(y.max(), -amax), amax), v[fit][np.argmax(y)], min(6.0, wmax)),
+                                bounds=([-amax, -vsini - 5, 3.0], [amax, vsini + 5, wmax]), maxfev=2000)
+            out[k] -= popt[0] * np.exp(-0.5 * ((v - popt[1]) / popt[2]) ** 2)
+        except Exception:
+            pass
+    return out
+
+
+def giants_found(res, sigma):
+    """Whether a species' result is a detection: at the threshold at the orbit's K_p, a sigma above anything the sham map reaches, with the map's own peak above 30 km/s in K_p and within 10 km/s of rest, and either inside the orbit's box or no more than a quarter above the orbit's value, as a short transit leaves K_p unresolved along a plateau; a shadow at the star's velocity leaking along the K_p axis passes neither, and a species whose template rests on one line, more than half of its weight within 10 km/s of one place, is left to the line tests, since a deep stellar line's own transit distortion sums along every trail."""
+    peak = res["map_peak"]
+    on_orbit = abs(peak["kp"] - res["kp_true"]) <= min(res.get("kp_half", 20.0), 60.0) or peak["snr"] <= 1.25 * res["snr"]
+    many = res.get("top_line_share", 0.0) <= 0.5
+    return bool(res["snr"] >= sigma and (res["sham"] is None or res["snr"] >= res["sham"] + 1.0) and peak["kp"] >= 30.0 and abs(peak["vrest"]) <= 10 and on_orbit and many)
+
+
+def giants_top_line_share(T, sd=None):
+    """The share of a template's weight, the sum of T^2, that lies within 10 km/s of its heaviest sample."""
+    w2 = np.asarray(T, float) ** 2
+    tot = float(w2.sum())
+    if tot <= 0:
+        return 0.0
+    i = int(np.argmax(w2))
+    return float(w2[max(i - 10, 0):i + 11].sum() / tot)
+
+
+def giants_planet_frame(ccf, vp, w, kp_grid, vrest):
+    """The in-transit cross-correlations summed in the planet's frame for each trial semi-amplitude: a map over K_p and rest velocity, each row's phases sin(2 pi phi) given by vp / kp_true as VP."""
+    vmax = (ccf.shape[1] - 1) // 2
+    out = np.zeros((len(kp_grid), len(vrest)))
+    for i, kp in enumerate(kp_grid):
+        for k in range(ccf.shape[0]):
+            shift = kp * vp[k]
+            v = vrest + shift
+            out[i] += w[k] * np.interp(v, np.arange(-vmax, vmax + 1), ccf[k], left=0.0, right=0.0)
+    return out / max(w.sum(), 1e-9)
+
+
+def giants_search(planets=[], species=list(giants_SPECIES), sigma=4.0, temp=0.0, sysrem=0, weight="log", inject=0.0, whiten=True, shadow=True, redo=False, instruments=()):
+    """Each planned transiting giant with four or more in-transit and out-of-transit spectra from HARPS or ESPRESSO on disk: residuals in the star's frame, each species' template cross-correlated with every spectrum, the in-transit sums over a K_p and rest-velocity map, and the peak at the orbit's K_p within 10 km/s of rest read against the map's scatter beyond 40 km/s; the strongest species per planet printed."""
+    from setitools import biosignatures as bio
+    plan = json.load(open(os.path.join(giants_ROOT, "plan.json")))
+    kp_grid = np.arange(0.0, 301.0, 5.0)
+    vrest = np.arange(-100.0, 101.0, 1.0)
+    for p in plan:
+        if planets and p["pl_name"] not in planets:
+            continue
+        for inst in ("ESPRESSO", "HARPS", "SPIRou", "NIRPS"):
+            if instruments and inst not in instruments:
+                continue
+            band = giants_band(inst)
+            # atoms in the optical, molecules in the near-infrared: the named species are kept to their band, the default list giving both
+            pool = list(species) + (list(giants_MOLECULES) if species == list(giants_SPECIES) else [])
+            wanted = [s for s in pool if (s in giants_HITRAN_ISO) == (band == "nir")]
+            rows = p["instruments"].get(inst) or []
+            rpath = os.path.join(giants_ROOT, "results", "%s.%s.json" % (re.sub(r"[^A-Za-z0-9+_.-]", "_", p["pl_name"]), inst))
+            if not wanted or not rows or (os.path.exists(rpath) and not redo):
+                continue
+            per, tc, dur, k = p["pl_orbper"], p["pl_tranmid"] - 2400000.5, (p["pl_trandur"] or 3.0) / 24.0, p["pl_ratror"] or 0.1
+            spectra = []
+            for r in rows:
+                path = os.path.join(giants_ROOT, "spectra", inst, re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+                if not os.path.exists(path):
+                    continue
+                try:
+                    w, f, e, meta = bio.shoreline_load(path)
+                except Exception:
+                    continue
+                wt, epoch = bio.shoreline_weight(r["t0"], r["t1"], tc, per, dur, k)
+                spectra.append((w, f, e, dict(meta, weight=wt, epoch=epoch), wt > 0))
+            n_in = sum(1 for s in spectra if s[4])
+            if n_in < 4 or len(spectra) - n_in < 4:
+                continue
+            rvs = [s[3]["rv"] for s in spectra if s[3]["rv"] is not None]
+            vsys = float(np.median(rvs)) if rvs else (p.get("st_radv") or 0.0)
+            if inject:
+                # the first species' lines laid into each in-transit spectrum's flux at depth INJECT along the planet's velocity, before anything else
+                Tinj = giants_template(wanted[0], temp or p.get("pl_eqt") or 1500.0, weight, band)
+                g = giants_grid(band)
+                kp_inj = 2 * np.pi * (p["pl_orbsmax"] or 0.05) * 1.495978707e8 / (per * 86400.0)
+                for i, (w, f, e, meta, inside) in enumerate(spectra):
+                    if inside:
+                        vp_i = kp_inj * np.sin(2 * np.pi * (meta["mjd"] - meta["epoch"]) / per)
+                        tw = np.interp(w, g * (1.0 + (vsys + vp_i) / 299792.458), Tinj, left=0.0, right=0.0)
+                        spectra[i] = (w, f * (1.0 - inject * meta["weight"] * tw), e, meta, inside)
+            R, ER, sd = giants_residuals(spectra, vsys, whiten, band)
+            if sysrem:
+                R = giants_sysrem(R, sd, sysrem)
+            ins = np.array([s[4] for s in spectra])
+            phase = np.array([(s[3]["mjd"] - s[3]["epoch"]) / per for s in spectra])
+            kp_true = 2 * np.pi * (p["pl_orbsmax"] or 0.05) * 1.495978707e8 / (per * 86400.0)
+            vp_unit = np.sin(2 * np.pi * phase)
+            wts = np.array([s[3]["weight"] for s in spectra])
+            best, results, maps, sham_maps = None, [], [], []
+            for sp in wanted:
+                T = giants_template(sp, temp or p.get("pl_eqt") or 1500.0, weight, band)
+                if not T.any():
+                    continue
+                ccf = giants_ccf(R, T, sd)
+                # the star's own residual pattern, the median cross-correlation outside transit, taken out of every row
+                ccf = ccf - np.median(ccf[~ins], axis=0)[None, :]
+                # the sham: out-of-transit rows given the in-transit rows' phases and weights, and every step the in-transit rows get
+                n_sh = min(int(ins.sum()), int((~ins).sum()))
+                sham_rows = ccf[~ins][:n_sh].copy() if n_sh >= 4 else None
+                # the star's shadow is an atomic-line feature of the optical band; a molecular template of a star without those lines has none
+                if shadow and band == "optical":
+                    ccf[ins] = giants_shadow(ccf[ins], kp_true * vp_unit[ins], p.get("st_vsin") or 15.0)
+                    if sham_rows is not None:
+                        sham_rows = giants_shadow(sham_rows, kp_true * vp_unit[ins][:n_sh], p.get("st_vsin") or 15.0)
+                m = giants_planet_frame(ccf[ins], vp_unit[ins], wts[ins], kp_grid, vrest)
+                m_out = giants_planet_frame(sham_rows, vp_unit[ins][:n_sh], wts[ins][:n_sh], kp_grid, vrest) if sham_rows is not None else None
+                far = np.abs(vrest) > 40
+                # the noise: the map's scatter away from rest, or the sham map's over its whole extent where that is larger
+                noise = float(np.nanstd(m[:, far]))
+                if m_out is not None:
+                    noise = max(noise, float(np.nanstd(m_out)))
+                # the orbit's box on the map: 10 km/s in rest velocity, and in K_p what moves the trail's ends by that much, 20 km/s at least
+                # and 60 at most, never reaching below 30 km/s where the star's own pattern sits
+                kp_half = min(max(20.0, 10.0 / max(float(np.abs(vp_unit[ins]).max()), 1e-3)), 60.0)
+                near = (np.abs(kp_grid - kp_true) <= kp_half)[:, None] & (kp_grid >= 30.0)[:, None] & (np.abs(vrest) <= 10)[None, :]
+                peak = float(np.nanmax(np.where(near, m, -np.inf)))
+                i, j = np.unravel_index(int(np.nanargmax(m)), m.shape)
+                res = dict(species=sp, snr=peak / noise if noise > 0 else 0.0, kp_true=kp_true, kp_half=kp_half, map_peak=dict(kp=float(kp_grid[i]), vrest=float(vrest[j]), snr=float(m[i, j] / noise) if noise > 0 else 0.0),
+                           sham=float(np.nanmax(np.where(near, m_out, -np.inf)) / noise) if m_out is not None and noise > 0 else None,
+                           top_line_share=giants_top_line_share(T, sd))
+                # a detection stands at the threshold, a sigma above anything the sham map reaches, and as the map's own peak, so a shadow
+                # at the star's velocity leaking along the K_p axis does not pass
+                res["found"] = giants_found(res, sigma)
+                results.append(res)
+                maps.append(m)
+                sham_maps.append(m_out)
+                if best is None or (res["found"], res["snr"]) > (best["found"], best["snr"]):
+                    best = res
+                print("  %-12s %-9s %-5s S/N %5.1f at K_p %.0f (map peak %5.1f at K_p %.0f, v %+.0f; sham %s; top line %.2f)" % (
+                    p["pl_name"], inst, sp, res["snr"], kp_true, res["map_peak"]["snr"], res["map_peak"]["kp"], res["map_peak"]["vrest"],
+                    "%.1f" % res["sham"] if res["sham"] is not None else "-", res["top_line_share"]), flush=True)
+            if best:
+                det = [r["species"] for r in results if r["found"]]
+                print("%-12s %-9s %d in, %d out: %s" % (p["pl_name"], inst, n_in, len(spectra) - n_in,
+                                                       "DETECTED " + ", ".join("%s %.1f sigma" % (r["species"], r["snr"]) for r in results if r["found"]) if det
+                                                       else "strongest %s at %.1f sigma, nothing detected" % (best["species"], best["snr"])), flush=True)
+            if results:
+                os.makedirs(os.path.join(giants_ROOT, "results"), exist_ok=True)
+                # every species' map and sham map kept beside the result, for the figures
+                np.savez_compressed(os.path.join(giants_ROOT, "results", "%s.%s.maps.npz" % (re.sub(r"[^A-Za-z0-9+_.-]", "_", p["pl_name"]), inst)),
+                                    kp=kp_grid, vrest=vrest, species=np.array([r["species"] for r in results]), maps=np.array(maps), shams=np.array([x if x is not None else np.full_like(maps[0], np.nan) for x in sham_maps]))
+                # a host rotating faster than 40 km/s or hotter than 7500 K leaves a shadow the Gaussian model does not reach: its map is kept but not read as a null
+                caveat = ("fast rotator" if (p.get("st_vsin") or 0) > 40 else "hot host" if (p.get("st_teff") or 0) > 7500 else None)
+                json.dump(dict(planet=p["pl_name"], inst=inst, band=band, n_in=n_in, n_out=len(spectra) - n_in, vsys=vsys, kp=kp_true, sigma=sigma, weight=weight,
+                               sysrem=sysrem, temp=temp or p.get("pl_eqt") or 1500.0, caveat=caveat, species=results),
+                          open(os.path.join(giants_ROOT, "results", "%s.%s.json" % (re.sub(r"[^A-Za-z0-9+_.-]", "_", p["pl_name"]), inst)), "w"), indent=1)
+
+
+def giants_fetch(streams=4, planets=(), night_per_in=2.0, instruments=(), min_in=4):
+    """The in-transit and eclipse spectra of every planned giant (or the named ones, or the named instruments' sets of MIN_IN spectra or more) with the same nights' other spectra nearest them up to NIGHT_PER_IN times their number, from ESO and the CADC, on STREAMS connections."""
+    from setitools import biosignatures as bio
+    plan = json.load(open(os.path.join(giants_ROOT, "plan.json")))
+    want = []
+    for p in plan:
+        if planets and p["pl_name"] not in planets:
+            continue
+        for inst, rows in p["instruments"].items():
+            if instruments and inst not in instruments:
+                continue
+            inside = [r for r in rows if r["src"] in ("ESO", "CADC") and r["place"] in ("transit", "eclipse")]
+            if len(inside) < min_in:
+                continue
+            want += inside
+            per, tc = p["pl_orbper"], p["pl_tranmid"] - 2400000.5
+            for epoch in sorted({round((0.5 * (r["t0"] + r["t1"]) - tc) / per) for r in inside}):
+                t_mid = tc + epoch * per
+                n = sum(1 for r in inside if round((0.5 * (r["t0"] + r["t1"]) - tc) / per) == epoch)
+                night = sorted((r for r in rows if r["src"] in ("ESO", "CADC") and r["place"] not in ("transit", "eclipse") and abs(0.5 * (r["t0"] + r["t1"]) - t_mid) < 0.5),
+                               key=lambda r: abs(0.5 * (r["t0"] + r["t1"]) - t_mid))
+                want += night[:max(int(night_per_in * n), 4)]
+    seen, todo = set(), []
+    for r in want:
+        path = os.path.join(giants_ROOT, "spectra", r["inst"], re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+        if r["id"] not in seen and not os.path.exists(path):
+            seen.add(r["id"])
+            todo.append((r, path))
+
+    def one(rp):
+        r, path = rp
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        try:
+            if r["src"] == "ESO":
+                return core.eso_download(r["id"], path)
+            b = core.get(bio.shoreline_CADC_FILE + r["id"] + ".fits", timeout=600, soft=True)
+            if b and b[:6] == b"SIMPLE":
+                open(path + ".tmp", "wb").write(b)
+                os.replace(path + ".tmp", path)
+                return True
+        except Exception:
+            pass
+        return False
+    got = sum(1 for ok in core.pmap(one, todo, streams) if ok)
+    print("%d spectra wanted, %d already here, %d fetched, %d failed" % (len(want), len(want) - len(todo), got, len(todo) - got))
+
+
+def giants_record(sigma=4.0):
+    """The searched planets' results in ROOT/results read into the coverage store: one row per planet and instrument, its target the planet's followed by # and the instrument, with its strongest species' significance at the orbit, the species detected, and a caveat where the host's rotation or heat left the star's shadow unmodelled or telluric residuals beyond the model; the reflected-light limits beside them, their targets followed by #reflected."""
+    import glob
+    rows, found, transiting = [], [], set()
+    for path in sorted(glob.glob(os.path.join(giants_ROOT, "results", "*.json"))):
+        r = json.load(open(path))
+        if ".reflected." in path or ".emission." in path or "species" not in r:
+            continue
+        det = [s["species"] for s in r["species"] if giants_found(s, sigma)]
+        best = max(r["species"], key=lambda s: s["snr"]) if r["species"] else None
+        if best is None:
+            continue
+        found += [(r["planet"], r["inst"], d) for d in det]
+        # a host rotating fast or hot leaves the star's shadow beyond the model; a sham map reaching ten sigma below zero marks telluric residuals beyond it
+        caveat = (r["caveat"] + ", the star's shadow beyond the model") if r.get("caveat") else (
+            "telluric residuals beyond the model" if any((s["sham"] or 0.0) < -10.0 for s in r["species"]) else None)
+        transiting.add(r["planet"])
+        rows.append(dict(target="planet:%s#%s" % (r["planet"], r["inst"]), stat=round(best["snr"], 1),
+                         unit="sigma of the strongest species' cross-correlation at the orbit's K_p (%s, %d in-transit spectra)" % (r["inst"], r["n_in"]),
+                         vet="not-measured" if caveat else None,
+                         note="%s; %s; detected %s; species %s%s" % (r["inst"], r["band"], ", ".join(det) or "none",
+                                                                     ", ".join("%s %.1f (sham %s)" % (s["species"], s["snr"], "%.1f" % s["sham"] if s["sham"] is not None else "-") for s in r["species"]),
+                                                                     "; " + caveat if caveat else "")))
+    # the reflected-light calibrations beside them, as limits on the planet-to-star contrast
+    sets, reflected = len(rows), set()
+    for path in sorted(glob.glob(os.path.join(giants_ROOT, "results", "*.reflected.json"))):
+        r = json.load(open(path))
+        if r.get("limit_3sigma") is None:
+            continue
+        reflected.add(r["planet"])
+        rows.append(dict(target="planet:%s#reflected" % r["planet"], stat=round(r["snr"], 1), upper_limit=round(1e6 * r["limit_3sigma"], 1),
+                         unit="ppm planet-to-star contrast at 3 sigma, reflected starlight (%d spectra, %.0f effective)" % (r["n"], r["n_eff"]),
+                         vet="not-measured" if (r.get("retained") or 0) < 0.5 else None,
+                         note="reflected light: %.1f sigma at the orbit (sham %.1f), map peak %.1f at K_p %.0f, v %+.0f; probe returned %.2f; contrast %+.0f ppm" % (
+                             r["snr"], r["sham"], r["map_peak"]["snr"], r["map_peak"]["kp"], r["map_peak"]["vrest"], r.get("retained") or 0, 1e6 * (r.get("contrast") or 0))))
+    core.record_run(
+        "giants_planet_frame", "Planet-frame compositions of the giant planets",
+        "ESO Phase 3 (HARPS, ESPRESSO, NIRPS, CRIRES, UVES), CADC (CFHT SPIRou), KOA (Keck NIRSPEC); Kurucz's gfall line list; HITRAN; NASA Exoplanet Archive pscomppars; SIMBAD",
+        "every archived transit of the giant planets brighter than V 11 with four or more in-transit and out-of-transit spectra from one spectrograph",
+        os.path.abspath(__file__), "giants", len(transiting | reflected), "planets", dict(sigma=sigma, weight=giants_WEIGHT),
+        "the K_p and rest-velocity map's scatter away from rest and the sham map of out-of-transit rows given the transit's phases",
+        "a species stands at %g sigma at the orbit's K_p, a sigma above the sham map, as the map's own peak" % sigma,
+        "%d planet-instrument transit sets of %d planets and reflected light from %d; %d species detected in %d planet%s" % (
+            sets, len(transiting), len(reflected), len(found), len({f[0] for f in found}), "" if len({f[0] for f in found}) == 1 else "s"), rows)
+    print("%d planet-instrument transit sets of %d planets and %d reflected-light limits recorded; detections: %s" % (
+        sets, len(transiting), len(reflected), ", ".join("%s %s %s" % f for f in found) or "none"))
+
+
+companions_DOC = r"""Companions read out of their stars' spectra with the orbit left free: every archived spectrum of a star put on the grid in its own stellar frame, so the primary's lines cancel whatever its reflex motion, divided by their median and whitened; a cool companion's lines (an M dwarf's spectrum from the archive, or a species' lines) cross-correlated with every residual; and the trail summed along every orbit of a grid in period, phase and velocity amplitude. `search` and `test` read the summit against the summits of the same grid with the epochs shuffled; `survey` and `reanalyse` take the sky's pattern out of the rows, mask each row's telluric velocity, keep each amplitude to the periods a system of two solar masses allows and the sampling's own periods out, and read the summit against three nulls, the epochs shuffled, whole nights shuffled and nights shuffled within their season, the lowest significance kept.
+
+    python -I seti.py composition companions plan                                              the archive's best-observed stars: ROOT/plan.json
+    python -I seti.py composition companions test [--depth 0.001] [--period 7.3] [--k 40]     an injection into GJ 486's SPIRou spectra, recovered
+    python -I seti.py composition companions search DIR [--template DIR2] [--inst SPIRou]       one star's spectra in DIR against a template star's in DIR2
+    python -I seti.py composition companions survey [--inst HARPS] [--per-star 300] [--max-stars N] [--streams 4] [--keep] [--stars NAME ...] [--stars-file PATH] [--template DIR|FILE.npy] [--ccf-only]
+    python -I seti.py composition companions reanalyse [--inst HARPS] [--components 5] [--part k/n]   the kept rows searched again"""
+
+
+def companions_spectra(paths):
+    """Spectra loaded with their own stellar velocities: (w, f, e, meta) per file, the velocity the header's where it has one."""
+    from setitools import biosignatures as bio
+    out = []
+    for path in paths:
+        try:
+            w, f, e, meta = bio.shoreline_load(path)
+        except Exception:
+            continue
+        out.append((w, f, e, meta))
+    return out
+
+
+def companions_vsys(spectra, fallback=None):
+    """A series' systemic velocity (km/s): the median of the pipeline velocities where the products carry them, else FALLBACK where given, else SIMBAD's for the star nearest the spectra's position within 10 arcsec, else the median of the observing blocks' target velocities, else zero."""
+    rvs = [s[3]["rv"] for s in spectra if s[3].get("rv") is not None]
+    if rvs:
+        return float(np.median(rvs))
+    if fallback is not None:
+        return float(fallback)
+    pos = [(s[3]["ra"], s[3]["dec"]) for s in spectra if s[3].get("ra") is not None and s[3].get("dec") is not None]
+    if pos:
+        ra, dec = float(np.median([p[0] for p in pos])), float(np.median([p[1] for p in pos]))
+        try:
+            rows = core.simbad("SELECT b.rvz_radvel, DISTANCE(POINT('ICRS', b.ra, b.dec), POINT('ICRS', %f, %f)) AS d FROM basic AS b WHERE "
+                               "CONTAINS(POINT('ICRS', b.ra, b.dec), CIRCLE('ICRS', %f, %f, %f)) = 1 AND b.rvz_radvel IS NOT NULL ORDER BY d" % (ra, dec, ra, dec, 10.0 / 3600.0))
+            if rows:
+                return float(rows[0]["rvz_radvel"])
+        except Exception:
+            pass
+    obs = [s[3]["rv_ob"] for s in spectra if s[3].get("rv_ob") is not None]
+    return float(np.median(obs)) if obs else 0.0
+
+
+def companions_align(F, master, max_kms=20):
+    """Each row's velocity against the median spectrum (km/s): the whole-sample shift on the one km/s grid within MAX_KMS at which the row's lines match the median's best by least squares over the samples the median absorbs by 5 per cent or more, refined by a parabola through the best three."""
+    use = np.isfinite(master) & (master < 0.95)
+    M = np.where(use, master - 1.0, 0.0)
+    X = np.nan_to_num(F - 1.0, nan=0.0)
+    shifts = np.arange(-max_kms, max_kms + 1)
+    out = np.zeros(F.shape[0])
+    for i in range(F.shape[0]):
+        cost = np.array([float(((np.roll(X[i], -s) - M)[use] ** 2).sum()) for s in shifts])
+        k = int(np.argmin(cost))
+        if 0 < k < len(shifts) - 1:
+            a, b, c = cost[k - 1], cost[k], cost[k + 1]
+            den = a - 2 * b + c
+            out[i] = shifts[k] + (0.5 * (a - c) / den if den > 0 else 0.0)
+        else:
+            out[i] = shifts[k]
+    return out
+
+
+def companions_residuals(spectra, vsys, band, align=True, info=None):
+    """Residuals on the band's grid: each spectrum in the primary's frame (its header velocity, else VSYS, then its own shift against the median spectrum when ALIGN) over its running median, divided by the median spectrum, a cubic taken out, telluric regions NaN; with each wavelength's scatter."""
+    from scipy.ndimage import median_filter
+    g = giants_grid(band)
+
+    def onto(spectra, shifts):
+        F = []
+        for (w, f, e, meta), dv in zip(spectra, shifts):
+            v = (meta["rv"] if meta.get("rv") is not None else vsys) + dv
+            wl = w / (1.0 + v / 299792.458)
+            ok = np.isfinite(f) & (f > 0)
+            fi = np.interp(g, wl[ok], f[ok], left=np.nan, right=np.nan)
+            cont = median_filter(np.nan_to_num(fi, nan=np.nanmedian(fi)), size=501, mode="nearest")
+            with np.errstate(all="ignore"):
+                F.append(fi / cont)
+        return np.array(F)
+    F = onto(spectra, np.zeros(len(spectra)))
+    master = np.nanmedian(F, axis=0)
+    if align:
+        shifts = companions_align(F, master)
+        moved = np.abs(shifts) >= 0.5
+        if moved.any():
+            F[moved] = onto([s for s, m in zip(spectra, moved) if m], shifts[moved])
+            master = np.nanmedian(F, axis=0)
+        if info is not None:
+            info["vstar"] = np.array([(meta["rv"] if meta.get("rv") is not None else vsys) + (dv if mv else 0.0) for (_, _, _, meta), dv, mv in zip(spectra, shifts, moved)])
+    with np.errstate(all="ignore"):
+        R = F / master
+    x = (np.arange(len(g)) - len(g) / 2.0) / len(g)
+    for i in range(len(R)):
+        good = np.isfinite(R[i])
+        if good.sum() > 100:
+            R[i] = R[i] / np.polyval(np.polyfit(x[good], R[i][good], 3), x)
+    for lo, hi in giants_BANDS[band]["telluric"]:
+        R[:, (g > lo) & (g < hi)] = np.nan
+    R = R - 1.0
+    sd = np.nanstd(R, axis=0)
+    floor = np.nanmedian(sd)
+    sd = np.where(np.isfinite(sd) & (sd > 0), np.maximum(sd, 0.1 * floor), floor)
+    return R, sd, master
+
+
+def companions_template(spectra, vsys, band):
+    """A template star's absorption pattern on the band's grid: one minus its median normalised spectrum in its own frame, negative values zero."""
+    _, _, master = companions_residuals(spectra, vsys, band)
+    return np.where(np.isfinite(master), np.clip(1.0 - master, 0.0, None), 0.0)
+
+
+def companions_unpattern(ccf, half=40):
+    """The star's own pattern taken out of every cross-correlation row at its own strength: the rows' median shape, scaled to each row by least squares within HALF km/s of the star's velocity and subtracted over the whole row, then the rows' remaining median."""
+    vmax = (ccf.shape[1] - 1) // 2
+    pattern = np.median(ccf, axis=0)
+    core = slice(vmax - half, vmax + half + 1)
+    pc = pattern[core]
+    scale = (ccf[:, core] * pc[None, :]).sum(1) / max(float((pc ** 2).sum()), 1e-30)
+    out = ccf - scale[:, None] * pattern[None, :]
+    return out - np.median(out, axis=0)[None, :]
+
+
+def companions_trails(ccf, t, periods, phases=24, kgrid=np.arange(30.0, 155.0, 5.0), core_kms=25.0, tell=None, tell_kms=10.0, batch=256, m_max=None):
+    """The trail sum over every orbit of the grid: for each period, phase and amplitude the mean of the cross-correlations read at K sin(2 pi (t/P + phase)), the readings within CORE_KMS of the star's own velocity left out, since the star's residual pattern lives there, and, given each row's telluric velocity TELL in the star's frame, those within TELL_KMS of it, since the sky's lines sweep through the star's frame once a year; with M_MAX (solar masses) each amplitude searched only up to the longest period a system of that mass allows it, 2 pi G M / K^3; BATCH periods at a time: the summit (period, phase, K, value) and the whole table over periods."""
+    try:
+        import torch
+    except ImportError:
+        raise ImportError("the trail search needs torch, which runs it on a GPU or the CPU")
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    n, width = ccf.shape
+    vmax = (width - 1) // 2
+    ph = np.arange(phases) / phases
+    Cf = torch.as_tensor(np.ascontiguousarray(ccf), dtype=torch.float32, device=dev).reshape(-1)
+    tt = torch.as_tensor(np.asarray(t, float), dtype=torch.float64, device=dev)
+    pht = torch.as_tensor(ph, dtype=torch.float64, device=dev)
+    kt = torch.as_tensor(np.asarray(kgrid, float), dtype=torch.float32, device=dev)
+    base = (torch.arange(n, device=dev) * width)[None, :, None, None]
+    tv = None if tell is None else torch.as_tensor(np.asarray(tell, float), dtype=torch.float32, device=dev)[None, :, None, None]
+    P_all = np.asarray(periods, float)
+    # the longest period at which each amplitude is possible: v^3 = 2 pi G M / P, with G M_sun = 1.32712e20 m^3 s^-2
+    pmax = None if m_max is None else torch.as_tensor(2 * np.pi * 1.32712e20 * m_max / (np.asarray(kgrid, float) * 1e3) ** 3 / 86400.0, dtype=torch.float64, device=dev)
+    table = np.full(len(P_all), -np.inf)
+    where = np.zeros(len(P_all), dtype=np.int64)
+    for s0 in range(0, len(P_all), batch):
+        P = torch.as_tensor(P_all[s0:s0 + batch], dtype=torch.float64, device=dev)
+        s = torch.sin(2 * np.pi * (tt[None, :, None] / P[:, None, None] + pht[None, None, :])).float()
+        vel = kt[None, None, None, :] * s[..., None]
+        # every row read at once by linear interpolation on the one km/s grid
+        x = (vel + vmax).clamp(0, 2 * vmax - 1)
+        j = torch.floor(x)
+        frac = x - j
+        idx = base + j.long()
+        vals = Cf[idx] * (1.0 - frac) + Cf[idx + 1] * frac
+        use = vel.abs() > core_kms
+        if tv is not None:
+            use = use & ((vel - tv).abs() > tell_kms)
+        tot = (vals * use).sum(1) / use.sum(1).clamp(min=1)
+        # a period the sampling keeps at one phase reads one velocity, not an orbit: the epochs' velocities must spread over the cycle
+        tot = tot.masked_fill((s.std(1) < 0.45)[..., None], float("-inf"))
+        if pmax is not None:
+            tot = tot.masked_fill((P[:, None] > pmax[None, :])[:, None, :], float("-inf"))
+        m, a = tot.reshape(tot.shape[0], -1).max(1)
+        table[s0:s0 + len(P)] = m.cpu().numpy()
+        where[s0:s0 + len(P)] = a.cpu().numpy()
+    i = int(np.argmax(table))
+    a, b = divmod(int(where[i]), len(kgrid))
+    return (float(P_all[i]), float(ph[a]), float(kgrid[b]), float(table[i])), table
+
+
+def companions_components(ccf, k):
+    """The cross-correlation rows with their K leading principal components taken out, the shapes the star's own residual pattern takes from night to night, which a companion's trail, moving from row to row, does not share."""
+    if not k:
+        return ccf
+    U, S, Vt = np.linalg.svd(ccf, full_matrices=False)
+    return ccf - (U[:, :k] * S[:k]) @ Vt[:k]
+
+
+def companions_periods(t):
+    """The period grid for a series: uniform in frequency at a quarter of the span's resolution, as a periodogram is, from half the span (two cycles at least, since a longer period reads a slow drift of the star's pattern as an orbit) down to half a day."""
+    span = max(float(t.max() - t.min()), 1.0)
+    f = np.arange(2.0 / span, 2.0, 1.0 / (4 * span))
+    return 1.0 / f[::-1]
+
+
+def companions_search(spectra, template, band, periods=None, trials=5, vsys=0.0, components=5):
+    """One star's spectra against a template: residuals, whitened cross-correlations with the static pattern removed and COMPONENTS principal components after it, the trail summit over the orbit grid, and the summits of TRIALS shufflings of the epochs as the null: (summit, null mean, null scatter, significance)."""
+    R, sd, _ = companions_residuals(spectra, vsys, band)
+    ccf = giants_ccf(R, template, sd)
+    ccf = companions_components(companions_unpattern(ccf), components)
+    t = np.array([s[3]["mjd"] for s in spectra])
+    t = t - t.min()
+    if periods is None:
+        periods = companions_periods(t)
+    best, table = companions_trails(ccf, t, periods)
+    rng = np.random.default_rng(3)
+    # the null on the same grid at its full density, so every alias the sampling allows is in it too
+    null = np.array([companions_trails(ccf, rng.permutation(t), periods)[0][3] for _ in range(trials)])
+    z = (best[3] - null.mean()) / max(null.std(), 1e-12)
+    return best, float(null.mean()), float(null.std()), float(z), periods, table
+
+
+def companions_test(depth=0.001, period=7.3, k=40.0):
+    """An injection of GJ 486's own lines at DEPTH, moving on a PERIOD-day orbit of amplitude K, into its SPIRou spectra from the rocky-planet search, then the blind search with the star's own spectrum as the template, before and after the injection."""
+    import glob
+    from setitools import biosignatures as bio
+    plan = json.load(open(os.path.join(bio.shoreline_ROOT, "plan.json")))
+    p = next(p for p in plan if p["pl_name"] == "GJ 486 b")
+    paths = [bio.shoreline_path(r) for r in p["instruments"]["SPIRou"]["inside"] + p["instruments"]["SPIRou"]["night"]]
+    spectra = companions_spectra([x for x in paths if os.path.exists(x)])
+    vsys = p.get("st_radv") or 19.1
+    band = "nir"
+    T = companions_template(spectra, vsys, band)
+    print("%d spectra; template samples above 0.1: %d" % (len(spectra), int((T > 0.1).sum())), flush=True)
+    best, nm, ns, z, periods, table = companions_search(spectra, T, band, vsys=vsys)
+    print("blind, no injection: summit P %.2f d, K %.0f km/s, %.4f; null %.4f +- %.4f -> %.1f sigma" % (best[0], best[2], best[3], nm, ns, z), flush=True)
+    g = giants_grid(band)
+    t0 = min(s[3]["mjd"] for s in spectra)
+    injected = []
+    for w, f, e, meta in spectra:
+        v = k * np.sin(2 * np.pi * (meta["mjd"] - t0) / period)
+        vstar = meta["rv"] if meta.get("rv") is not None else vsys
+        tw = np.interp(w, g * (1.0 + (vstar + v) / 299792.458), T, left=0.0, right=0.0)
+        injected.append((w, f * (1.0 - depth * tw), e, meta))
+    best, nm, ns, z, periods, table = companions_search(injected, T, band, vsys=vsys)
+    print("injected depth %g at P %.2f d, K %.0f: summit P %.2f d, K %.0f km/s, %.4f; null %.4f +- %.4f -> %.1f sigma" % (depth, period, k, best[0], best[2], best[3], nm, ns, z), flush=True)
+
+
+companions_ROOT = core.data("companions")
+
+
+def companions_plan(min_spectra=100, min_span=365.0):
+    """The archive's best-observed stars per spectrograph, those with MIN_SPECTRA spectra or more over MIN_SPAN days or more, into ROOT/plan.json: instrument, name, count and span."""
+    out = []
+    for inst in ("HARPS", "ESPRESSO", "NIRPS", "CRIRES", "UVES"):
+        q = ("SELECT TOP 2000 target_name, COUNT(*) AS n, MIN(t_min) AS t0, MAX(t_max) AS t1, AVG(s_ra) AS ra, AVG(s_dec) AS dec FROM ivoa.ObsCore WHERE "
+             "dataproduct_type = 'spectrum' AND instrument_name = '%s' GROUP BY target_name ORDER BY n DESC" % inst)
+        for r in core.tap("eso", q, method="POST"):
+            n, span = int(r["n"]), float(r["t1"]) - float(r["t0"])
+            if n >= min_spectra and span >= min_span and r["target_name"].strip().upper() not in ("SUN", "MOON", "SKY"):
+                out.append(dict(inst=inst, name=r["target_name"], n=n, span=round(span, 1), ra=core.num(r["ra"]), dec=core.num(r["dec"])))
+    os.makedirs(companions_ROOT, exist_ok=True)
+    json.dump(out, open(os.path.join(companions_ROOT, "plan.json"), "w"), indent=1)
+    by = {}
+    for o in out:
+        by[o["inst"]] = by.get(o["inst"], 0) + 1
+    print("%d star-instrument series: %s" % (len(out), ", ".join("%s %d" % kv for kv in sorted(by.items()))))
+
+
+def companions_untellur(ccf, tell):
+    """Each cross-correlation row less the sky's pattern: the rows moved into their telluric frames, their median there taken as the pattern, moved back to each row's frame, fitted to the row at its own strength by least squares and subtracted."""
+    v = np.arange(ccf.shape[1], dtype=float) - (ccf.shape[1] - 1) // 2
+    moved = np.array([np.interp(v, v - vt, row, left=np.nan, right=np.nan) for row, vt in zip(ccf, tell)])
+    with np.errstate(all="ignore"):
+        pattern = np.nanmedian(moved, axis=0)
+    pattern = np.where(np.isfinite(pattern), pattern, 0.0)
+    out = np.empty_like(ccf)
+    for i, (row, vt) in enumerate(zip(ccf, tell)):
+        back = np.interp(v, v + vt, pattern, left=0.0, right=0.0)
+        out[i] = row - float((row * back).sum() / max((back * back).sum(), 1e-30)) * back
+    return out
+
+
+def companions_night_shuffle(t, rng):
+    """The epochs with whole nights moved to other nights' dates, each night keeping its spectra's offsets from its start, so that what is tied to the hour of observing or to one night's conditions stays in the null."""
+    night = np.floor(t + 0.3)
+    bases, inv = np.unique(night, return_inverse=True)
+    return bases[rng.permutation(len(bases))][inv] + (t - night)
+
+
+def companions_season_shuffle(t, rng, width=20.0):
+    """The epochs with whole nights moved only among nights within the same WIDTH days of the year, each night keeping its spectra's offsets from its start, so that what follows the season and the hour of observing stays in the null; a season with one night keeps it."""
+    night = np.floor(t + 0.3)
+    bases, inv = np.unique(night, return_inverse=True)
+    season = np.floor((bases % 365.25) / width)
+    moved = bases.copy()
+    for s in np.unique(season):
+        idx = np.where(season == s)[0]
+        moved[idx] = bases[idx][rng.permutation(len(idx))]
+    return moved[inv] + (t - night)
+
+
+companions_KGRID = np.arange(40.0, 155.0, 5.0)
+companions_CORE = 30.0
+# the largest total mass of a system the search allows, in solar masses, which bounds each amplitude's period
+companions_MMAX = 2.0
+# the sampling's own periods: a summit near a day, its half and double, or near the year or its half is marked, not dropped
+companions_ALIASES = ((0.5, 0.02), (0.99727, 0.02), (1.0, 0.02), (2.0, 0.02), (4.0, 0.02), (182.6, 0.08), (365.25, 0.08), (730.5, 0.08))
+
+
+def companions_off_aliases(periods):
+    """The periods away from the sampling's own: the summit is taken only there, since the day's and the year's rhythms outweigh a companion's trail at those periods and a companion on them cannot be told from the observing."""
+    keep = np.ones(len(periods), dtype=bool)
+    for p, w in companions_ALIASES:
+        keep &= np.abs(periods / p - 1.0) >= w
+    return periods[keep]
+
+
+def companions_trail_result(ccf, t, components, trials=5, tell=None):
+    """The trail summit of cleaned cross-correlation rows over the series' period grid, amplitudes from 40 km/s and the star's core to 30 km/s left out: the sky's pattern removed in its own frame and each row's telluric velocity TELL masked where given, then the summit against three nulls, the epochs shuffled, whole nights shuffled and nights shuffled within their season, the lowest significance kept; a summit at the sampling's own periods marked as an alias: the result fields for a star."""
+    rows = companions_untellur(ccf, tell) if tell is not None else ccf
+    c = companions_components(rows, components)
+    tt = t - t.min()
+    pmax = 2 * np.pi * 1.32712e20 * companions_MMAX / (companions_KGRID.min() * 1e3) ** 3 / 86400.0
+    periods = companions_off_aliases(companions_periods(tt))
+    periods = periods[periods <= pmax]
+    run = lambda times: companions_trails(c, times, periods, kgrid=companions_KGRID, core_kms=companions_CORE, tell=tell, batch=512, m_max=companions_MMAX)
+    best, table = run(tt)
+    rng = np.random.default_rng(3)
+    ep = np.array([run(rng.permutation(tt))[0][3] for _ in range(trials)])
+    ni = np.array([run(companions_night_shuffle(tt, rng))[0][3] for _ in range(trials)])
+    se = np.array([run(companions_season_shuffle(tt, rng))[0][3] for _ in range(trials)])
+    zs = {name: (best[3] - x.mean()) / max(x.std(), 1e-12) for name, x in (("epochs", ep), ("nights", ni), ("seasons", se))}
+    z_ep, z_ni, z_se = zs["epochs"], zs["nights"], zs["seasons"]
+    null = {"epochs": ep, "nights": ni, "seasons": se}[min(zs, key=zs.get)]
+    alias = next(("%g d" % p for p, w in companions_ALIASES if abs(best[0] / p - 1.0) < w), None)
+    return dict(span=float(tt.max()), period=best[0], phase=best[1], k=best[2], value=best[3], null_mean=float(null.mean()), null_sd=float(null.std()),
+                z=float(min(z_ep, z_ni, z_se)), z_epochs=float(z_ep), z_nights=float(z_ni), z_seasons=float(z_se), nights=int(len(np.unique(np.floor(tt + 0.3)))),
+                alias=alias, components=components, telluric_mask=tell is not None, method=5)
+
+
+def companions_tell(name, mjd, vsys, berv=None, vstar=None, instrument="HARPS"):
+    """Each row's telluric velocity in the star's frame, the barycentric correction less the velocity the spectrum was put at: the correction from the kept rows where they carry it, else computed from the plan's position for the instrument's site; the velocity per row (VSTAR) where kept, else VSYS."""
+    if berv is None or not np.all(np.isfinite(berv)):
+        # names compared without spaces and underscores, which a star's tag turns its spaces into
+        key = lambda s: re.sub(r"[\s_]", "", str(s)).upper()
+        plan = {key(p["name"]): p for p in json.load(open(os.path.join(companions_ROOT, "plan.json"))) if p["inst"] == instrument}
+        p = plan.get(key(name))
+        if p is None or p.get("ra") is None:
+            return None
+        from setitools import science
+        site = "Paranal" if instrument in ("ESPRESSO", "UVES", "CRIRES") else "LaSilla"
+        berv = np.atleast_1d(science.barycentric_correction(p["ra"], p["dec"], np.asarray(mjd, float), site))
+    return np.asarray(berv, float) - (np.asarray(vstar, float) if vstar is not None else float(vsys or 0.0))
+
+
+def companions_reanalyse(components=5, instrument=None, part=None):
+    """Every star whose cross-correlation rows are kept under ROOT/ccf searched again from those rows with COMPONENTS principal components taken out, the results under ROOT/results rewritten; PART (k, n) takes the stars whose tag hashes to k of n, so n searches can run side by side."""
+    import glob
+    import zlib
+    os.makedirs(os.path.join(companions_ROOT, "results"), exist_ok=True)
+    n = 0
+    for path in sorted(glob.glob(os.path.join(companions_ROOT, "ccf", "*.npz"))):
+        tag = os.path.basename(path)[:-4]
+        if instrument and not tag.startswith(instrument + "_"):
+            continue
+        if part and zlib.crc32(tag.encode()) % part[1] != part[0]:
+            continue
+        rpath = os.path.join(companions_ROOT, "results", tag + ".json")
+        old = json.load(open(rpath)) if os.path.exists(rpath) else (json.load(open(path[:-4] + ".json")) if os.path.exists(path[:-4] + ".json") else {})
+        # a star whose note has not arrived is still being written or copied, and waits for the next pass
+        if not old or (old.get("components") == components and old.get("method") == 5 and "z" in old):
+            continue
+        try:
+            with np.load(path) as d:
+                rows, mjd = d["ccf"].astype(np.float64), d["mjd"]
+                berv = d["berv"] if "berv" in d.files else None
+                vstar = d["vstar"] if "vstar" in d.files else None
+        except Exception:
+            continue
+        tell = companions_tell(old.get("name") or tag[len(instrument or "HARPS") + 1:], mjd, old.get("vsys"), berv, vstar, instrument or "HARPS")
+        res = companions_trail_result(rows, mjd, components, tell=tell)
+        out = dict(old, n=int(rows.shape[0]), **res)
+        json.dump(out, open(rpath, "w"), indent=1)
+        print("%-20s %3d rows over %5.0f d on %d nights: summit P %8.2f d, K %3.0f km/s, %.2f; null %.2f +- %.2f -> %.1f sigma (epochs %.1f, nights %.1f, seasons %.1f)%s" % (
+            out.get("name", tag), out["n"], out["span"], out["nights"], out["period"], out["k"], out["value"], out["null_mean"], out["null_sd"], out["z"],
+            out["z_epochs"], out["z_nights"], out["z_seasons"], "; alias of %s" % out["alias"] if out["alias"] else ""), flush=True)
+        n += 1
+    print("%d stars searched again" % n)
+
+
+def companions_survey(instrument="HARPS", per_star=300, max_stars=0, streams=4, template_dir=None, template_obj="GJ 367", template_vsys=47.9, keep=False, components=5, stars=(), ccf_only=False):
+    """The plan's series of one instrument, most spectra first (or the named STARS in their order): up to PER_STAR spectra of each star spread over its span fetched from ESO, searched blind against the template with COMPONENTS principal components taken out of the cross-correlation rows, the summit, null and cross-correlation rows kept under ROOT/results and ROOT/ccf, and the spectra removed unless KEEP; a star with a result is passed over; with CCF_ONLY the rows are kept and the trail search left for later."""
+    plan = [p for p in json.load(open(os.path.join(companions_ROOT, "plan.json"))) if p["inst"] == instrument]
+    plan.sort(key=lambda p: -p["n"])
+    if stars:
+        order = {s.strip().upper().replace(" ", ""): i for i, s in enumerate(stars)}
+        plan = sorted((p for p in plan if p["name"].strip().upper().replace(" ", "") in order), key=lambda p: order[p["name"].strip().upper().replace(" ", "")])
+    band = giants_band(instrument)
+    tpl_dir = template_dir or os.path.join(bio_shoreline_root(), "spectra", "HARPS")
+    # a template kept as an array (.npy) is read as it is, which spares a node the template star's spectra
+    T = np.load(tpl_dir) if str(tpl_dir).endswith(".npy") else companions_template(companions_spectra(companions_files(tpl_dir, template_obj)), template_vsys, band)
+    os.makedirs(os.path.join(companions_ROOT, "results"), exist_ok=True)
+    os.makedirs(os.path.join(companions_ROOT, "ccf"), exist_ok=True)
+    done = 0
+    for p in plan:
+        tag = re.sub(r"[^A-Za-z0-9+_.-]", "_", "%s_%s" % (instrument, p["name"]))
+        rpath = os.path.join(companions_ROOT, "results", tag + ".json")
+        if os.path.exists(rpath) or (ccf_only and os.path.exists(os.path.join(companions_ROOT, "ccf", tag + ".npz"))):
+            continue
+        # the stars another node has finished, from the list the coordinating node copies here
+        finished = os.path.join(companions_ROOT, "ccf", "done.txt")
+        if os.path.exists(finished) and tag in set(open(finished, encoding="utf-8").read().split()):
+            continue
+        rows = [r for r in core.archive_spectra(p["ra"], p["dec"]) if r["inst"] == instrument and (r.get("snr") or 0) > 30]
+        rows.sort(key=lambda r: r["t0"])
+        pick = rows[::max(len(rows) // per_star, 1)][:per_star]
+        folder = os.path.join(companions_ROOT, "spectra", tag)
+        os.makedirs(folder, exist_ok=True)
+
+        def one(r):
+            path = os.path.join(folder, re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+            if os.path.exists(path):
+                return path
+            try:
+                return path if core.eso_download(r["id"], path) else None
+            except Exception:
+                # a product the archive refuses, proprietary or withdrawn, is passed over
+                return None
+        paths = [x for x in core.pmap(one, pick, streams) if x]
+        spectra = companions_spectra(paths)
+        if len(spectra) < 30:
+            json.dump(dict(name=p["name"], inst=instrument, n=len(spectra), note="too few spectra"), open(rpath, "w"))
+            continue
+        vsys = companions_vsys(spectra)
+        info = {}
+        R, sd, _ = companions_residuals(spectra, vsys, band, info=info)
+        ccf = companions_unpattern(giants_ccf(R, T, sd))
+        t = np.array([s[3]["mjd"] for s in spectra])
+        berv = np.array([s[3].get("berv") if s[3].get("berv") is not None else np.nan for s in spectra], float)
+        vstar = info.get("vstar", np.full(len(spectra), vsys))
+        np.savez_compressed(os.path.join(companions_ROOT, "ccf", tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=berv, vstar=vstar)
+        if ccf_only:
+            json.dump(dict(name=p["name"], inst=instrument, n=len(spectra), vsys=vsys), open(os.path.join(companions_ROOT, "ccf", tag + ".json"), "w"))
+            print("%-20s %3d spectra: rows kept" % (p["name"], len(spectra)), flush=True)
+            if not keep:
+                import shutil
+                shutil.rmtree(folder, ignore_errors=True)
+            done += 1
+            if max_stars and done >= max_stars:
+                break
+            continue
+        res = companions_trail_result(ccf, t, components, tell=berv - vstar if np.all(np.isfinite(berv)) else None)
+        json.dump(dict(name=p["name"], inst=instrument, n=len(spectra), vsys=vsys, **res), open(rpath, "w"), indent=1)
+        print("%-20s %3d spectra over %5.0f d: summit P %8.2f d, K %3.0f km/s, %.2f; null %.2f +- %.2f -> %.1f sigma" % (
+            p["name"], len(spectra), res["span"], res["period"], res["k"], res["value"], res["null_mean"], res["null_sd"], res["z"]), flush=True)
+        if not keep:
+            import shutil
+            shutil.rmtree(folder, ignore_errors=True)
+        done += 1
+        if max_stars and done >= max_stars:
+            break
+    print("%d stars searched" % done)
+
+
+def bio_shoreline_root():
+    """The rocky-planet search's data root, where the archive's M-dwarf spectra are kept."""
+    from setitools import biosignatures as bio
+    return bio.shoreline_ROOT
+
+
+def companions_files(folder, obj):
+    """The FITS files of a folder whose OBJECT header holds OBJ (spaces ignored, case ignored), all of them without OBJ."""
+    import glob
+    from astropy.io import fits
+    out = []
+    for f in sorted(glob.glob(os.path.join(folder, "*.fits"))):
+        if not obj or obj.replace(" ", "").upper() in str(fits.getheader(f).get("OBJECT", "")).replace(" ", "").upper():
+            out.append(f)
+    return out
+
+
+def companions_cli():
+    quiet_warnings()
+    p = argparse.ArgumentParser(prog="seti.py composition companions")
+    p.add_argument("mode", choices=("plan", "test", "search", "survey", "reanalyse"))
+    p.add_argument("--components", type=int, default=5)
+    p.add_argument("--stars", nargs="*", default=[])
+    p.add_argument("--stars-file")
+    p.add_argument("--part", help="k/n: the re-search's share, by the stars' tags")
+    p.add_argument("--ccf-only", action="store_true")
+    p.add_argument("--per-star", type=int, default=300)
+    p.add_argument("--max-stars", type=int, default=0)
+    p.add_argument("--streams", type=int, default=4)
+    p.add_argument("--keep", action="store_true")
+    p.add_argument("target", nargs="?")
+    p.add_argument("--object", default="")
+    p.add_argument("--vsys", type=float, default=None)
+    p.add_argument("--template")
+    p.add_argument("--template-object", default="")
+    p.add_argument("--template-vsys", type=float, default=0.0)
+    p.add_argument("--inst", default="SPIRou")
+    p.add_argument("--max", type=int, default=0)
+    p.add_argument("--inject", type=float, default=0.0)
+    p.add_argument("--depth", type=float, default=0.001)
+    p.add_argument("--period", type=float, default=7.3)
+    p.add_argument("--k", type=float, default=40.0)
+    a = p.parse_args()
+    if a.stars_file:
+        a.stars = [s.strip() for s in open(a.stars_file, encoding="utf-8") if s.strip()]
+    if a.mode == "plan":
+        companions_plan()
+        return
+    if a.mode == "survey":
+        companions_survey(a.inst, a.per_star, a.max_stars, a.streams, a.template, a.template_object or "GJ 367", a.template_vsys or 47.9, a.keep, a.components, a.stars, a.ccf_only)
+        return
+    if a.mode == "reanalyse":
+        companions_reanalyse(a.components, a.inst if a.inst != "SPIRou" else None, tuple(int(x) for x in a.part.split("/")) if a.part else None)
+        return
+    if a.mode == "test":
+        companions_test(a.depth, a.period, a.k)
+        return
+    band = giants_band(a.inst)
+    files = companions_files(a.target, a.object)
+    spectra = companions_spectra(files[:a.max] if a.max else files)
+    tpl = companions_spectra(companions_files(a.template, a.template_object)) if a.template else spectra
+    T = companions_template(tpl, a.template_vsys, band)
+    vsys = a.vsys if a.vsys is not None else companions_vsys(spectra)
+    print("%d spectra of %s at %.1f km/s, template from %d spectra of %s: template samples above 0.1: %d" % (len(spectra), a.object or a.target, vsys, len(tpl), a.template_object or "itself", int((T > 0.1).sum())), flush=True)
+    if a.inject:
+        g = giants_grid(band)
+        t0 = min(s[3]["mjd"] for s in spectra)
+        injected = []
+        for w, f, e, meta in spectra:
+            v = a.k * np.sin(2 * np.pi * (meta["mjd"] - t0) / a.period)
+            vstar = meta["rv"] if meta.get("rv") is not None else vsys
+            tw = np.interp(w, g * (1.0 + (vstar + v) / 299792.458), T, left=0.0, right=0.0)
+            injected.append((w, f * (1.0 - a.inject * tw), e, meta))
+        spectra = injected
+    best, nm, ns, z, periods, table = companions_search(spectra, T, band, vsys=vsys, components=a.components)
+    print("%s: summit P %.2f d, phase %.2f, K %.0f km/s, %.4f; null %.4f +- %.4f -> %.1f sigma" % (
+        "injected %g at P %.2f d, K %.0f" % (a.inject, a.period, a.k) if a.inject else "blind", best[0], best[1], best[2], best[3], nm, ns, z), flush=True)
+
+
+# --------------------------------------------------------------------------------------------------------------
+
+binaries_DOC = r"""Companions of single-lined binaries along their known orbits: each archived spectrum's velocity measured against a template of the primary and the primary's orbit fitted to those velocities; the spectra put on the grid in the primary's frame at their own velocities, divided by the series' median and cross-correlated by inverse variance with an M-dwarf template; the star's pattern, the sky's pattern and five principal components taken out of the rows; the rows summed along the track the orbit gives the companion over its semi-amplitude K2 and its systemic offset from the primary's, the summit read against the orbit's phase moved and whole nights shuffled, K2 bootstrapped over whole nights, and the masses from K1 and K2.
+
+    python -I seti.py composition binaries plan [--min 20]                                     the ESO series of the Gaia DR3 and SB9 single-lined binaries: ROOT/plan.json
+    python -I seti.py composition binaries template NAME [--inst HARPS] [--out FILE.npy]       a primary's line depths from its own spectra at its catalogue orbit's velocities
+    python -I seti.py composition binaries build NAME [NAME ...] [--inst HARPS] [--min-snr 10] [--per-star 300] [--keep]   each binary's rows: ROOT/rows
+    python -I seti.py composition binaries search [NAME ...] [--inst HARPS] [--dv 1.0]          the summit over K2 at a fixed systemic offset: ROOT/results
+    python -I seti.py composition binaries measure NAME [--inst HARPS] [--incl DEG] [--k2-fixed KMS] [--dv-fixed KMS]   the peak over K2 and the offset, bootstrapped: ROOT/measure
+    python -I seti.py composition binaries record"""
+
+binaries_ROOT = core.data("binaries")
+# Gaia DR3 counts its times of periastron from the reference epoch J2016.0
+binaries_J2016 = 2457389.0
+binaries_CORE, binaries_TELL, binaries_COMPONENTS = 30.0, 10.0, 5
+
+
+def binaries_radial(t, P, tp, e, w):
+    """The orbit's radial-velocity shape at MJD T, cos(nu + omega) + e cos(omega), from Kepler's equation (omega in degrees)."""
+    M = 2 * np.pi * (((np.asarray(t, float) - tp) / P) % 1.0)
+    E = M.copy()
+    for _ in range(60):
+        E = E - (E - e * np.sin(E) - M) / (1.0 - e * np.cos(E))
+    nu = 2 * np.arctan2(np.sqrt(1 + e) * np.sin(E / 2), np.sqrt(1 - e) * np.cos(E / 2))
+    return np.cos(nu + np.radians(w)) + e * np.cos(np.radians(w))
+
+
+def binaries_orbit(target):
+    """A plan entry's catalogue orbit: (period, time of periastron in MJD, e, omega, K1, gamma)."""
+    tp = target["t_peri"]
+    if target["source"].startswith("Gaia"):
+        tp = binaries_J2016 + tp
+    elif tp < 1e5:
+        tp = tp + 2400000.0
+    return target["period"], tp - 2400000.5, target["e"] or 0.0, target["omega"] or 0.0, target["k1"], target["gamma"] or 0.0
+
+
+def binaries_refit(t, v, P, tp, e, w, k1):
+    """The orbit fitted to measured velocities V: a grid over period (within 0.4 per cent), phase, e and omega with K1 and gamma solved linearly at each point, then least squares with a soft loss; (P, tp, e, omega, K1, gamma, rms)."""
+    from scipy.optimize import least_squares
+    span = max(float(t.max() - t.min()), P)
+    step = 0.02 * P / span * P
+    ph = np.arange(0.0, 1.0, 0.01)
+    best = (np.inf, P, tp, e, w)
+    for eg in np.arange(0.0, 0.61, 0.05):
+        for wg in np.arange(0.0, 360.0, 20.0):
+            for Pg in np.arange(P * 0.996, P * 1.004 + step / 2, step):
+                tpg = tp + ph[:, None] * Pg
+                M = 2 * np.pi * (((t[None, :] - tpg) / Pg) % 1.0)
+                E = M + eg * np.sin(M)
+                for _ in range(12):
+                    E = E - (E - eg * np.sin(E) - M) / (1.0 - eg * np.cos(E))
+                nu = 2 * np.arctan2(np.sqrt(1 + eg) * np.sin(E / 2), np.sqrt(1 - eg) * np.cos(E / 2))
+                s = np.cos(nu + np.radians(wg)) + eg * np.cos(np.radians(wg))
+                sc = s - s.mean(1, keepdims=True)
+                kk = (sc * (v - v.mean())[None, :]).sum(1) / np.maximum((sc * sc).sum(1), 1e-12)
+                cost = np.where(kk > 0, np.log1p((v[None, :] - v.mean() - kk[:, None] * sc) ** 2).sum(1), np.inf)
+                j = int(np.argmin(cost))
+                if cost[j] < best[0]:
+                    best = (float(cost[j]), float(Pg), float(tpg[j, 0]), float(eg), float(wg))
+    P, tp, e, w = best[1], best[2], max(best[3], 0.01), best[4]
+    se = np.sqrt(max(e, 1e-4))
+    x0 = [P, tp, se * np.cos(np.radians(w)), se * np.sin(np.radians(w)), k1, float(np.median(v - k1 * binaries_radial(t, P, tp, e, w)))]
+    unpack = lambda x: (x[0], x[1], min(x[2] ** 2 + x[3] ** 2, 0.95), float(np.degrees(np.arctan2(x[3], x[2]))), x[4], x[5])
+    resid = lambda x: (lambda q: q[5] + q[4] * binaries_radial(t, q[0], q[1], q[2], q[3]) - v)(unpack(x))
+    fit = least_squares(resid, x0, loss="soft_l1", f_scale=1.0,
+                        bounds=([P * 0.995, -np.inf, -0.97, -0.97, 0.3 * k1, -np.inf], [P * 1.005, np.inf, 0.97, 0.97, 2.0 * k1, np.inf]))
+    return unpack(fit.x) + (float(1.4826 * np.median(np.abs(resid(fit.x)))),)
+
+
+def binaries_onto(spectra, v=None, band="optical"):
+    """Each spectrum on the band's grid, moved by its velocity V where given, over its running median of 501 samples, the telluric regions NaN."""
+    from scipy.ndimage import median_filter
+    g = giants_grid(band)
+    out = np.full((len(spectra), len(g)), np.nan)
+    for i, (w, f, e, meta) in enumerate(spectra):
+        wl = w / (1.0 + (0.0 if v is None else v[i]) / 299792.458)
+        ok = np.isfinite(f) & (f > 0)
+        fi = np.interp(g, wl[ok], f[ok], left=np.nan, right=np.nan)
+        cont = median_filter(np.nan_to_num(fi, nan=np.nanmedian(fi)), size=501, mode="nearest")
+        with np.errstate(all="ignore"):
+            out[i] = fi / cont
+    for lo, hi in giants_BANDS[band]["telluric"]:
+        out[:, (g > lo) & (g < hi)] = np.nan
+    return out
+
+
+def binaries_velocities(spectra, T, vmax=200, band="optical"):
+    """Each spectrum's barycentric velocity (km/s): the peak of its cross-correlation with the line depths T over +-VMAX, refined by a parabola through the three highest samples."""
+    c = giants_ccf(binaries_onto(spectra, None, band) - 1.0, T, None, vmax)
+    v = np.arange(-vmax, vmax + 1, dtype=float)
+    out = np.zeros(len(c))
+    for i, row in enumerate(c):
+        k = int(np.argmax(row))
+        den = row[k - 1] - 2 * row[k] + row[k + 1] if 0 < k < len(row) - 1 else 0.0
+        out[i] = v[k] + (0.5 * (row[k - 1] - row[k + 1]) / den if den < 0 else 0.0)
+    return out
+
+
+def binaries_plan_entries(inst=None):
+    """The plan's entries, of one instrument where given."""
+    return [x for x in json.load(open(os.path.join(binaries_ROOT, "plan.json"))) if inst is None or x["inst"] == inst]
+
+
+def binaries_target(name, inst):
+    """A binary's plan entry by name, spaces and punctuation ignored."""
+    key = lambda s: re.sub(r"[^A-Za-z0-9]", "", s).upper()
+    return next(x for x in binaries_plan_entries(inst) if key(x["name"]) == key(name))
+
+
+def binaries_tag(target):
+    """The file tag of a binary's series: its instrument and name."""
+    return re.sub(r"[^A-Za-z0-9+_.-]", "_", "%s_%s" % (target["inst"], target["name"]))
+
+
+def binaries_plan(min_n=20):
+    """The ESO archive's series of MIN_N or more spectra of one target from HARPS, ESPRESSO, NIRPS, UVES or FEROS, each matched within 10 arcsec to a Gaia DR3 single-lined orbit (SB1, SB1C, AstroSpectroSB1; G below 13) or else an SB9 single-lined orbit, with the mass function, the companion's least mass for a primary of one solar mass and its K2 at that mass: ROOT/plan.json."""
+    series = []
+    for inst in ("HARPS", "ESPRESSO", "NIRPS", "UVES", "FEROS"):
+        q = ("SELECT TOP 20000 target_name, COUNT(*) AS n, MIN(t_min) AS t0, MAX(t_max) AS t1, AVG(s_ra) AS ra, AVG(s_dec) AS dec FROM ivoa.ObsCore "
+             "WHERE dataproduct_type = 'spectrum' AND instrument_name = '%s' GROUP BY target_name ORDER BY n DESC" % inst)
+        for r in core.tap("eso", q, method="POST"):
+            n, ra, dec, name = int(r["n"]), core.num(r["ra"]), core.num(r["dec"]), (r["target_name"] or "").strip()
+            if n >= min_n and ra is not None and dec is not None and name.upper() not in ("SUN", "MOON", "SKY", ""):
+                series.append(dict(inst=inst, name=name, n=n, span=round(core.num(r["t1"]) - core.num(r["t0"]), 1), ra=ra, dec=dec))
+    gaia = core.tap_async("gaia", "SELECT o.source_id, o.nss_solution_type, o.period, o.semi_amplitude_primary, o.eccentricity, o.t_periastron, o.arg_periastron, "
+                          "o.center_of_mass_velocity, g.ra, g.dec, g.phot_g_mean_mag, g.parallax, g.bp_rp FROM gaiadr3.nss_two_body_orbit AS o "
+                          "JOIN gaiadr3.gaia_source AS g ON g.source_id = o.source_id WHERE o.nss_solution_type IN ('SB1', 'SB1C', 'AstroSpectroSB1') "
+                          "AND g.phot_g_mean_mag < 13", maxrec=2000000)
+    sb9 = [r for r in core.tap("vizier", 'SELECT m.Seq, m.RAJ2000, m.DEJ2000, m.Name, o.Per, o.T0, o.e, o.omega, o.K1, o.K2, o.V0 FROM "B/sb9/main" AS m '
+                                          'JOIN "B/sb9/orbits" AS o ON o.Seq = m.Seq') if not core.num(r["K2"])]
+
+    def cells(rows, rkey, dkey, size=0.05):
+        grid = {}
+        for r in rows:
+            rr, dd = core.num(r[rkey]), core.num(r[dkey])
+            if rr is not None and dd is not None:
+                grid.setdefault((int(dd // size), int(rr // size)), []).append((rr, dd, r))
+        return grid
+
+    def nearest(grid, ra, dec, size=0.05):
+        best = None
+        for i in (int(dec // size) - 1, int(dec // size), int(dec // size) + 1):
+            for j in range(int(ra // size) - 2, int(ra // size) + 3):
+                for rr, dd, r in grid.get((i, j % int(360 / size)), []):
+                    d = math.degrees(math.acos(max(-1.0, min(1.0, math.sin(math.radians(dec)) * math.sin(math.radians(dd)) +
+                                                             math.cos(math.radians(dec)) * math.cos(math.radians(dd)) * math.cos(math.radians(ra - rr)))))) * 3600
+                    if d <= 10.0 and (best is None or d < best[0]):
+                        best = (d, r)
+        return best
+
+    def least_mass(f):
+        lo, hi = 0.0, 50.0
+        for _ in range(80):
+            mid = 0.5 * (lo + hi)
+            lo, hi = (mid, hi) if mid ** 3 / (1.0 + mid) ** 2 < f else (lo, mid)
+        return 0.5 * (lo + hi)
+    out, ggrid, sgrid = [], cells(gaia, "ra", "dec"), cells(sb9, "RAJ2000", "DEJ2000")
+    for s in series:
+        hit, orbit = nearest(ggrid, s["ra"], s["dec"]), None
+        if hit and core.num(hit[1]["period"]) and core.num(hit[1]["semi_amplitude_primary"]):
+            g = {k: (v if k in ("source_id", "nss_solution_type") else core.num(v)) for k, v in hit[1].items()}
+            orbit = dict(source="Gaia DR3 " + g["nss_solution_type"], gaia=g["source_id"], sep_arcsec=round(hit[0], 1), period=g["period"], k1=g["semi_amplitude_primary"],
+                         e=g["eccentricity"] or 0.0, t_peri=g["t_periastron"], omega=g["arg_periastron"], gamma=g["center_of_mass_velocity"], g_mag=g["phot_g_mean_mag"],
+                         parallax=g["parallax"], bp_rp=g["bp_rp"])
+        else:
+            hit = nearest(sgrid, s["ra"], s["dec"])
+            if hit and core.num(hit[1]["Per"]) and core.num(hit[1]["K1"]):
+                o = hit[1]
+                orbit = dict(source="SB9", sb9=o["Seq"], sb9_name=(o["Name"] or "").strip(), sep_arcsec=round(hit[0], 1), period=core.num(o["Per"]), k1=core.num(o["K1"]),
+                             e=core.num(o["e"]) or 0.0, t_peri=core.num(o["T0"]), omega=core.num(o["omega"]), gamma=core.num(o["V0"]))
+        if orbit is None:
+            continue
+        f = 1.0361e-7 * (1 - orbit["e"] ** 2) ** 1.5 * orbit["k1"] ** 3 * orbit["period"]
+        m2 = least_mass(f)
+        out.append(dict(s, **orbit, mass_function=f, m2_min=round(m2, 3), k2_at_m2_min=round(orbit["k1"] / max(m2, 1e-6), 1), cycles=round(s["span"] / orbit["period"], 1)))
+    out.sort(key=lambda t: (-(t["n"] >= 30), -t["n"]))
+    os.makedirs(binaries_ROOT, exist_ok=True)
+    json.dump(out, open(os.path.join(binaries_ROOT, "plan.json"), "w"), indent=1)
+    print("%d series of single-lined binaries of %d stars" % (len(out), len({(round(t["ra"], 2), round(t["dec"], 2)) for t in out})))
+
+
+def binaries_fetch(target, min_snr=10.0, per_star=300, streams=4):
+    """A binary's public spectra from its instrument above MIN_SNR, up to PER_STAR spread over the span, fetched into ROOT/spectra/<tag>: the loaded spectra and the number listed."""
+    q = ("SELECT dp_id, instrument_name, t_min, snr FROM ivoa.ObsCore WHERE dataproduct_type = 'spectrum' AND "
+         "CONTAINS(POINT('ICRS', s_ra, s_dec), CIRCLE('ICRS', %.5f, %.5f, 0.01)) = 1" % (target["ra"], target["dec"]))
+    listed = sorted((r for r in core.tap("eso", q) if r["instrument_name"] == target["inst"] and (core.num(r["snr"]) or 0) > min_snr), key=lambda r: float(r["t_min"]))
+    folder = os.path.join(binaries_ROOT, "spectra", binaries_tag(target))
+    os.makedirs(folder, exist_ok=True)
+
+    def one(r):
+        path = os.path.join(folder, re.sub(r"[^A-Za-z0-9_.-]", "_", r["dp_id"]) + ".fits")
+        try:
+            return path if os.path.exists(path) or core.eso_download(r["dp_id"], path) else None
+        except Exception:
+            return None
+    paths = [x for x in core.pmap(one, listed[::max(len(listed) // per_star, 1)][:per_star], streams) if x]
+    return companions_spectra(paths), len(listed)
+
+
+def binaries_template(name, inst="HARPS", out=None):
+    """A primary's line depths, one minus the median of its spectra each put at its catalogue orbit's velocity: the template against which the velocities are measured, ROOT/templates/<tag>.npy unless OUT."""
+    target = binaries_target(name, inst)
+    spectra, _ = binaries_fetch(target)
+    P, tp, e, w, k1, gamma = binaries_orbit(target)
+    v = gamma + k1 * binaries_radial(np.array([s[3]["mjd"] for s in spectra]), P, tp, e, w)
+    with np.errstate(all="ignore"):
+        master = np.nanmedian(binaries_onto(spectra, v), axis=0)
+    T = np.where(np.isfinite(master), np.clip(1.0 - master, 0.0, None), 0.0)
+    out = out or os.path.join(binaries_ROOT, "templates", binaries_tag(target) + ".npy")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    np.save(out, T)
+    print("%s: line depths from %d spectra, %d samples above 0.1: %s" % (target["name"], len(spectra), int((T > 0.1).sum()), out))
+
+
+def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, rv_template=None, template=None, keep=False):
+    """Each named binary's rows: its spectra's velocities measured against RV_TEMPLATE and the orbit fitted to them, each spectrum put in the primary's frame at its own velocity, the residuals cross-correlated with the M-dwarf TEMPLATE and the star's pattern taken out, kept as ROOT/rows/<tag>.npz (rows, epochs, barycentric corrections, the velocities the rows were put at and the measured ones) with a note."""
+    rv_template = rv_template or os.path.join(binaries_ROOT, "templates", "rv.npy")
+    template = template or os.path.join(binaries_ROOT, "templates", "mdwarf.npy")
+    Trv, T = np.load(rv_template), np.load(template)
+    os.makedirs(os.path.join(binaries_ROOT, "rows"), exist_ok=True)
+    for name in names:
+        target = binaries_target(name, inst)
+        spectra, listed = binaries_fetch(target, min_snr, per_star, streams)
+        if len(spectra) < 20:
+            json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, note="too few spectra"),
+                      open(os.path.join(binaries_ROOT, "rows", binaries_tag(target) + ".json"), "w"))
+            print("%s: %d spectra loaded of %d listed; too few" % (target["name"], len(spectra), listed), flush=True)
+            continue
+        t = np.array([s[3]["mjd"] for s in spectra])
+        v = binaries_velocities(spectra, Trv)
+        P, tp, e, w, k1, gamma, rms = binaries_refit(t, v, *binaries_orbit(target)[:5])
+        for s, x in zip(spectra, v):
+            s[3]["rv"] = float(x)
+        info = {}
+        R, sd, _ = companions_residuals(spectra, gamma, "optical", info=info)
+        ccf = companions_unpattern(giants_ccf(R, T, sd))
+        tag = binaries_tag(target)
+        np.savez_compressed(os.path.join(binaries_ROOT, "rows", tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=np.array([s[3]["berv"] for s in spectra], float),
+                            vstar=np.asarray(info["vstar"], float), vpred=v)
+        json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, vsys=gamma), open(os.path.join(binaries_ROOT, "rows", tag + ".json"), "w"))
+        print("%s: %d spectra of %d listed; orbit P %.5f d, K1 %.3f km/s, e %.3f, omega %.1f, gamma %.2f; scatter %.3f km/s" % (
+            target["name"], len(spectra), listed, P, k1, e, w, gamma, rms), flush=True)
+        if not keep:
+            import shutil
+            shutil.rmtree(os.path.join(binaries_ROOT, "spectra", tag), ignore_errors=True)
+
+
+def binaries_rows(target):
+    """A binary's kept rows with the primary's orbit fitted to their measured velocities, the rows cleaned of the sky's pattern and five principal components and each weighted by the inverse square of its scatter away from the star: a dict."""
+    d = np.load(os.path.join(binaries_ROOT, "rows", binaries_tag(target) + ".npz"))
+    c, t, berv, vstar, vpred = (d[k].astype(float) for k in ("ccf", "mjd", "berv", "vstar", "vpred"))
+    P, tp, e, w, k1, gamma, rms = binaries_refit(t, vpred, *binaries_orbit(target)[:5])
+    shape = binaries_radial(t, P, tp, e, w)
+    return dict(c=c, t=t, tell=berv - vstar, vstar=vstar, orbit=(P, tp, e, w, k1, gamma), rms=rms, shape=shape,
+                centre=gamma - float(np.median(vstar - k1 * shape)), night=np.floor(t + 0.3))
+
+
+def binaries_clean(b, idx):
+    """The rows of IDX cleaned of the sky's pattern and five principal components, with each row's weight, the inverse square of its robust scatter more than 50 km/s from the star."""
+    cc = companions_components(companions_untellur(b["c"][idx], b["tell"][idx]), binaries_COMPONENTS)
+    v = np.arange(cc.shape[1], dtype=float) - (cc.shape[1] - 1) // 2
+    return cc, 1.0 / np.maximum(1.4826 * np.median(np.abs(cc[:, np.abs(v - b["centre"]) > 50]), axis=1), 1e-6) ** 2
+
+
+def binaries_curve(b, idx, cc, wt, k2, dv0=0.0, offset=0.0, shape=None):
+    """The weighted mean of the cleaned rows read along the companion's track for each K2, its systemic velocity the primary's moved by DV0 and read OFFSET from the track, readings near the star's lines or the sky's left out; -inf where fewer than a fifth of the rows, and ten, remain."""
+    P, tp, e, w, k1, gamma = b["orbit"]
+    shape = b["shape"][idx] if shape is None else shape
+    dv = gamma + dv0 - np.asarray(k2, float)[:, None] * shape[None, :] - b["vstar"][idx][None, :] + offset
+    vmax = (cc.shape[1] - 1) // 2
+    x = dv + vmax
+    xc = np.clip(x, 0, 2 * vmax - 1)
+    j = np.floor(xc).astype(int)
+    f = xc - j
+    r = np.arange(cc.shape[0])[None, :]
+    vals = cc[r, j] * (1 - f) + cc[r, j + 1] * f
+    use = (x >= 0) & (x <= 2 * vmax - 1) & (np.abs(dv - b["centre"]) > binaries_CORE) & (np.abs(dv - b["tell"][idx][None, :]) > binaries_TELL)
+    W = np.where(use, wt[None, :], 0.0)
+    out = (W * vals).sum(1) / np.maximum(W.sum(1), 1e-30)
+    return np.where(use.sum(1) >= max(10, len(idx) // 5), out, -np.inf)
+
+
+def binaries_summit(b, idx, cc, wt, grid, dv0, draws, rng):
+    """The summit of the curve over GRID at offset DV0 against its summits with the orbit's phase moved by a tenth to nine tenths of a period and with whole nights shuffled: (index, value, significances, the stricter null's summits)."""
+    P, tp, e, w = b["orbit"][:4]
+    val = binaries_curve(b, idx, cc, wt, grid, dv0)
+    i = int(np.argmax(val))
+    nulls, z = {}, {}
+    for kind in ("phase", "nights"):
+        t = b["t"][idx]
+        tops = np.array([float(np.max(binaries_curve(b, idx, cc, wt, grid, dv0, shape=binaries_radial(
+            t + rng.uniform(0.1, 0.9) * P if kind == "phase" else companions_night_shuffle(t, rng), P, tp, e, w)))) for _ in range(draws)])
+        nulls[kind], z[kind] = tops, float((val[i] - tops.mean()) / max(tops.std(), 1e-12))
+    return i, val, z, nulls[min(z, key=z.get)]
+
+
+def binaries_local(b, idx, cc, wt, k2c, dvc, half_k, half_v, step):
+    """The map's peak over K2 and the offset on a grid of STEP around (K2C, DVC), then on a grid of 0.05 km/s within half a km/s of it."""
+    for hk, hv, s in ((half_k, half_v, step), (0.5, 0.5, 0.05)):
+        ks, vs = np.arange(k2c - hk, k2c + hk + s / 2, s), np.arange(dvc - hv, dvc + hv + s / 2, s)
+        mm = np.array([binaries_curve(b, idx, cc, wt, ks, x) for x in vs])
+        jj, ii = np.unravel_index(int(np.argmax(mm)), mm.shape)
+        k2c, dvc = float(ks[ii]), float(vs[jj])
+    return k2c, dvc
+
+
+def binaries_masses(b, k2, incl=90.0):
+    """The masses (solar masses) from the orbit and K2 at inclination INCL: (M1, M2)."""
+    P, tp, e, w, k1, gamma = b["orbit"]
+    f = 1.0361e-7 * (1 - e * e) ** 1.5 * P * (k1 + np.asarray(k2, float)) ** 2 / np.sin(np.radians(incl)) ** 3
+    return f * k2, f * k1
+
+
+def binaries_search(names=(), inst="HARPS", dv=1.0, draws=300, detect=5.0):
+    """Each binary with kept rows (or the named ones) searched over K2 at a fixed systemic offset DV: the summit against the two nulls, the lower significance kept, and a detection's K2 bootstrapped over whole nights; ROOT/results/<tag>.json."""
+    os.makedirs(os.path.join(binaries_ROOT, "results"), exist_ok=True)
+    targets = [binaries_target(n, inst) for n in names] if names else [x for x in binaries_plan_entries(inst) if os.path.exists(os.path.join(binaries_ROOT, "rows", binaries_tag(x) + ".npz"))]
+    for target in targets:
+        tag = binaries_tag(target)
+        if not os.path.exists(os.path.join(binaries_ROOT, "rows", tag + ".npz")):
+            continue
+        rng = np.random.default_rng(zlib.crc32(tag.encode()))
+        b = binaries_rows(target)
+        idx = np.arange(len(b["t"]))
+        cc, wt = binaries_clean(b, idx)
+        grid = np.arange(max(b["orbit"][4], 5.0), 250.001, 0.25)
+        i, val, z, _ = binaries_summit(b, idx, cc, wt, grid, dv, draws, rng)
+        m1, m2 = binaries_masses(b, grid[i])
+        P, tp, e, w, k1, gamma = b["orbit"]
+        res = dict(name=target["name"], inst=inst, gaia=target.get("gaia"), rows=len(idx), nights=int(len(np.unique(b["night"]))), span_days=float(b["t"].max() - b["t"].min()),
+                   period=P, e=e, omega=w, k1=k1, gamma=gamma, rms_kms=b["rms"], dv=dv, k2=float(grid[i]), z_phase=z["phase"], z_nights=z["nights"], z=min(z.values()),
+                   m1_sin3i=float(m1), m2_sin3i=float(m2))
+        if res["z"] >= detect:
+            nights = np.unique(b["night"])
+            ks = np.arange(grid[i] - 6.0, grid[i] + 6.001, 0.25)
+            boot = []
+            for _ in range(draws):
+                pick = np.concatenate([np.where(b["night"] == n)[0] for n in rng.choice(nights, size=len(nights), replace=True)])
+                c2, w2 = binaries_clean(b, pick)
+                boot.append(float(ks[int(np.argmax(binaries_curve(b, pick, c2, w2, ks, dv)))]))
+            res["k2_16_50_84"] = [float(q) for q in np.percentile(boot, [16, 50, 84])]
+        json.dump(res, open(os.path.join(binaries_ROOT, "results", tag + ".json"), "w"), indent=1)
+        print("%-12s %3d rows: orbit P %.4f d K1 %.2f e %.3f, rms %.3f km/s; summit K2 %.2f km/s, %.1f sigma (phases %.1f, nights %.1f); m sin^3 i %.3f + %.3f" % (
+            target["name"], res["rows"], P, k1, e, b["rms"], res["k2"], res["z"], z["phase"], z["nights"], m1, m2), flush=True)
+
+
+def binaries_measure(name, inst="HARPS", draws=300, incl=90.0, k2_fixed=None, dv_fixed=1.0):
+    """One binary measured with the offset free: the map over K2 and the offset with its peak refined and bootstrapped over whole nights, the curve at the peak's offset against the nulls and at zero offset, each half by date and each set of alternate nights measured alone, the profile in the companion's frame, the masses at INCL, and the rows read at a published K2_FIXED and offset DV_FIXED against 2000 null draws; ROOT/measure/<tag>.json with the curve and profile as CSV and the map as an array."""
+    target = binaries_target(name, inst)
+    tag = binaries_tag(target)
+    out = os.path.join(binaries_ROOT, "measure")
+    os.makedirs(out, exist_ok=True)
+    rng = np.random.default_rng(zlib.crc32(tag.encode()))
+    b = binaries_rows(target)
+    allrows = np.arange(len(b["t"]))
+    cc, wt = binaries_clean(b, allrows)
+    k1 = b["orbit"][4]
+    grid = np.arange(max(k1, 5.0), 250.001, 0.25)
+    k2m, dvs = np.arange(max(k1, 5.0), 160.001, 0.5), np.arange(-30.0, 30.001, 0.5)
+    m = np.array([binaries_curve(b, allrows, cc, wt, k2m, x) for x in dvs])
+    m = np.where(np.isfinite(m), m, np.nan)
+    j, i = np.unravel_index(int(np.nanargmax(m)), m.shape)
+    far = (np.abs(k2m[None, :] - k2m[i]) > 25) | (np.abs(dvs[:, None] - dvs[j]) > 15)
+    ref = m[far & np.isfinite(m)]
+    snr = (m - np.median(ref)) / (1.4826 * np.median(np.abs(ref - np.median(ref))))
+    np.savez_compressed(os.path.join(out, tag + "_map.npz"), k2=k2m, dv=dvs, snr=snr)
+    k2p, dvp = binaries_local(b, allrows, cc, wt, float(k2m[i]), float(dvs[j]), 4.0, 3.0, 0.1)
+    ii, val, z, worst = binaries_summit(b, allrows, cc, wt, grid, dvp, draws, rng)
+    zc = (val - worst.mean()) / max(worst.std(), 1e-12)
+    ok = np.isfinite(zc)
+    np.savetxt(os.path.join(out, tag + "_k2curve.csv"), np.c_[grid[ok], zc[ok]], delimiter=",", header="k2,z", comments="", fmt="%.3f")
+    i0, _, z0, _ = binaries_summit(b, allrows, cc, wt, grid, 0.0, draws, rng)
+    nights = np.unique(b["night"])
+    boot = []
+    for _ in range(draws):
+        pick = np.concatenate([np.where(b["night"] == n)[0] for n in rng.choice(nights, size=len(nights), replace=True)])
+        c2, w2 = binaries_clean(b, pick)
+        boot.append(binaries_local(b, pick, c2, w2, k2p, dvp, 6.0, 4.0, 0.25))
+    boot = np.array(boot)
+    m1, m2 = binaries_masses(b, boot[:, 0], incl)
+    pct = lambda x: [float(q) for q in np.percentile(x, [16, 50, 84])]
+    order, half, alt = np.argsort(b["t"]), len(b["t"]) // 2, np.isin(b["night"], nights[::2])
+    splits = {}
+    for label, idx in (("first half by date", np.sort(order[:half])), ("second half by date", np.sort(order[half:])),
+                       ("alternate nights, one set", np.where(alt)[0]), ("alternate nights, other set", np.where(~alt)[0])):
+        c2, w2 = binaries_clean(b, idx)
+        k2s, dv2 = binaries_local(b, idx, c2, w2, k2p, dvp, 6.0, 4.0, 0.25)
+        zs = binaries_summit(b, idx, c2, w2, grid, dvp, max(draws // 3, 50), rng)[2]
+        splits[label] = dict(k2=k2s, dv=dv2, z=min(zs.values()), rows=len(idx))
+    offs = np.arange(-100.0, 100.001, 1.0)
+    prof = np.array([binaries_curve(b, allrows, cc, wt, [k2p], dvp, o)[0] for o in offs])
+    prof = np.where(np.isfinite(prof), prof, np.nan)
+    side = np.abs(offs) > 30
+    prof = (prof - np.nanmedian(prof[side])) / (1.4826 * np.nanmedian(np.abs(prof[side] - np.nanmedian(prof[side]))))
+    ok = np.isfinite(prof)
+    np.savetxt(os.path.join(out, tag + "_profile.csv"), np.c_[offs[ok], prof[ok]], delimiter=",", header="offset,snr", comments="", fmt="%.3f")
+    P, tp, e, w, k1, gamma = b["orbit"]
+    res = dict(name=target["name"], inst=inst, gaia=target.get("gaia"), rows=len(allrows), nights=int(len(nights)), span_days=float(b["t"].max() - b["t"].min()),
+               orbit=dict(period=P, t_peri_mjd=tp, e=e, omega=w, k1=k1, gamma=gamma, rms_kms=b["rms"]), peak=dict(k2=k2p, dv=dvp),
+               summit=dict(k2=float(grid[ii]), z_phase=z["phase"], z_nights=z["nights"], z=min(z.values())), summit_zero_offset=dict(k2=float(grid[i0]), z=min(z0.values())),
+               bootstrap=dict(draws=draws, k2_16_50_84=pct(boot[:, 0]), dv_16_50_84=pct(boot[:, 1])), incl=incl, m1_16_50_84=pct(m1), m2_16_50_84=pct(m2), splits=splits)
+    if k2_fixed:
+        at = float(binaries_curve(b, allrows, cc, wt, [k2_fixed], dv_fixed)[0])
+        fixed = []
+        for n in range(2000):
+            t = b["t"] + rng.uniform(0.1, 0.9) * P if n % 2 else companions_night_shuffle(b["t"], rng)
+            fixed.append(float(binaries_curve(b, allrows, cc, wt, [k2_fixed], dv_fixed, shape=binaries_radial(t, P, tp, e, w))[0]))
+        fixed = np.array([x for x in fixed if np.isfinite(x)])
+        res["fixed"] = dict(k2=k2_fixed, dv=dv_fixed, z=float((at - fixed.mean()) / fixed.std()), as_high=int((fixed >= at).sum()), of=len(fixed))
+    json.dump(res, open(os.path.join(out, tag + ".json"), "w"), indent=1)
+    bk = res["bootstrap"]["k2_16_50_84"]
+    print("%s %s: peak K2 %.2f (%.2f-%.2f) at offset %+.2f km/s, %.1f sigma (phases %.1f, nights %.1f); M1 %.4f M2 %.4f at i %.3f%s" % (
+        inst, target["name"], k2p, bk[0], bk[2], dvp, res["summit"]["z"], z["phase"], z["nights"], res["m1_16_50_84"][1], res["m2_16_50_84"][1], incl,
+        "; at K2 %.2f: %.1f sigma, %d of %d nulls as high" % (k2_fixed, res["fixed"]["z"], res["fixed"]["as_high"], res["fixed"]["of"]) if k2_fixed else ""), flush=True)
+
+
+def binaries_record(detect=5.0):
+    """The searched binaries' results and measurements written to the store: one row per binary and instrument, its target the primary's Gaia DR3 identifier followed by # and the instrument, a detection marked as the eclipsing binary's companion and a series too thin to search as not measured."""
+    rows, found = [], []
+    for target in binaries_plan_entries():
+        tag = binaries_tag(target)
+        load = lambda sub: json.load(open(os.path.join(binaries_ROOT, sub, tag + ".json"))) if os.path.exists(os.path.join(binaries_ROOT, sub, tag + ".json")) else None
+        r, m, note = load("results"), load("measure"), load("rows")
+        if r is None and note is None:
+            continue
+        key = "gaia_dr3:%s#%s" % (target.get("gaia"), target["inst"])
+        if r is None or not np.isfinite(r["z"]):
+            rows.append(dict(target=key, stat=None, unit="sigma of the summit over K2", vet="not-measured",
+                             note="%s: %d spectra%s, too few to search" % (target["name"], (r or note)["rows" if r else "n"], " on %d nights" % r["nights"] if r else "")))
+            continue
+        hit = r["z"] >= detect
+        found += [target["name"]] if hit else []
+        text = "%s: P %.4f d, K1 %.2f km/s, e %.3f; summit K2 %.2f km/s at offset %+.1f km/s (phases %.1f, nights %.1f sigma); m sin^3 i %.3f + %.3f Msun" % (
+            target["name"], r["period"], r["k1"], r["e"], r["k2"], r["dv"], r["z_phase"], r["z_nights"], r["m1_sin3i"], r["m2_sin3i"])
+        if m:
+            bk = m["bootstrap"]["k2_16_50_84"]
+            text += "; offset free: K2 %.2f (%.2f-%.2f) km/s at %+.2f km/s, masses %.3f + %.4f Msun at i %.2f" % (
+                m["peak"]["k2"], bk[0], bk[2], m["peak"]["dv"], m["m1_16_50_84"][1], m["m2_16_50_84"][1], m["incl"])
+        rows.append(dict(target=key, stat=round(r["z"], 1), unit="sigma of the summit over K2 against the stricter null (%s, %d spectra)" % (target["inst"], r["rows"]),
+                         vet="eclipsing-binary" if hit else None, note=text))
+    n = len({x["target"].split("#")[0] for x in rows})
+    core.record_run(
+        "binaries_eblm_known_orbits", "Companions of single-lined binaries along their known orbits",
+        "ESO Phase 3 (HARPS, ESPRESSO); Gaia DR3 non-single-star orbits; SB9",
+        "the EBLM binaries with Gaia DR3 single-lined orbits and archived HARPS series of 20 or more spectra above S/N 10, periods below 100 d covered three times; TOI-1338's ESPRESSO series",
+        os.path.abspath(__file__), "binaries", n, "binaries", dict(dv=1.0, components=binaries_COMPONENTS, core_kms=binaries_CORE, tell_kms=binaries_TELL, detect=detect),
+        "the summit over K2 against the same rows with the orbit's phase moved by 0.1 to 0.9 of a period and with whole nights shuffled, 300 of each, the lower significance kept",
+        "a companion stands at %g sigma; with the companion's systemic offset free, its K2 bootstrapped over whole nights" % detect,
+        "%d series of %d binaries; %d companions at %g sigma or more: %s" % (len(rows), n, len(found), detect, ", ".join(sorted(found)) or "none"), rows)
+    print("%d rows recorded; companions: %s" % (len(rows), ", ".join(sorted(found)) or "none"))
+
+
+def binaries_cli():
+    quiet_warnings()
+    p = argparse.ArgumentParser(prog="seti.py composition binaries")
+    p.add_argument("mode", choices=("plan", "template", "build", "search", "measure", "record"))
+    p.add_argument("names", nargs="*")
+    p.add_argument("--inst", default="HARPS")
+    p.add_argument("--min", type=int, default=20)
+    p.add_argument("--out")
+    p.add_argument("--min-snr", type=float, default=10.0)
+    p.add_argument("--per-star", type=int, default=300)
+    p.add_argument("--streams", type=int, default=4)
+    p.add_argument("--rv-template")
+    p.add_argument("--template")
+    p.add_argument("--keep", action="store_true")
+    p.add_argument("--dv", type=float, default=1.0)
+    p.add_argument("--draws", type=int, default=300)
+    p.add_argument("--detect", type=float, default=5.0)
+    p.add_argument("--incl", type=float, default=90.0)
+    p.add_argument("--k2-fixed", type=float, default=None)
+    p.add_argument("--dv-fixed", type=float, default=1.0)
+    a = p.parse_args()
+    if a.mode == "plan":
+        binaries_plan(a.min)
+    elif a.mode == "template":
+        binaries_template(a.names[0], a.inst, a.out)
+    elif a.mode == "build":
+        binaries_build(a.names, a.inst, a.min_snr, a.per_star, a.streams, a.rv_template, a.template, a.keep)
+    elif a.mode == "search":
+        binaries_search(a.names, a.inst, a.dv, a.draws, a.detect)
+    elif a.mode == "measure":
+        binaries_measure(a.names[0], a.inst, a.draws, a.incl, a.k2_fixed, a.dv_fixed)
+    else:
+        binaries_record(a.detect)
+
+
+def giants_reflected(planets=(), max_spectra=300, streams=4, instruments=("HARPS", "ESPRESSO"), components=5, probe=1e-4, redo=False):
+    """Reflected starlight of the named planets (or every non-transiting giant of the plan with an orbit): up to MAX_SPECTRA archived spectra of the host spread over its span, each on the grid in the star's frame over its running median and the series' median, whitened; the star's own absorption pattern as the template, its residual pattern taken out of each cross-correlation row at its own strength and COMPONENTS principal components of the rows taken out after it; the rows summed in the planet's frame over K_p and rest velocity, weighted by the Lambert phase function and only where the planet moves more than 25 km/s from the star; the value at the orbit's K_p against the map's scatter away from the star and a sham of the rows with their phases shuffled; the gain measured by laying a copy of the star's lines at contrast PROBE, dimmed by the phase function, into the same spectra along the planet's velocity and reading the map's rise at the orbit through the same cleaning, so the value and the 3 sigma limit are stated as contrasts; results under ROOT/results/<planet>.reflected.json."""
+    plan = json.load(open(os.path.join(giants_ROOT, "plan.json")))
+    kp_grid = np.arange(0.0, 301.0, 5.0)
+    vrest = np.arange(-100.0, 101.0, 1.0)
+    quiet = (kp_grid >= 60.0)[:, None] & (np.abs(vrest) > 40.0)[None, :]
+    os.makedirs(os.path.join(giants_ROOT, "results"), exist_ok=True)
+
+    def cleaned(R, sd, master):
+        T = np.where(np.isfinite(master), np.clip(1.0 - master, 0.0, None), 0.0)
+        c = companions_unpattern(giants_ccf(R, T, sd))
+        if components:
+            U, S, Vt = np.linalg.svd(c, full_matrices=False)
+            c = c - (U[:, :components] * S[:components]) @ Vt[:components]
+        return c, T
+    for p in plan:
+        if (planets and p["pl_name"] not in planets) or (not planets and p.get("tran_flag")):
+            continue
+        tag = re.sub(r"[^A-Za-z0-9+_.-]", "_", p["pl_name"])
+        rpath = os.path.join(giants_ROOT, "results", tag + ".reflected.json")
+        if os.path.exists(rpath) and not redo:
+            continue
+        rows = [r for inst in instruments for r in (p["instruments"].get(inst) or []) if r["src"] == "ESO" and (r.get("snr") or 0) > 50]
+        if len(rows) < 30:
+            continue
+        rows.sort(key=lambda r: r["t0"])
+        pick = rows[::max(len(rows) // max_spectra, 1)][:max_spectra]
+        folder = os.path.join(giants_ROOT, "reflected", tag)
+        os.makedirs(folder, exist_ok=True)
+
+        def one(r):
+            path = os.path.join(folder, re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+            if os.path.exists(path):
+                return path
+            try:
+                return path if core.eso_download(r["id"], path) else None
+            except Exception:
+                # a product the archive refuses, proprietary or withdrawn, is passed over
+                return None
+        paths = [x for x in core.pmap(one, pick, streams) if x]
+        spectra = companions_spectra(paths)
+        if len(spectra) < 30:
+            continue
+        per, tc = p["pl_orbper"], p["pl_tranmid"] - 2400000.5
+        kp_true = 2 * np.pi * (p["pl_orbsmax"] or 0.05) * 1.495978707e8 / (per * 86400.0)
+        vsys = companions_vsys(spectra, p.get("st_radv"))
+        band = giants_band(instruments[0])
+        g = giants_grid(band)
+        phase = np.array([((s[3]["mjd"] - tc) / per) % 1.0 for s in spectra])
+        vp_unit = np.sin(2 * np.pi * phase)
+        # Lambert's phase function at the phase angle, zero at inferior conjunction and pi at superior conjunction, where the lit face is full;
+        # rows near the star's velocity left out
+        alpha = 2.0 * np.pi * np.abs(phase - 0.5)
+        lam = (np.sin(alpha) + (np.pi - alpha) * np.cos(alpha)) / np.pi
+        w = np.where(np.abs(kp_true * vp_unit) > 25.0, lam, 0.0)
+        if w.sum() <= 0:
+            continue
+        R, sd, master = companions_residuals(spectra, vsys, band)
+        ccf, T = cleaned(R, sd, master)
+        m = giants_planet_frame(ccf, vp_unit, w, kp_grid, vrest)
+        # the probe: the star's own lines at contrast PROBE times the phase function, shifted by the planet's velocity, laid into each spectrum's flux
+        laid = []
+        for (wv, f, e, meta), vp, lam_k in zip(spectra, kp_true * vp_unit, lam):
+            vstar = meta["rv"] if meta.get("rv") is not None else vsys
+            tw = np.interp(wv, g * (1.0 + (vstar + vp) / 299792.458), T, left=0.0, right=0.0)
+            laid.append((wv, f * (1.0 - probe * lam_k * tw), e, meta))
+        Rp, sdp, masterp = companions_residuals(laid, vsys, band)
+        ccfp, _ = cleaned(Rp, sdp, masterp)
+        mp = giants_planet_frame(ccfp, vp_unit, w, kp_grid, vrest)
+        i0, j0 = int(np.argmin(np.abs(kp_grid - kp_true))), int(np.argmin(np.abs(vrest)))
+        gain = float(mp[i0, j0] - m[i0, j0]) / probe
+        # the gain the whitened template would give with nothing lost: its norm times the phase function under the rows' weights
+        ok = np.isfinite(R).all(0)
+        gain_white = float(np.sqrt(((T / sd) ** 2)[ok].sum())) * float((w * lam).sum() / w.sum())
+        rng = np.random.default_rng(5)
+        shams = [giants_planet_frame(ccf, vp_unit[rng.permutation(len(vp_unit))], w, kp_grid, vrest) for _ in range(5)]
+        noise = max(float(np.nanstd(m[quiet])), float(np.mean([np.nanstd(x[quiet]) for x in shams])))
+        near = (np.abs(kp_grid - kp_true) <= 30)[:, None] & (kp_grid >= 30.0)[:, None] & (np.abs(vrest) <= 10)[None, :]
+        val = float(np.nanmax(np.where(near, m, -np.inf)))
+        above = np.where(kp_grid[:, None] >= 30.0, m, -np.inf)
+        i, j = np.unravel_index(int(np.nanargmax(above)), m.shape)
+        sham_max = float(np.mean([np.nanmax(np.where(near, x, -np.inf)) for x in shams]))
+        res = dict(planet=p["pl_name"], n=len(spectra), n_eff=float(w.sum() ** 2 / (w ** 2).sum()), kp_true=kp_true, vsys=vsys, components=components, probe=probe,
+                   snr=val / noise if noise > 0 else 0.0, sham=sham_max / noise if noise > 0 else 0.0,
+                   map_peak=dict(kp=float(kp_grid[i]), vrest=float(vrest[j]), snr=float(m[i, j] / noise) if noise > 0 else 0.0), noise=noise, value=val,
+                   orbit=float(m[i0, j0]), gain=gain, gain_white=gain_white, retained=gain / gain_white if gain_white > 0 else None,
+                   contrast=float(m[i0, j0]) / gain if gain > 0 else None, limit_3sigma=3.0 * noise / gain if gain > 0 else None)
+        json.dump(res, open(rpath, "w"), indent=1)
+        print("%-14s %3d spectra (%.0f effective): reflected light at K_p %.0f: %.1f sigma (sham %.1f); map peak %.1f at K_p %.0f, v %+.0f; contrast %+.0f ppm, 3 sigma limit %.0f ppm; probe retained %.2f" % (
+            p["pl_name"], len(spectra), res["n_eff"], kp_true, res["snr"], res["sham"], res["map_peak"]["snr"], res["map_peak"]["kp"], res["map_peak"]["vrest"],
+            1e6 * (res["contrast"] or 0), 1e6 * (res["limit_3sigma"] or 0), res["retained"] or 0), flush=True)
+
+def giants_emission(planets=(), max_spectra=300, streams=4, species=("CO", "H2O"), sysrem=6, components=0, probe=3e-4, redo=False):
+    """Dayside thermal emission of the named planets (or every giant of the plan hotter than 1000 K with thirty or more SPIRou spectra): up to MAX_SPECTRA telluric-corrected SPIRou spectra from the CADC, those at the phases where the planet's dayside faces us and it moves more than 25 km/s from its star first; each on the near-infrared grid in the star's frame over its running median and the series' median, SYSREM systematics taken out of the residuals, whitened; each molecule's petitRADTRANS cross-section at the planet's temperature as the template; the rows' cross-correlations with the static pattern taken out and COMPONENTS principal components after it, summed in the planet's frame over K_p and rest velocity with the Lambert weights; the peak within 10 km/s of rest between 30 km/s and the edge-on amplitude against the map's scatter away from the star and shams with the phases shuffled; the gain from a copy of the template laid into the same spectra at contrast PROBE along the edge-on orbit through the same cleaning; results under ROOT/results/<planet>.emission.json."""
+    from setitools import biosignatures as bio
+    plan = json.load(open(os.path.join(giants_ROOT, "plan.json")))
+    kp_grid = np.arange(0.0, 301.0, 5.0)
+    vrest = np.arange(-100.0, 101.0, 1.0)
+    band = "nir"
+    g = giants_grid(band)
+    os.makedirs(os.path.join(giants_ROOT, "results"), exist_ok=True)
+
+    def cleaned(R, sd, T):
+        c = companions_unpattern(giants_ccf(R, T, sd))
+        if components:
+            U, S, Vt = np.linalg.svd(c, full_matrices=False)
+            c = c - (U[:, :components] * S[:components]) @ Vt[:components]
+        return c
+    for p in plan:
+        if (planets and p["pl_name"] not in planets) or (not planets and (p.get("pl_eqt") or 0) < 1000):
+            continue
+        tag = re.sub(r"[^A-Za-z0-9+_.-]", "_", p["pl_name"])
+        rpath = os.path.join(giants_ROOT, "results", tag + ".emission.json")
+        if os.path.exists(rpath) and not redo:
+            continue
+        rows = [r for r in (p["instruments"].get("SPIRou") or []) if r["src"] == "CADC" and r["id"].endswith("t") and r["place"] != "transit"]
+        if len(rows) < 30:
+            continue
+        per, tc = p["pl_orbper"], p["pl_tranmid"] - 2400000.5
+        kp_true = 2 * np.pi * (p["pl_orbsmax"] or 0.05) * 1.495978707e8 / (per * 86400.0)
+
+        def lambert(ph):
+            alpha = 2.0 * np.pi * np.abs(ph - 0.5)
+            return (np.sin(alpha) + (np.pi - alpha) * np.cos(alpha)) / np.pi
+        for r in rows:
+            ph = ((0.5 * (r["t0"] + r["t1"]) - tc) / per) % 1.0
+            r["weight"] = float(lambert(ph)) if abs(kp_true * np.sin(2 * np.pi * ph)) > 25.0 else 0.0
+        pick = sorted((r for r in rows if r["weight"] > 0), key=lambda r: -r["weight"])[:max_spectra]
+        if len(pick) < 30:
+            continue
+        folder = os.path.join(giants_ROOT, "emission", tag)
+        os.makedirs(folder, exist_ok=True)
+
+        def one(r):
+            path = os.path.join(folder, re.sub(r"[^A-Za-z0-9_.-]", "_", r["id"]) + ".fits")
+            if os.path.exists(path):
+                return path
+            try:
+                b = core.get(bio.shoreline_CADC_FILE + r["id"] + ".fits", timeout=600, soft=True)
+                if b and b[:6] == b"SIMPLE":
+                    open(path + ".tmp", "wb").write(b)
+                    os.replace(path + ".tmp", path)
+                    return path
+            except Exception:
+                pass
+            return None
+        paths = [x for x in core.pmap(one, pick, streams) if x]
+        spectra = companions_spectra(paths)
+        if len(spectra) < 30:
+            continue
+        vsys = companions_vsys(spectra, p.get("st_radv"))
+        phase = np.array([((s[3]["mjd"] - tc) / per) % 1.0 for s in spectra])
+        vp_unit = np.sin(2 * np.pi * phase)
+        lam = lambert(phase)
+        w = np.where(np.abs(kp_true * vp_unit) > 25.0, lam, 0.0)
+        if w.sum() <= 0:
+            continue
+        t_k = p.get("pl_eqt") or 1500.0
+        # telluric residuals move with the barycentric correction, so the rows are not aligned on the star's lines here
+        R, sd, master = companions_residuals(spectra, vsys, band, align=False)
+        if sysrem:
+            R = giants_sysrem(R, sd, sysrem)
+        quiet = (kp_grid >= 30.0)[:, None] & (np.abs(vrest) > 40.0)[None, :]
+        near = ((kp_grid >= 30.0) & (kp_grid <= kp_true + 30.0))[:, None] & (np.abs(vrest) <= 10)[None, :]
+        i0, j0 = int(np.argmin(np.abs(kp_grid - kp_true))), int(np.argmin(np.abs(vrest)))
+        rng = np.random.default_rng(5)
+        perms = [rng.permutation(len(vp_unit)) for _ in range(5)]
+        results = []
+        for sp in species:
+            T = giants_template(sp, t_k, band=band)
+            if not T.any():
+                continue
+            ccf = cleaned(R, sd, T)
+            m = giants_planet_frame(ccf, vp_unit, w, kp_grid, vrest)
+            shams = [giants_planet_frame(ccf, vp_unit[q], w, kp_grid, vrest) for q in perms]
+            noise = max(float(np.nanstd(m[quiet])), float(np.mean([np.nanstd(x[quiet]) for x in shams])))
+            val = float(np.nanmax(np.where(near, m, -np.inf)))
+            a, b = np.unravel_index(int(np.nanargmax(np.where(near, m, -np.inf))), m.shape)
+            i, j = np.unravel_index(int(np.nanargmax(np.where(kp_grid[:, None] >= 30.0, m, -np.inf))), m.shape)
+            sham_max = float(np.mean([np.nanmax(np.where(near, x, -np.inf)) for x in shams]))
+            # the probe: the template's lines at contrast PROBE times the phase function along the edge-on orbit, laid into each spectrum's flux
+            laid = []
+            for (wv, f, e, meta), vp, lam_k in zip(spectra, kp_true * vp_unit, lam):
+                vstar = meta["rv"] if meta.get("rv") is not None else vsys
+                tw = np.interp(wv, g * (1.0 + (vstar + vp) / 299792.458), T, left=0.0, right=0.0)
+                laid.append((wv, f * (1.0 - probe * lam_k * tw), e, meta))
+            Rp, sdp, _ = companions_residuals(laid, vsys, band, align=False)
+            if sysrem:
+                Rp = giants_sysrem(Rp, sdp, sysrem)
+            mp = giants_planet_frame(cleaned(Rp, sdp, T), vp_unit, w, kp_grid, vrest)
+            gain = float(mp[i0, j0] - m[i0, j0]) / probe
+            res = dict(species=sp, snr=val / noise if noise > 0 else 0.0, sham=sham_max / noise if noise > 0 else 0.0, at=dict(kp=float(kp_grid[a]), vrest=float(vrest[b])),
+                       map_peak=dict(kp=float(kp_grid[i]), vrest=float(vrest[j]), snr=float(m[i, j] / noise) if noise > 0 else 0.0), noise=noise, value=val,
+                       gain=gain, contrast=val / gain if gain > 0 else None, limit_3sigma=3.0 * noise / gain if gain > 0 else None)
+            results.append(res)
+            print("  %-12s SPIRou %-4s S/N %5.1f at K_p %.0f, v %+.0f (edge-on K_p %.0f; sham %.1f; map peak %.1f at K_p %.0f, v %+.0f); contrast %+.0f ppm, 3 sigma limit %.0f ppm, probe gain %.0f" % (
+                p["pl_name"], sp, res["snr"], kp_grid[a], vrest[b], kp_true, res["sham"], res["map_peak"]["snr"], kp_grid[i], vrest[j], 1e6 * (res["contrast"] or 0), 1e6 * (res["limit_3sigma"] or 0), gain), flush=True)
+        if results:
+            json.dump(dict(planet=p["pl_name"], inst="SPIRou", n=len(spectra), n_eff=float(w.sum() ** 2 / (w ** 2).sum()), kp_true=kp_true, vsys=vsys, temp=t_k, sysrem=sysrem,
+                           components=components, probe=probe, species=results), open(rpath, "w"), indent=1)
+
+
+def giants_cli():
+    quiet_warnings()
+    p = argparse.ArgumentParser(prog="seti.py composition giants")
+    p.add_argument("mode", choices=("plan", "fetch", "search", "record", "reflected", "emission"))
+    p.add_argument("--max-spectra", type=int, default=300)
+    p.add_argument("--vmax", type=float, default=11.0)
+    p.add_argument("--streams", type=int, default=4)
+    p.add_argument("--planets", nargs="*", default=[])
+    p.add_argument("--night-per-in", type=float, default=2.0)
+    p.add_argument("--instruments", nargs="*", default=[])
+    p.add_argument("--min-in", type=int, default=4)
+    p.add_argument("--species", nargs="*", default=list(giants_SPECIES))
+    p.add_argument("--sigma", type=float, default=4.0)
+    p.add_argument("--temp", type=float, default=0.0)
+    # SysRem passes, principal components and the probe's contrast default per mode: search 0 passes, reflected 5 components at 1e-4,
+    # emission 6 passes and no components at 3e-4
+    p.add_argument("--sysrem", type=int, default=None)
+    p.add_argument("--weight", choices=("linear", "sqrt", "log"), default="log")
+    p.add_argument("--inject", type=float, default=0.0)
+    p.add_argument("--no-whiten", action="store_true")
+    p.add_argument("--no-shadow", action="store_true")
+    p.add_argument("--redo", action="store_true")
+    p.add_argument("--components", type=int, default=None)
+    p.add_argument("--probe", type=float, default=None)
+    a = p.parse_args()
+    pick = lambda value, default: default if value is None else value
+    if a.mode == "plan":
+        giants_plan(a.vmax)
+    elif a.mode == "fetch":
+        giants_fetch(a.streams, a.planets, a.night_per_in, a.instruments, a.min_in)
+    elif a.mode == "record":
+        giants_record(a.sigma)
+    elif a.mode == "reflected":
+        giants_reflected(a.planets, a.max_spectra, a.streams, components=pick(a.components, 5), probe=pick(a.probe, 1e-4), redo=a.redo)
+    elif a.mode == "emission":
+        giants_emission(a.planets, a.max_spectra, a.streams, species=tuple(a.species) if a.species != list(giants_SPECIES) else ("CO", "H2O"),
+                        sysrem=pick(a.sysrem, 6), components=pick(a.components, 0), probe=pick(a.probe, 3e-4), redo=a.redo)
+    else:
+        giants_search(a.planets, a.species, a.sigma, a.temp, pick(a.sysrem, 0), a.weight, a.inject, not a.no_whiten, not a.no_shadow, a.redo, tuple(a.instruments))
+
+
 APPROACHES = {
+    "giants": (giants_cli, giants_DOC),
+    "companions": (companions_cli, companions_DOC),
+    "binaries": (binaries_cli, binaries_DOC),
     "combs": (lambda: core.run_cli(combs_main), combs_DOC),
     "ghosts": (lambda: core.run_cli(ghosts_main), ghosts_DOC),
     "subdwarfindex": (lambda: core.run_cli(subdwarfindex_main), subdwarfindex_DOC),
