@@ -4833,39 +4833,58 @@ def binaries_survey(inst="HARPS"):
 
 
 def binaries_record(detect=5.0):
-    """The searched binaries' results and measurements written to the store: one row per binary and instrument, its target the primary's Gaia DR3 identifier followed by # and the instrument, a detection marked as the eclipsing binary's companion and a series too thin to search as not measured."""
-    rows, found = [], []
+    """The searched binaries' results, calibrations and measurements written to the store: one row per binary and instrument, its target the primary's Gaia DR3 identifier followed by # and the instrument, its statistic the summit over K2 at the fixed offset in units of its nulls' scatter and its p the Gumbel law's false-alarm probability, with the probability across the survey's binaries in the note; a companion whose probability falls below DETECT sigma (one-sided) marked as the eclipsing binary's companion, one between 3 sigma and that a candidate, and a series too thin to search as not measured."""
+    from scipy import stats
+    limit = float(stats.norm.sf(detect))
+    survey = {}
+    for inst in ("HARPS", "ESPRESSO"):
+        p = os.path.join(binaries_ROOT, "calibrate", "survey_%s.json" % inst)
+        if os.path.exists(p):
+            s = json.load(open(p))
+            survey.update({(inst, name): dict(v, binaries=s["binaries"]) for name, v in s["targets"].items()})
+    rows, found, candidates = [], [], []
     for target in binaries_plan_entries():
         tag = binaries_tag(target)
         load = lambda sub: json.load(open(os.path.join(binaries_ROOT, sub, tag + ".json"))) if os.path.exists(os.path.join(binaries_ROOT, sub, tag + ".json")) else None
-        r, m, note = load("results"), load("measure"), load("rows")
+        r, m, note, c = load("results"), load("measure"), load("rows"), load("calibrate")
         if r is None and note is None:
             continue
         key = "gaia_dr3:%s#%s" % (target.get("gaia"), target["inst"])
-        if r is None or not np.isfinite(r["z"]):
-            rows.append(dict(target=key, stat=None, unit="sigma of the summit over K2", vet="not-measured",
+        if r is None or not np.isfinite(r["z"]) or c is None:
+            rows.append(dict(target=key, stat=None, unit="summit over K2 in units of its nulls' scatter", vet="not-measured",
                              note="%s: %d spectra%s, too few to search" % (target["name"], (r or note)["rows" if r else "n"], " on %d nights" % r["nights"] if r else "")))
             continue
-        hit = r["z"] >= detect
+        a, f = c["adopted"]["fixed"], c["adopted"]["free"]
+        hit = a["p_gumbel"] < limit
         found += [target["name"]] if hit else []
-        text = "%s: P %.4f d, K1 %.2f km/s, e %.3f; summit K2 %.2f km/s at offset %+.1f km/s (phases %.1f, nights %.1f sigma); m sin^3 i %.3f + %.3f Msun" % (
-            target["name"], r["period"], r["k1"], r["e"], r["k2"], r["dv"], r["z_phase"], r["z_nights"], r["m1_sin3i"], r["m2_sin3i"])
-        if m:
-            bk = m["bootstrap"]["k2_16_50_84"]
-            text += "; offset free: K2 %.2f (%.2f-%.2f) km/s at %+.2f km/s, masses %.3f + %.4f Msun at i %.2f" % (
-                m["peak"]["k2"], bk[0], bk[2], m["peak"]["dv"], m["m1_16_50_84"][1], m["m2_16_50_84"][1], m["incl"])
-        rows.append(dict(target=key, stat=round(r["z"], 1), unit="sigma of the summit over K2 against the stricter null (%s, %d spectra)" % (target["inst"], r["rows"]),
+        candidates += [target["name"]] if not hit and a["sigma_gumbel"] >= 3.0 else []
+        text = ("%s: P %.4f d, K1 %.2f km/s, e %.3f; summit K2 %.2f km/s at offset %+.1f km/s, %.1f in units of its nulls' scatter, the highest of %d null draws %.1f; "
+                "false-alarm probability %.2g (%.1f sigma), empirical %.2g" % (target["name"], r["period"], r["k1"], r["e"], r["k2"], r["dv"], a["z"], 2 * c["draws"], a["top"],
+                                                                                a["p_gumbel"], a["sigma_gumbel"], a["p_emp"]))
+        s = survey.get((target["inst"], target["name"]))
+        if s:
+            text += ", across the survey's %d binaries %.2g (%.1f sigma)" % (s["binaries"], s["fixed"]["p"], s["fixed"]["sigma"])
+        text += "; offset free within %g km/s %.2g (%.1f sigma)" % (c["window"], f["p_gumbel"], f["sigma_gumbel"])
+        if m and np.isfinite(m.get("k2_total", np.nan)):
+            text += "; offset free: K2 %.2f +- %.2f (stat) +- %.2f (sys) km/s at %+.2f km/s, masses %.3f + %.4f Msun at i %.2f" % (
+                m["peak"]["k2"], m["k2_stat"], m["k2_sys"], m["peak"]["dv"], m["m1_total"][1], m["m2_total"][1], m["incl"])
+        rows.append(dict(target=key, stat=round(a["z"], 1), p=float(a["p_gumbel"]),
+                         unit="summit over K2 in units of its nulls' scatter, p from a Gumbel law fitted to %d draws of each null (%s, %d spectra)" % (c["draws"], target["inst"], r["rows"]),
                          vet="eclipsing-binary" if hit else None, note=text))
     n = len({x["target"].split("#")[0] for x in rows})
     core.record_run(
         "binaries_eblm_known_orbits", "Companions of single-lined binaries along their known orbits",
         "ESO Phase 3 (HARPS, ESPRESSO); Gaia DR3 non-single-star orbits; SB9",
         "the EBLM binaries with Gaia DR3 single-lined orbits and archived HARPS series of 20 or more spectra above S/N 10, periods below 100 d covered three times; TOI-1338's ESPRESSO series",
-        os.path.abspath(__file__), "binaries", n, "binaries", dict(dv=1.0, components=binaries_COMPONENTS, core_kms=binaries_CORE, tell_kms=binaries_TELL, detect=detect),
-        "the summit over K2 against the same rows with the orbit's phase moved by 0.1 to 0.9 of a period and with whole nights shuffled, 300 of each, the lower significance kept",
-        "a companion stands at %g sigma; with the companion's systemic offset free, its K2 bootstrapped over whole nights" % detect,
-        "%d series of %d binaries; %d companions at %g sigma or more: %s" % (len(rows), n, len(found), detect, ", ".join(sorted(found)) or "none"), rows)
-    print("%d rows recorded; companions: %s" % (len(rows), ", ".join(sorted(found)) or "none"))
+        os.path.abspath(__file__), "binaries", n, "binaries", dict(dv=1.0, components=binaries_COMPONENTS, core_kms=binaries_CORE, tell_kms=binaries_TELL, detect=detect, draws=10000, window_kms=5.0),
+        "the summit over K2 against 10,000 draws of each null, the orbit's phase moved by 0.1 to 0.9 of a period and whole nights shuffled, by a Gumbel law fitted to the null summits, "
+        "the null of the larger probability adopted; across the survey's binaries from the highest standardised null of each draw and by the per-binary probability compounded (Sidak)",
+        "a companion stands when its false-alarm probability reaches %g sigma; with the companion's systemic offset free, its K2 bootstrapped over whole nights with the larger of the parts' "
+        "standard error and the season bootstrap as its systematic uncertainty; checked against 3 and 8 principal components, each half of the band, a second M-dwarf template and "
+        "companions injected into the spectra" % detect,
+        "%d series of %d binaries; %d companions at %g sigma or more: %s; candidates between 3 and %g sigma: %s" % (
+            len(rows), n, len(found), detect, ", ".join(sorted(found)) or "none", detect, ", ".join(sorted(candidates)) or "none"), rows)
+    print("%d rows recorded; companions: %s; candidates: %s" % (len(rows), ", ".join(sorted(found)) or "none", ", ".join(sorted(candidates)) or "none"))
 
 
 def binaries_cli():

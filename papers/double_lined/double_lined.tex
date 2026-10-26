@@ -19,6 +19,10 @@
 \usepgfplotslibrary{groupplots}
 \pgfplotsset{compat=1.18}
 \emergencystretch=3em
+% a table body read from a file, expandable so that a rule may follow it
+\makeatletter
+\newcommand{\tabinput}[1]{\@@input #1 }
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\kms}{km\,s$^{-1}$}
@@ -39,23 +43,24 @@
 An eclipsing binary of a solar-type star and an M dwarf gives model-independent masses for both
 stars once the M dwarf's own lines are measured, at optical flux ratios near $10^{-3}$. This paper
 measures them from public ESO archive spectra with an analysis built independently of the published
-ones. Each spectrum's velocity is measured against a template and the primary's orbit fitted to
-those velocities; the spectra are placed on one velocity grid in the primary's frame and divided by
-their series' median; the residuals are cross-correlated by inverse variance with an empirical
-M1\,V spectrum; the star's pattern, the sky's pattern and five principal components are removed;
-and the rows are summed along the companion's track over its semi-amplitude \Ktwo\ and its systemic
-offset, against nulls with the orbit's phase moved and with whole nights shuffled. From 260
-ESPRESSO spectra of TOI-1338/BEBOP-1, 114 HARPS spectra of EBLM J0310$-$31 and 35 HARPS spectra of
-HD\,4875 the companions stand at 19.3, 19.2 and $13.3\sigma$, with \Ktwo\ $= 77.27$, $88.12$ and
-$75.29$\,\kms\ against published values of $77.16 \pm 0.48$, $88.27 \pm 0.46$ and $75.13 \pm
-0.16$\,\kms, and masses within 0.5 per cent of the published dynamical masses; HD\,4875's
-companion had been measured only in the near-infrared. In all three the companion's lines sit
-$+1.05$ to $+1.25$\,\kms\ from the primary's systemic velocity, and holding that offset at zero
-moves \Ktwo\ by up to $0.55$\,\kms. Across the 35 searchable EBLM binaries with archived HARPS
-series, six companions stand above $5\sigma$, four of them without a published semi-amplitude: EBLM
-J2101$-$45 at $15.0\sigma$, whose 75 spectra give \Ktwo\ $= 65.41$\,\kms\ and minimum masses of
-$1.431$ and $0.556$\,\Msun, and J0649$-$27, J0825$-$67 and J1141$-$37 at 6.7, 6.4 and
-$5.2\sigma$.
+ones. The spectra are placed in the primary's frame at their measured velocities and divided by
+their series' median, cross-correlated with an empirical M1\,V spectrum, cleaned of the star's and
+the sky's patterns and of five principal components, and summed along the companion's track over
+its semi-amplitude \Ktwo\ and its systemic offset. Each summit is set against $10^4$ draws of two
+nulls, the orbit's phase moved and whole nights shuffled, with a Gumbel law for the tail, and the
+35 binaries of the survey are accounted for together. TOI-1338/BEBOP-1 (260 ESPRESSO spectra), EBLM
+J0310$-$31 (114 HARPS spectra) and HD\,4875 (35 HARPS spectra) give false-alarm probabilities of
+$10^{-11}$, $8\times10^{-12}$ and $1\times10^{-8}$ and \Ktwo\ $= 77.27 \pm 0.10 \pm 0.15$, $88.12
+\pm 0.18 \pm 0.34$ and $75.29 \pm 0.30 \pm 0.87$\,\kms\ (statistical, then systematic from the
+series' parts by date and its seasons), against published values of $77.16 \pm 0.48$, $88.27 \pm
+0.46$ and $75.13 \pm 0.16$\,\kms; HD\,4875's companion had been measured only in the
+near-infrared. The companion's lines sit $+1.05$ to $+1.25$\,\kms\ from the primary's systemic
+velocity. Among the 35 southern EBLM binaries with archived HARPS series, one further companion
+stands with a false-alarm probability of $1.5\times10^{-7}$ across the whole survey: EBLM
+J2101$-$45, whose 75 spectra give \Ktwo\ $= 65.41 \pm 0.32 \pm 0.32$\,\kms\ and minimum masses of
+$1.415$ and $0.552$\,\Msun, stable under changes of template, band and principal components and
+recovered when a companion is injected into the same spectra. J0649$-$27, J0825$-$67 and J1141$-$37
+reach 3.3 to $3.9\sigma$ alone but 2.1 to $3.0\sigma$ across the survey, and remain candidates.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -94,10 +99,12 @@ ref.~\cite{Stevenson2026}, and 264 ESPRESSO spectra of TOI-1338, against 103.
 This paper describes such an analysis, the binaries approach of the seti-tools package, which
 shares its spectra machinery with the package's planet-frame and free-orbit companion searches and
 their orbitlight release~\cite{orbitlight}, and applies it to public products of the ESO Science
-Archive alone. Section~\ref{sec:data} selects the targets and spectra,
-Section~\ref{sec:method} describes the method, Section~\ref{sec:validation} compares its results
-for three systems with published dynamical masses, Section~\ref{sec:survey} applies it to the
-southern EBLM binaries with HARPS series, and Section~\ref{sec:discussion} discusses what the
+Archive alone. Section~\ref{sec:data} selects the targets and spectra and
+Section~\ref{sec:method} describes the method, its statistic and its calibration.
+Section~\ref{sec:validation} compares its results for three systems with published dynamical
+masses, which test its accuracy, its uncertainties and its false-alarm probabilities.
+Section~\ref{sec:survey} applies it to the southern EBLM binaries with HARPS series and separates
+the one new measurement from the candidates, and Section~\ref{sec:discussion} discusses what the
 comparison shows.
 
 \section{Targets and spectra}\label{sec:data}
@@ -164,28 +171,88 @@ The companion's barycentric velocity at time $t$ is
 v_2(t) = \gamma + \Delta v_\mathrm{sys} - K_2\left[\cos(\nu + \omega) + e\cos\omega\right],
 \end{equation}
 with $\nu$, $\omega$ and $e$ from the primary's fitted orbit and \dvsys\ the offset of the
-companion's lines from the primary's systemic velocity. Each row is read at $v_2$ less the
-velocity at which its spectrum was placed, by linear interpolation, and the weighted mean of the
-readings is the trail's value. Readings within 30\,\kms\ of the primary's lines or within
-10\,\kms\ of the row's telluric velocity are left out, and a value needs readings from at least
-a fifth of the rows and no fewer than ten. The map of the trail over \Ktwo\ from \Kone\ to
-160\,\kms\ and over \dvsys\ from $-30$ to $+30$\,\kms, both at 0.5\,\kms, gives the peak, refined
-on grids of 0.1 and then 0.05\,\kms.
+companion's lines from the primary's systemic velocity. With $C_i(v)$ the cleaned
+cross-correlation of spectrum $i$ at velocity $v$ in the frame in which it was placed,
+$v_{\star,i}$ the velocity at which it was placed and $w_i$ its weight, the trail's value is
+\begin{equation}
+S(K_2, \Delta v_\mathrm{sys}) = \frac{\sum_i w_i\, m_i\, C_i\!\left(v_2(t_i) - v_{\star,i}\right)}{\sum_i w_i\, m_i},
+\end{equation}
+read by linear interpolation, where $m_i$ is one when the reading lies more than 30\,\kms\ from the
+primary's lines and more than 10\,\kms\ from the row's telluric velocity and zero otherwise. $S$ is
+defined where the readings number at least a fifth of the rows and at least ten. The map of $S$
+over \Ktwo\ from \Kone\ to 160\,\kms\ and over \dvsys\ from $-30$ to $+30$\,\kms, both at
+0.5\,\kms, gives the peak within 5\,\kms\ of zero offset, refined on grids of 0.1 and then
+0.05\,\kms.
 
-\subsection{Significance, uncertainty and masses}
+\subsection{The statistic and its false-alarm probability}\label{sec:stat}
 
-The significance is that of the summit of the trail over \Ktwo\ at the peak's \dvsys, against the
-summits of the same curve with the orbit's phase moved by a uniform 0.1 to 0.9 of a period and
-with whole nights moved to other nights' dates, 300 of each. The lower of the two is quoted, so
-that what is tied to the orbital phase and what is tied to the hour or the night both stay in a
-null. The uncertainty of the peak comes from 300 draws of whole nights with replacement, each
-cleaned again and its peak found on grids of 0.25 and then 0.05\,\kms; the 16th, 50th and 84th
-percentiles are quoted. The masses follow from
+The search statistic is the summit $\hat S = \max_{K_2} S$ over a grid from \Kone\ to 250\,\kms\
+in steps of 0.25\,\kms, either at a fixed offset or, with the offset free, over the offsets within
+5\,\kms\ of zero in steps of 0.5\,\kms\ as well. A null draw computes the same summit with the
+companion's track replaced, by the orbit's phase moved by a uniform 0.1 to 0.9 of a period or by
+whole nights moved to other nights' dates, each night keeping its spectra's offsets from its start,
+so that what is tied to the orbital phase and what is tied to the hour or the night both stay in a
+null. Each binary is set against $10^4$ draws of each null, $\hat S^{(j)}$, and three numbers
+describe its summit. The first is its height in units of the nulls' scatter,
+\begin{equation}
+z = \frac{\hat S - \langle \hat S^{(j)} \rangle}{\mathrm{sd}(\hat S^{(j)})},
+\end{equation}
+a standardised statistic rather than a probability. The second is the empirical false-alarm
+probability, $p_\mathrm{emp} = (1 + n_\ge)/(10^4 + 1)$, with $n_\ge$ the draws at or above $\hat
+S$, which cannot fall below $10^{-4}$. The third extends the nulls with a tail model. Each null
+summit is the largest of many correlated values of the trail, so the summits follow an
+extreme-value law, and the Gumbel law~\cite{Gumbel1958} with the nulls' mean and scatter gives
+\begin{equation}
+p_\mathrm{G} = 1 - \exp\!\left\{-\exp\!\left[-\frac{\hat S - \mu}{\beta}\right]\right\},\qquad
+\beta = \frac{\sqrt{6}}{\pi}\,\mathrm{sd}(\hat S^{(j)}),\quad \mu = \langle \hat S^{(j)} \rangle - 0.5772\,\beta .
+\end{equation}
+The null of the two with the larger $p_\mathrm{G}$ is adopted, and $p_\mathrm{G}$ is quoted with
+the one-sided Gaussian significance of the same probability. A generalised extreme-value law fitted
+to the same draws~\cite{Coles2001} measures the tail's shape $\xi$: zero for Gumbel's, negative for
+a lighter tail, for which $p_\mathrm{G}$ overstates the probability, and positive for a heavier one.
+
+The 35 searched binaries are accounted for together. In each draw of a null, the highest of the 35
+binaries' summits, each in units of its own nulls' scatter, gives one draw of the survey's highest
+null, and each binary's $z$ is set against these draws with a Gumbel law fitted in the same way.
+Beside it, each binary's own $p_\mathrm{G}$ is compounded over the 35~\cite{Sidak1967},
+$1 - (1 - p_\mathrm{G})^{35}$. The larger of the two, under the null that gives the larger, is the
+false-alarm probability across the survey. A companion is taken as detected when its own
+$p_\mathrm{G}$ reaches $5\sigma$ ($2.9\times10^{-7}$), and the probability across the survey is
+quoted beside it.
+
+\subsection{Uncertainty and masses}\label{sec:uncertainty}
+
+The statistical uncertainty of \Ktwo\ is half the 16th to 84th percentile range of 300 draws of
+whole nights with replacement, each cleaned again and its peak found on grids of 0.25 and then
+0.05\,\kms. Noise that persists over a season is not in it. As in the published
+analyses~\cite{Sebastian2024b,Stevenson2026}, each series is divided by date into four parts of
+about equal numbers of spectra (two parts below 60 spectra), whole nights kept together, each part
+cleaned and measured alone, and the parts' standard error with Bessel's correction is a systematic
+uncertainty. The series is also resampled by observing season, runs of nights without a gap
+longer than 90\,d, in 300 draws of whole seasons with replacement when it spans four seasons or
+more. The larger of the two is the systematic uncertainty, added in quadrature to the statistical
+one for the masses, which follow from
 \begin{equation}
 M_{1,2}\sin^3 i = 1.0361\times10^{-7}\,(1-e^2)^{3/2}\,(K_1+K_2)^2\,K_{2,1}\,P ,
 \end{equation}
 with the velocities in \kms, the period in days and the masses in \Msun, divided by $\sin^3 i$ at
 the published inclination from the eclipses.
+
+\subsection{Robustness tests}\label{sec:robust}
+
+Each companion is measured again under five changes of the analysis: three and eight principal
+components in place of five; the M-dwarf template kept only blueward or only redward of 5500\,\AA;
+and the template made instead from the 110 archived HARPS spectra of L\,98-59, an M3 dwarf with
+the same instrument~\cite{Cloutier2019}, in the same way as GJ\,367's. The band and template
+changes rebuild the rows from the spectra. A synthetic companion is also laid into the actual
+spectra before any processing: the template's lines at a V-band flux ratio of $10^{-3}$, and for
+the four companions of Section~\ref{sec:survey} also $3\times10^{-4}$, scaled in wavelength as the
+ratio of 3400 and 6000\,K black bodies, moving at the measured \Ktwo\ and an offset of $+1.0$\,\kms\
+on the primary's orbit but a quarter of a period later than the real companion, so that the two
+tracks cross only twice an orbit. The injected spectra go through the whole analysis and are read
+along the moved track, the null with the phase moved kept a tenth of a period from the real
+companion's track. The ratio of the real companion's peak to the injected one's at $10^{-3}$ gives
+the flux ratio at which the real companion's lines match the template's.
 
 \section{Three systems with published dynamical masses}\label{sec:validation}
 
@@ -195,7 +262,8 @@ Saltire~\cite{Sebastian2024b}; EBLM J0310$-$31, measured from HARPS spectra with
 Saltire~\cite{Stevenson2026}; and HD\,4875 (EBLM J0050$-$18), measured from NIRPS spectra by
 cross-correlation with a synthetic M-dwarf spectrum~\cite{Hahlin2026}. The archive holds 264
 ESPRESSO spectra of TOI-1338 above the signal-to-noise cut, of which 260 load, 114 HARPS spectra of
-J0310$-$31 and 35 of HD\,4875.
+J0310$-$31 and 35 of HD\,4875. They test the method's accuracy, its uncertainties and the
+calibration of its false-alarm probabilities on companions whose semi-amplitudes are known.
 
 \subsection{Orbits}
 
@@ -230,42 +298,36 @@ HD\,4875  & this work & 13.635615 & 29.736 & 0.1814 & 251.71 & 29\\
 The companion stands out in each system's map (Fig.~\ref{fig:maps}) at the published \Ktwo\ and
 just redward of the primary's systemic velocity, and the trail over \Ktwo\ at that offset rises
 alone above the nulls (Fig.~\ref{fig:curves}). Table~\ref{tab:k2} sets the results against the
-published ones. The semi-amplitudes agree within $0.16$\,\kms: $77.27$ against $77.16 \pm
-0.48$\,\kms\ for TOI-1338, $88.12$ against $88.27 \pm 0.46$ for J0310$-$31, and $75.29$ against
-$75.13 \pm 0.16$ for HD\,4875, whose published value comes from near-infrared spectra alone. At the
-published inclinations, the masses agree within 0.5 per cent for the primaries and 0.5 per cent
-for the secondaries. The significances, 19.3, 19.2 and 13.3$\sigma$, are each the lower of the
-two nulls' (Table~\ref{tab:k2}); the null with whole nights shuffled is the stricter one for
-J0310$-$31, and the null with the phase moved for TOI-1338 and HD\,4875. The profile of the
-summed rows in the companion's frame (Fig.~\ref{fig:profiles}) is a single line 5 to 6\,\kms\
-wide at half maximum, and nothing beyond 15\,\kms\ of it rises above three times the profile's
-scatter.
+published ones. The semi-amplitudes differ from the published values by $+0.11$, $-0.15$ and
+$+0.16$\,\kms, which is 0.2, 0.3 and 0.2 times the two uncertainties combined, and at the published
+inclinations the masses agree within 0.6 per cent. HD\,4875's published value comes from
+near-infrared spectra alone.
+
+The summits stand 19.3, 19.4 and 13.8 times the nulls' scatter above their mean, where the highest
+of the adopted null's $10^4$ draws reaches 3.1, 5.2 and 3.0 times. No draw comes within reach of
+the observed summits, so the empirical probabilities are at their floor of $10^{-4}$, and
+the Gumbel law gives $10^{-11}$, $8\times10^{-12}$ and $1\times10^{-8}$, or 6.7, 6.7 and
+$5.6\sigma$ (Table~\ref{tab:calib}). With the offset free within 5\,\kms\ of zero they are
+$2\times10^{-12}$, $3\times10^{-10}$ and $2\times10^{-7}$. Across the survey's 35 binaries,
+J0310$-$31 stays at $3\times10^{-10}$ ($6.2\sigma$) and HD\,4875 at $4\times10^{-7}$ ($4.9\sigma$).
+The profile of the summed rows in the companion's frame (Fig.~\ref{fig:profiles}) is a single line
+5 to 6\,\kms\ wide at half maximum, and nothing beyond 15\,\kms\ of it rises above three times the
+profile's scatter.
 
 \begin{table}[t]
 \centering
-\caption{The secondary's semi-amplitude, the companion's systemic offset, the significance against
-each null and the masses, against the published values. Ranges are the 16th to 84th percentiles of
-300 draws of whole nights; the masses use the published inclinations, $89.639^\circ$,
-$86.531^\circ$~\cite{Stevenson2026} and $89.057^\circ$~\cite{Hahlin2026}.}\label{tab:k2}
+\caption{The secondary's semi-amplitude, with its statistical and systematic uncertainties
+(Section~\ref{sec:uncertainty}), the companion's systemic offset with the 16th to 84th percentiles
+of 300 draws of whole nights, the summit at an offset of $+1.0$\,\kms\ in units of its nulls'
+scatter with its false-alarm probability (Section~\ref{sec:stat}), and the masses at the published
+inclinations, $89.639^\circ$, $86.531^\circ$~\cite{Stevenson2026} and
+$89.057^\circ$~\cite{Hahlin2026}, against the published values.}\label{tab:k2}
 \small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lccc}
 \toprule
  & TOI-1338 & J0310$-$31 & HD\,4875\\
 \midrule
-Spectra (nights), instrument & 260 (255), ESPRESSO & 114 (114), HARPS & 35 (33), HARPS\\
-Span (d) & 2231 & 3031 & 1376\\
-\Ktwo\ (\kms) & 77.27 (77.17--77.37) & 88.12 (87.97--88.33) & 75.29 (74.89--75.49)\\
-\dvsys\ (\kms) & $+1.05$ ($+1.00$ to $+1.15$) & $+1.10$ ($+1.00$ to $+1.25$) & $+1.25$ ($+0.75$ to $+1.25$)\\
-Significance, phase moved & 19.3 & 20.5 & 13.3\\
-Significance, nights shuffled & 26.2 & 19.2 & 14.5\\
-$M_1$ (\Msun) & 1.102 (1.099--1.106) & 1.345 (1.338--1.351) & 1.113 (1.102--1.124)\\
-$M_2$ (\Msun) & 0.3084 (0.3078--0.3090) & 0.4252 (0.4238--0.4264) & 0.4400 (0.4375--0.4426)\\
-\midrule
-Published \Ktwo\ (\kms) & $77.16 \pm 0.48$ & $88.27 \pm 0.46$ & $75.13 \pm 0.16$\\
-Published $M_1$ (\Msun) & $1.098 \pm 0.017$ & $1.350 \pm 0.017$ & $1.1150 \pm 0.0066$\\
-Published $M_2$ (\Msun) & $0.307 \pm 0.003$ & $0.426 \pm 0.003$ & $0.4405 \pm 0.0015$\\
-Spectra used & 103, ESPRESSO & 71, HARPS & 15 nights, NIRPS\\
-Reference & \cite{Sebastian2024b} & \cite{Stevenson2026} & \cite{Hahlin2026}\\
+\tabinput{data/tab_k2.tex}
 \bottomrule
 \end{tabular}
 \end{table}
@@ -283,7 +345,7 @@ line marks the published \Ktwo, the dotted line zero offset and the cross the pe
 \begin{tikzpicture}
 \begin{groupplot}[group style={group size=3 by 1, horizontal sep=1.1cm}, width=0.345\textwidth, height=5cm,
   xlabel={\Ktwo\ (\kms)}, ymin=-8, ymax=22, grid=major, grid style={gray!20}]
-\nextgroupplot[title={TOI-1338 (ESPRESSO)}, ylabel={significance ($\sigma$)}, xmin=37, xmax=117]
+\nextgroupplot[title={TOI-1338 (ESPRESSO)}, ylabel={in units of the nulls' scatter}, xmin=37, xmax=117]
 \addplot[thick, no markers] table[x=k2, y=z, col sep=comma]{data/ESPRESSO_J0608-59_k2curve.csv};
 \addplot[gray, dashed] coordinates {(77.16,-8) (77.16,22)};
 \nextgroupplot[title={EBLM J0310$-$31 (HARPS)}, xmin=48, xmax=128]
@@ -294,8 +356,8 @@ line marks the published \Ktwo, the dotted line zero offset and the cross the pe
 \addplot[gray, dashed] coordinates {(75.13,-8) (75.13,22)};
 \end{groupplot}
 \end{tikzpicture}
-\caption{The trail over \Ktwo\ at the peak's systemic offset, measured against the summits of the
-stricter null, so that the summit's height is its significance. The dashed line marks the
+\caption{The trail over \Ktwo\ at the peak's systemic offset, less the mean of the stricter null's
+summits and in units of their scatter, from 300 draws of each null. The dashed line marks the
 published \Ktwo.}\label{fig:curves}
 \end{figure}
 
@@ -323,49 +385,66 @@ The companion's lines sit $+1.05$, $+1.10$ and $+1.25$\,\kms\ from the primary's
 in the three systems. The published analyses, which leave the secondary's systemic velocity free
 and use the pipelines' M2 line mask, found the same sign and size: $+1.40 \pm 0.06$\,\kms\ in the
 ESPRESSO spectra of TOI-1338~\cite{Sebastian2024b} and $+1.20 \pm 0.10$\,\kms\ for
-J0310$-$31~\cite{Stevenson2026}. The offset collects the difference between the two templates' zero points, the primary's G0 template
-on the scale of its Gaia orbit and GJ\,367's spectrum placed at its pipeline velocities, and the
-two stars' differences in gravitational redshift and convective blueshift, which for J0310$-$31's
-radii~\cite{Stevenson2026} amount to about 0.1\,\kms\ in gravitational redshift. Held at zero
-instead, the offset moves the summit to $77.62$, $88.37$ and $74.74$\,\kms, by $+0.35$, $+0.25$ and
-$-0.55$\,\kms, since a constant velocity error of the track projects onto \Ktwo\ through the phases
-the spectra sample. At this precision the offset is a parameter of the fit.
+J0310$-$31~\cite{Stevenson2026}. The offset collects the difference between the two templates'
+zero points, the primary's G0 template on the scale of its Gaia orbit and GJ\,367's spectrum placed
+at its pipeline velocities, and the two stars' differences in gravitational redshift and convective
+blueshift, which for J0310$-$31's radii~\cite{Stevenson2026} amount to about 0.1\,\kms\ in
+gravitational redshift. Held at zero instead, the offset moves the summit to $77.62$, $88.37$ and
+$74.74$\,\kms, by $+0.35$, $+0.25$ and $-0.55$\,\kms, since a constant velocity error of the track
+projects onto \Ktwo\ through the phases the spectra sample. At this precision the offset is a
+parameter of the fit, and its uncertainty is part of the bootstrap's.
 
-\subsection{Consistency within each series}
+\subsection{Systematic uncertainty}
 
-Each series divided in two by date, and into alternate nights, gives the semi-amplitudes of
-Table~\ref{tab:splits}. The halves of TOI-1338 and J0310$-$31 agree within $0.35$\,\kms, close to
-the published uncertainties of 0.48 and 0.46\,\kms, which are dominated by splits by observing
-season~\cite{Sebastian2024b,Stevenson2026}. The first half of HD\,4875's series, 17 spectra, gives
-the companion at $5.2\sigma$ and $74.24$\,\kms, and the second half $75.99$\,\kms; the alternate sets
-agree within $0.15$\,\kms.
+Each series divided by date, and into alternate nights, gives the semi-amplitudes of
+Table~\ref{tab:splits}. The four parts of TOI-1338 span 76.82 to 77.47\,\kms\ and those of
+J0310$-$31 87.27 to 88.72\,\kms, giving systematic uncertainties of 0.15 and 0.34\,\kms, below
+the published uncertainties of 0.48 and 0.46\,\kms\ that came from splits by observing
+season~\cite{Sebastian2024b,Stevenson2026}. HD\,4875's 35 spectra divide into two halves, at
+$74.24$ and $75.99$\,\kms, whose standard error of 0.87\,\kms\ is three times the night bootstrap's
+0.30\,\kms\ and makes its total uncertainty 0.93\,\kms. Resampling whole seasons gives smaller
+ranges for all three. The systematic term therefore dominates the uncertainty of every
+semi-amplitude measured here, as it did in the published analyses.
 
 \begin{table}[t]
 \centering
-\caption{The semi-amplitude and significance from each half of a series by date and from
-alternate nights, each half cleaned and measured on its own.}\label{tab:splits}
+\caption{The semi-amplitude, with the summit's $z$ in brackets, from each part of a series by date
+(two parts below 60 spectra) and from alternate nights, each cleaned and measured alone, the range
+from resampling whole observing seasons, and the systematic uncertainty, the larger of the parts'
+standard error and the seasons' half-range.}\label{tab:splits}
 \begin{tabular}{lccc}
 \toprule
 Subset & TOI-1338 & J0310$-$31 & HD\,4875\\
 \midrule
-First half by date  & 77.17 (15.9$\sigma$) & 88.02 (8.9$\sigma$) & 74.24 (5.2$\sigma$)\\
-Second half by date & 77.52 (14.8$\sigma$) & 88.32 (14.4$\sigma$) & 75.99 (10.2$\sigma$)\\
-Alternate nights, one set   & 77.02 (13.1$\sigma$) & 87.97 (12.0$\sigma$) & 75.34 (9.3$\sigma$)\\
-Alternate nights, other set & 77.17 (17.9$\sigma$) & 87.97 (13.7$\sigma$) & 75.19 (11.6$\sigma$)\\
+\tabinput{data/tab_splits.tex}
 \bottomrule
 \end{tabular}
 \end{table}
 
+\subsection{Robustness and injections}
+
+The five changes of the analysis (Section~\ref{sec:robust}) leave the semi-amplitudes within
+0.05\,\kms\ of the measured value for TOI-1338, within 0.25\,\kms\ for J0310$-$31 and within
+0.40\,\kms\ for HD\,4875 (Table~\ref{tab:robust}), each within its total uncertainty. Each half of
+the band finds every companion on its own, at 12 to $20\sigma$ in the units of the nulls' scatter,
+and the L\,98-59 template finds it at least as strongly as GJ\,367's. Companions injected at a flux
+ratio of $10^{-3}$ a quarter of a period from the real ones are recovered at $-0.15$, $-0.10$ and
+$+0.15$\,\kms\ from the injected semi-amplitudes (Table~\ref{tab:inject}), within the
+uncertainties and with no sign of a bias from the principal components the cleaning removes. Against the
+injections, the real companions' lines match the template's at flux ratios of $1.0$, $0.9$ and
+$2.9\times10^{-3}$.
+
 \subsection{Two HARPS series below the threshold}
 
 The 73 archived HARPS spectra of TOI-1338 do not show the companion on their own: the trail's
-summit over \Ktwo\ stands $0.0\sigma$ above the nulls. Read at the published \Ktwo\ and the offset
-of $+1.0$\,\kms, they give $2.8\sigma$, with 21 of 2000 null draws as high, as the published
-analysis of HARPS spectra gave about $3\sigma$~\cite{Sebastian2024b}. For J1928$-$38, whose
-companion of $0.276$\,\Msun\ was measured at a signal-to-noise ratio of 3.65 in 73 HARPS
-spectra~\cite{Stevenson2026}, the 74 archived HARPS spectra give no summit above the nulls and
-$0.3\sigma$ at the published \Ktwo, with 715 of 2000 draws as high. At its brightness, $V = 11.2$,
-and its companion's mass, this method does not reach J1928$-$38's secondary in HARPS spectra.
+summit over \Ktwo\ stands at $z = -0.1$, with a false-alarm probability of 0.49. Read at the
+published \Ktwo\ and the offset of $+1.0$\,\kms, they give $2.8\sigma$, with 21 of 2000 null draws
+as high, as the published analysis of HARPS spectra gave about $3\sigma$~\cite{Sebastian2024b}. For
+J1928$-$38, whose companion of $0.276$\,\Msun\ was measured at a signal-to-noise ratio of 3.65 in
+73 HARPS spectra~\cite{Stevenson2026}, the 74 archived HARPS spectra give no summit above the nulls
+and $0.3\sigma$ at the published \Ktwo, with 718 of 2000 draws as high. At its brightness, $V =
+11.2$, and its companion's mass, this method does not reach J1928$-$38's secondary in HARPS
+spectra.
 
 \section{The southern EBLM binaries}\label{sec:survey}
 
@@ -373,140 +452,223 @@ The same analysis was applied to the 37 EBLM binaries with archived HARPS series
 companion's systemic offset held at $+1.0$\,\kms, the value the three systems of
 Section~\ref{sec:validation} share, so that each search runs over \Ktwo\ alone. Two series cannot
 be searched: J2126$-$28 has 17 spectra above the signal-to-noise cut and J0543$-$57 has 21 spectra
-on six nights. Table~\ref{tab:survey} lists the other 35. Six stand above $5\sigma$: J0310$-$31
-and HD\,4875 of Section~\ref{sec:validation}, and four whose companions have no published
-semi-amplitude, EBLM J2101$-$45 at $15.0\sigma$, J0649$-$27 at $6.7\sigma$, J0825$-$67 at
-$6.4\sigma$ and J1141$-$37 at $5.2\sigma$.
+on six nights. Table~\ref{tab:survey} lists the other 35 with each summit's $z$ and false-alarm
+probability.
 
-Table~\ref{tab:new} gives the four measured as in Section~\ref{sec:validation}, with the offset free
-and the peak bootstrapped over nights. The masses are $m\sin^3 i$; the binaries eclipse, and with
-the primaries' Gaia DR3 radii the eclipses require $\sin^3 i > 0.993$ for J2101$-$45 and
-J0825$-$67 and $\sin^3 i > 0.96$ for the two with periods near 5\,d. J2101$-$45 is the clearest:
-each half of its 75 spectra by date, and each set of alternate nights, finds the companion at
-8.8 to $15.3\sigma$ within 1\,\kms\ of the full series' \Ktwo, and its companion of
-$0.556$\,\Msun\ orbits a primary of $1.43$\,\Msun\ whose Gaia radius of $2.67$\,R$_\odot$ places
-it above the main sequence. The model-based masses of ref.~\cite{Triaud2017} for J2101$-$45, $1.29
-\pm 0.10$ and $0.523 \pm 0.043$\,\Msun, J0649$-$27, $1.45 \pm 0.13$ and $0.371 \pm 0.061$\,\Msun,
-and J1141$-$37, $1.22 \pm 0.10$ and $0.354 \pm 0.050$\,\Msun, agree with the dynamical ones within
-their uncertainties. J0825$-$67 and J1141$-$37 rest on 27 and 30 spectra, too few to divide, and
-their orbits fit the measured velocities to 0.15 and 0.13\,\kms, ten times the scatter of the
-brighter systems. The halves of J0649$-$27 and J1141$-$37 by date and by alternate nights each
-return \Ktwo\ within 4.5\,\kms\ of the full series', at 0.9 to $5.5\sigma$ apiece.
+\subsection{Calibration across the survey}
 
-Below the threshold, three summits fall at semi-amplitudes that give an F or G primary and an
-M-dwarf companion: J0415$-$16 at $4.5\sigma$ ($1.07$ and $0.32$\,\Msun), J0057$-$21 at
-$4.4\sigma$ ($1.30$ and $0.37$\,\Msun) and J0621$-$50 at $2.8\sigma$ ($1.23$ and
-$0.42$\,\Msun), the last at the \Ktwo\ of $109.9$\,\kms\ that its model-based masses
-predict~\cite{Triaud2017}. The summits of the remaining binaries imply primaries from 0.02 to
-5.4\,\Msun, as the highest of the noise over a wide range of \Ktwo\ does.
+The nulls of the 35 binaries (Fig.~\ref{fig:nulls}) follow the Gumbel law to the depth $10^4$
+draws reach. The median of the 70 fitted shapes is $\xi = -0.02$, nine exceed $+0.1$ and the
+largest is $+0.81$, while the seven systems discussed here have $\xi$ between $-0.34$ and $+0.10$
+(Table~\ref{tab:calib}). The survey's highest null, the largest of the 35 standardised summits of
+each draw, has a mean of 2.5 and 2.7 and a largest value in $10^4$ draws of 5.1 and 8.5 under the
+two nulls. Four binaries reach $5\sigma$ on their own nulls: J0310$-$31 and HD\,4875, J2101$-$45
+at $4.3\times10^{-9}$ ($5.8\sigma$), and TOI-1338's ESPRESSO series outside the survey. Across the
+survey J2101$-$45 keeps $1.5\times10^{-7}$ ($5.1\sigma$), HD\,4875 $4\times10^{-7}$ and
+J0310$-$31 $3\times10^{-10}$. Three more stand between 3 and $5\sigma$ on their own nulls,
+J0649$-$27, J0825$-$67 and J1141$-$37 at 3.9, 3.6 and $3.3\sigma$, but at 3.0, 2.6 and $2.1\sigma$
+across the survey. The next highest, J0057$-$21, J0415$-$16 and J0621$-$50, have probabilities of
+0.05, 0.08 and 0.37 across the survey, the last at the \Ktwo\ of $109.9$\,\kms\ that its
+model-based masses predict~\cite{Triaud2017}.
+
+\begin{table}[t]
+\centering
+\caption{The false-alarm probabilities of the seven companions: the summit at an offset of
+$+1.0$\,\kms\ in units of its nulls' scatter ($z$), the highest of the adopted null's $10^4$ draws
+in the same units, the Gumbel law's probability and its Gaussian significance, the same with the offset
+free within 5\,\kms\ of zero, the probability across the survey's 35 binaries, and the fitted
+tail shape under the two nulls. No null draw reaches any of the seven summits, so their empirical
+probabilities are at the floor of $10^{-4}$.}\label{tab:calib}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccc}
+\toprule
+System & $z$ & Highest null & $p_\mathrm{G}$ ($\sigma$) & Offset free & Across 35 & $\xi$ (phase, nights)\\
+\midrule
+\tabinput{data/tab_calib.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{data/nulls.png}
+\caption{Left: the fraction of each binary's $2\times10^4$ null summits at or above a given height
+in units of their scatter, under both nulls, for the 35 binaries searched, against the Gumbel law
+of unit scatter (dashed), with the six companions of the survey at their observed $z$ and
+$p_\mathrm{G}$. Right: the same for the survey's highest null, the largest of the 35 standardised
+null summits in each draw, with the Gumbel laws fitted to it (dashed) and the six companions at
+their probabilities across the survey.}\label{fig:nulls}
+\end{figure}
+
+\subsection{EBLM J2101$-$45}
+
+J2101$-$45's 75 spectra over 2298\,d give \Ktwo\ $= 65.41 \pm 0.32 \pm 0.32$\,\kms\ at an offset of
+$+1.45$\,\kms\ (Table~\ref{tab:new}), the systematic term from its eight observing seasons. The
+companion holds under every change of the analysis (Table~\ref{tab:robust}): the five variants
+give 65.26 to 65.91\,\kms, within 1.1 times the total uncertainty of the measured value, the red
+half of the band finds it at 21 and the blue half at 8 times the nulls' scatter, and the L\,98-59
+template at 19. Three of its four parts by date find it on their own, at 6.5 to $9.8$ in the
+nulls' units, at 65.41 to 66.16\,\kms; the fourth, at 1.1, does not. A companion injected at a flux
+ratio of $10^{-3}$ is recovered at $65.61$\,\kms, and against it the real companion's lines match
+the template's at $3.1\times10^{-3}$; one injected at $3\times10^{-4}$ is not recovered. The masses
+are $m_1\sin^3 i = 1.415 \pm 0.024$ and $m_2\sin^3 i = 0.552 \pm 0.006$\,\Msun, and since the
+binary eclipses, the primary's Gaia DR3 radius of $2.67$\,R$_\odot$ requires $\sin^3 i > 0.993$, so
+the masses themselves are within 0.7 per cent of these. The primary, at $1.42$\,\Msun\ and
+$2.67$\,R$_\odot$, lies above the main sequence. The model-based masses of
+ref.~\cite{Triaud2017}, $1.29 \pm 0.10$ and $0.523 \pm 0.043$\,\Msun, differ from the dynamical
+ones by 1.2 and 0.7 times the combined uncertainties.
+
+\subsection{Three candidates}
+
+J0649$-$27, J0825$-$67 and J1141$-$37 do not reach $5\sigma$ on their own nulls and fall to 2.1 to
+$3.0\sigma$ across the survey, so their semi-amplitudes (Table~\ref{tab:new},
+Fig.~\ref{fig:diagnostics}) are those their candidate companions would have. Each has a specific
+weakness. One of the $10^4$ draws of J0649$-$27's adopted null reaches 6.7 times the nulls'
+scatter, against its summit's 7.4; neither half of its 43 spectra finds the companion on its own, at 1.0 and
+1.7 in the nulls' units; and the red half of the band, where an M dwarf's lines carry most of the
+signal, peaks instead at $139.8$\,\kms\ and 2.8, while the blue half finds $120.35$\,\kms\ at 4.4.
+J0825$-$67 rests on 27 spectra, too few for its parts or alternate nights to be measured alone, and
+its uncertainty comes from its five seasons; companions injected along its moved track are not
+recovered at either flux ratio, the summit falling at 94\,\kms\ and 0.7 to 0.9 in the nulls' units,
+so its spectra do not test the method's recovery. J1141$-$37's 30 spectra divide into halves at 1.1
+and 3.5 in the nulls' units and alternate nights at 5.5 and 0.9, and its seasons give a systematic
+uncertainty of 2.6\,\kms. For J0649$-$27 and J1141$-$37 the injections at $10^{-3}$ are recovered
+within 0.15\,\kms, and against them the candidate companions' lines would match the template's at
+$0.7\times10^{-3}$, the order expected for an M3 dwarf beside an F star. The model-based masses of
+ref.~\cite{Triaud2017} for J0649$-$27, $1.45 \pm 0.13$ and $0.371 \pm 0.061$\,\Msun, and for
+J1141$-$37, $1.22 \pm 0.10$ and $0.354 \pm 0.050$\,\Msun, are consistent with the minimum masses
+the candidates would give, $1.230 \pm 0.071$ and $0.335 \pm 0.012$, and $1.320 \pm 0.090$ and
+$0.371 \pm 0.015$\,\Msun, which the eclipses bound by $\sin^3 i > 0.96$. More spectra of these
+three would decide them.
 
 \begin{table}[!htbp]
 \centering
 \caption{The 35 searchable EBLM binaries with archived HARPS series: the spectra (nights), the
-span, the primary's orbit fitted to the measured velocities, the summit of the trail over \Ktwo\ at
-a systemic offset of $+1.0$\,\kms\ and its lower significance against the two nulls. Summits of
-$5\sigma$ and more are in bold.}\label{tab:survey}
+span, the primary's orbit fitted to the measured velocities, and the summit of the trail over \Ktwo\
+at a systemic offset of $+1.0$\,\kms\ with its $z$ and false-alarm probability. Companions at
+$5\sigma$ or more are in bold and candidates between 3 and $5\sigma$ in italics.}\label{tab:survey}
 \small
-\begin{tabular}{lrrrrrrr}
+\begin{tabular}{lrrrrrrrr}
 \toprule
-EBLM & Spectra & Span (d) & $P$ (d) & \Kone\ (\kms) & $e$ & \Ktwo\ (\kms) & $\sigma$\\
+EBLM & Spectra & Span (d) & $P$ (d) & \Kone\ (\kms) & $e$ & \Ktwo\ (\kms) & $z$ & $p_\mathrm{G}$\\
 \midrule
-J0035$-$69 & 27 (27) & 949 & 8.4147 & 17.33 & 0.244 & 98.33 & 0.1\\
-J0050$-$18 & 35 (33) & 1376 & 13.6356 & 29.74 & 0.181 & \textbf{75.24} & \textbf{13.9}\\
-J0055$-$00 & 83 (80) & 2771 & 11.3918 & 21.16 & 0.058 & 118.91 & -0.9\\
-J0057$-$21 & 35 (35) & 2288 & 32.3014 & 17.87 & 0.220 & 63.37 & 4.4\\
-J0104$-$38 & 35 (35) & 1910 & 8.2561 & 20.65 & 0.000 & 100.40 & 2.1\\
-J0110$-$40 & 43 (43) & 1740 & 28.7816 & 10.23 & 0.092 & 26.98 & -1.0\\
-J0310$-$31 & 114 (114) & 3031 & 12.6428 & 27.87 & 0.309 & \textbf{88.37} & \textbf{19.0}\\
-J0353$-$16 & 120 (100) & 3960 & 11.7612 & 16.64 & 0.006 & 83.14 & 1.0\\
-J0415$-$16 & 48 (47) & 1390 & 51.7026 & 15.21 & 0.239 & 50.46 & 4.5\\
-J0418$-$53 & 91 (91) & 2909 & 13.6993 & 10.36 & 0.000 & 109.11 & -0.8\\
-J0503$-$25 & 40 (39) & 1968 & 15.2652 & 7.80 & 0.091 & 78.80 & 0.6\\
-J0525$-$55 & 61 (61) & 1885 & 4.8001 & 25.18 & 0.000 & 118.18 & -0.3\\
-J0526$-$34 & 85 (84) & 2345 & 10.1909 & 23.60 & 0.126 & 94.60 & 2.7\\
-J0608$-$59 & 73 (73) & 1818 & 14.6085 & 21.62 & 0.156 & 77.62 & -0.1\\
-J0621$-$50 & 43 (43) & 1778 & 4.9638 & 37.58 & 0.000 & 109.83 & 2.8\\
-J0623$-$27 & 36 (36) & 2493 & 5.7780 & 28.05 & 0.056 & 190.30 & -0.4\\
-J0627$-$67 & 41 (41) & 1813 & 9.4689 & 17.27 & 0.159 & 42.27 & -1.5\\
-J0649$-$27 & 43 (42) & 1797 & 4.3080 & 32.55 & 0.002 & \textbf{119.55} & \textbf{6.7}\\
-J0759$-$69 & 81 (79) & 1988 & 17.0043 & 16.26 & 0.413 & 23.51 & 0.1\\
-J0825$-$67 & 27 (27) & 1234 & 10.0669 & 29.43 & 0.052 & \textbf{78.43} & \textbf{6.4}\\
-J0925$-$03 & 61 (61) & 2168 & 14.7748 & 16.60 & 0.330 & 83.10 & -0.3\\
-J0946$-$29 & 39 (38) & 1234 & 10.4511 & 20.82 & 0.161 & 56.82 & -0.9\\
-J0954$-$45 & 32 (32) & 2262 & 8.0727 & 27.83 & 0.295 & 112.58 & 0.2\\
-J1119$-$39 & 36 (36) & 2257 & 4.2136 & 11.13 & 0.004 & 29.63 & 1.6\\
-J1141$-$37 & 30 (30) & 1718 & 5.1477 & 32.23 & 0.000 & \textbf{116.23} & \textbf{5.2}\\
-J1201$-$36 & 65 (65) & 2284 & 9.1131 & 8.74 & 0.153 & 28.99 & -0.7\\
-J1219$-$39 & 62 (62) & 2175 & 6.7600 & 10.83 & 0.056 & 72.33 & -1.2\\
-J1305$-$31 & 41 (41) & 2123 & 10.6191 & 22.40 & 0.038 & 82.65 & 0.1\\
-J1613$-$76 & 39 (39) & 1308 & 14.3087 & 22.90 & 0.068 & 82.40 & 0.4\\
-J1630+10 & 37 (37) & 1872 & 10.9638 & 19.44 & 0.183 & 84.94 & -0.5\\
-J1928$-$38 & 74 (73) & 2271 & 23.3230 & 17.26 & 0.073 & 111.76 & -1.4\\
-J1959$-$56 & 40 (40) & 1864 & 29.7492 & 17.71 & 0.365 & 100.71 & -0.9\\
-J2040$-$41 & 45 (44) & 1901 & 14.4562 & 12.45 & 0.226 & 31.95 & -0.9\\
-J2101$-$45 & 75 (75) & 2298 & 25.5768 & 25.51 & 0.091 & \textbf{65.76} & \textbf{15.0}\\
-J2207$-$41 & 56 (55) & 2308 & 14.7750 & 8.70 & 0.069 & 44.70 & 0.6\\
+\tabinput{data/tab_survey.tex}
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[!htbp]
 \centering
-\caption{The four companions without a published semi-amplitude, measured with the offset free.
-Ranges are the 16th to 84th percentiles of 300 draws of whole nights; the significances are against
-the null with the phase moved and the null with whole nights shuffled; the masses are
-$m\sin^3 i$.}\label{tab:new}
-\footnotesize\setlength{\tabcolsep}{1.9pt}
+\caption{J2101$-$45 and the three candidates, measured with the offset free: the semi-amplitude
+with its statistical and systematic uncertainties, the offset with the 16th to 84th percentiles of
+300 draws of whole nights, the false-alarm probability with its Gaussian significance on the
+binary's own nulls and across the survey, and the minimum masses with the total uncertainty of
+\Ktwo\ carried through.}\label{tab:new}
+\footnotesize\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccccc}
 \toprule
-EBLM & Spectra & \Ktwo\ (\kms) & \dvsys\ (\kms) & $\sigma$ & $m_1\sin^3 i$ (\Msun) & $m_2\sin^3 i$ (\Msun)\\
+EBLM & \Ktwo\ (\kms) & \dvsys\ (\kms) & $p_\mathrm{G}$ ($\sigma$) & Across 35 ($\sigma$) & $m_1\sin^3 i$ (\Msun) & $m_2\sin^3 i$ (\Msun)\\
 \midrule
-J2101$-$45 & 75 (75) & 65.41 (65.36--66.01) & $+1.45$ ($+1.10$, $+1.65$) & 15.6, 20.6 & 1.431 (1.412--1.447) & 0.556 (0.551--0.559)\\
-J0649$-$27 & 43 (42) & 119.40 (117.80--121.85) & $+1.35$ ($-0.67$, $+2.21$) & 8.4, 6.8 & 1.230 (1.188--1.296) & 0.335 (0.328--0.346)\\
-J0825$-$67 & 27 (27) & 78.18 (76.98--78.73) & $+1.25$ ($+0.45$, $+2.05$) & 7.8, 6.6 & 0.936 (0.905--0.957) & 0.353 (0.346--0.358)\\
-J1141$-$37 & 30 (30) & 114.68 (113.87--117.18) & $+0.15$ ($-0.40$, $+1.70$) & 8.1, 5.5 & 1.351 (1.296--1.395) & 0.376 (0.367--0.384)\\
+\tabinput{data/tab_new.tex}
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{The semi-amplitude, with the summit's $z$ in brackets, as measured and under the five
+changes of the analysis of Section~\ref{sec:robust}: three and eight principal components, the
+template kept blueward or redward of 5500\,\AA, and the template from L\,98-59's spectra.}\label{tab:robust}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccc}
+\toprule
+System & As measured & 3 components & 8 components & 3800--5500\,\AA & 5500--7880\,\AA & L\,98-59\\
+\midrule
+\tabinput{data/tab_robust.tex}
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{table}[!htbp]
+\centering
+\caption{Companions injected into the spectra a quarter of a period from the real ones: the
+flux ratio and \Ktwo\ injected, the semi-amplitude and offset recovered along the moved track with
+the summit's $z$, and, where the injection at $10^{-3}$ is recovered, the flux ratio at which the
+real companion's lines match the template's ($10^{-3}$).}\label{tab:inject}
+\small
+\begin{tabular}{lcccccc}
+\toprule
+System & Flux ratio & \Ktwo\ injected & \Ktwo\ recovered & \dvsys\ (\kms) & $z$ & Real companion\\
+\midrule
+\tabinput{data/tab_inject.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\textwidth]{data/diagnostics.png}
+\caption{J2101$-$45 and the three candidates. Left: the map over \Ktwo\ and the companion's
+systemic offset in units of its scatter, the cross at the peak. Middle: the trail over \Ktwo\ at
+the peak's offset in units of the stricter null's scatter, as measured (black) and under the five
+changes of the analysis. Right: the cleaned rows summed in the companion's frame at the peak, in
+units of the profile's scatter beyond 30\,\kms.}\label{fig:diagnostics}
+\end{figure}
 
 \section{Discussion}\label{sec:discussion}
 
 The semi-amplitudes measured here differ from the published ones by $-0.15$ to $+0.16$\,\kms,
 within the published uncertainties, although the analysis makes its own choice at each step. The
-template
-is an observed M1\,V spectrum rather than a line mask or a synthetic spectrum; the primary's
-spectrum is removed by division by the series' median in the primary's frame and by principal
-components of the cross-correlation rows, rather than by a singular value decomposition of the
-spectra; the significance is measured against nulls built from the same rows rather than from a fit
-to the map; and the uncertainty comes from resampling whole nights. The agreement indicates that
-the published dynamical masses of TOI-1338 and EBLM J0310$-$31 do not depend on those analysis
-choices at the level of their quoted uncertainties, and that the near-infrared semi-amplitude of
-HD\,4875's companion holds in the optical.
+template is an observed M1\,V spectrum rather than a line mask or a synthetic spectrum; the
+primary's spectrum is removed by division by the series' median in the primary's frame and by
+principal components of the cross-correlation rows, rather than by a singular value decomposition
+of the spectra; the significance is measured against nulls built from the same rows rather than
+from a fit to the map; and the uncertainty comes from resampling whole nights and dividing the
+series by date. The agreement indicates that the published dynamical masses of TOI-1338 and EBLM
+J0310$-$31 do not depend on those analysis choices at the level of their quoted uncertainties, and
+that the near-infrared semi-amplitude of HD\,4875's companion holds in the optical.
+
+The calibration separates the height of a summit from its probability. In units of the nulls'
+scatter the four companions stand 13.8 to 19.4 high, but the nulls are drawn $10^4$ times each, so
+the empirical probability stops at $10^{-4}$, and beyond it the probability rests on the Gumbel
+law. That law fits the nulls to the depth they reach, and for the four companions the fitted
+tails are as light as Gumbel's or lighter, so their probabilities are not optimistic. Their
+summits also stand 11 to 16 times the nulls' scatter beyond the highest of the adopted null's
+$10^4$ draws.
+Across the survey the probability of the weakest of the four, HD\,4875, is $4\times10^{-7}$,
+and for J2101$-$45 $1.5\times10^{-7}$. The three candidates show why the survey-wide accounting
+matters: at 3.3 to $3.9\sigma$ alone they would each look like detections, and 35 binaries searched
+over \Ktwo\ make summits of that height expected.
 
 The archive's own completeness matters as much as the method. It holds 114 HARPS spectra of
 J0310$-$31 above a signal-to-noise ratio of 10, against the 71 of the published analysis, and 260
 usable ESPRESSO spectra of TOI-1338, two and a half times the published set. A detection's
-significance grows with the square root of the number of spectra at fixed quality.
+significance grows with the square root of the number of spectra at fixed quality, and the
+candidates, with 27 to 43 spectra, are where more spectra would count.
 
 The method has the limits of any optical analysis of these binaries. Toward 0.1\,\Msun\ the
 companion's optical flux falls to $10^{-4}$ of the primary's and below, and the HARPS series of
-J1928$-$38 and of the lowest-mass companions do not reach them. The near-infrared
-carries a larger share of the companion's light, and the archive holds NIRPS series of nine of the
-EBLM binaries considered here, taken alongside their HARPS spectra.
+J1928$-$38 and of the lowest-mass companions do not reach them; no injection at
+$3\times10^{-4}$ is detected, and only J1141$-$37's returns the injected \Ktwo, at 1.8 in the
+nulls' units. The near-infrared carries a larger share of the
+companion's light, and the archive holds NIRPS series of nine of the EBLM binaries considered here,
+taken alongside their HARPS spectra.
 
 \section{Conclusion}\label{sec:conclusion}
 
 An analysis of public ESO archive spectra, independent of the published pipelines, recovers the
-M-dwarf companions of TOI-1338, EBLM J0310$-$31 and HD\,4875 at 19.3, 19.2 and $13.3\sigma$ and
-measures their semi-amplitudes as $77.27$, $88.12$ and $75.29$\,\kms, within $0.16$\,\kms\ of the
-published values, with masses within 0.5 per cent of the published dynamical masses. HD\,4875's
-companion, measured before in the near-infrared alone, is detected here in the optical. The
-companion's lines sit $+1.05$ to
-$+1.25$\,\kms\ from the primary's systemic velocity in all three, and leaving that offset free is
-needed for accuracy at the tenth of a kilometre per second. Across the 35 searchable southern EBLM
-binaries with archived HARPS series, the companions of EBLM J2101$-$45, J0649$-$27, J0825$-$67 and
-J1141$-$37 are measured for the first time, J2101$-$45's at $15.0\sigma$ with minimum masses of
-$1.431$ and $0.556$\,\Msun.
+M-dwarf companions of TOI-1338, EBLM J0310$-$31 and HD\,4875 with false-alarm probabilities of
+$10^{-11}$, $8\times10^{-12}$ and $1\times10^{-8}$ and measures their semi-amplitudes as $77.27 \pm
+0.18$, $88.12 \pm 0.38$ and $75.29 \pm 0.93$\,\kms, within $0.16$\,\kms\ of the published values,
+with masses within 0.6 per cent of the published dynamical masses. HD\,4875's companion, measured
+before in the near-infrared alone, is detected here in the optical. The companion's lines sit
+$+1.05$ to $+1.25$\,\kms\ from the primary's systemic velocity in all three, and leaving that offset
+free is needed for accuracy at the tenth of a kilometre per second. Across the 35 searchable
+southern EBLM binaries with archived HARPS series, the companion of EBLM J2101$-$45 is measured for
+the first time, at a false-alarm probability of $1.5\times10^{-7}$ across the survey, with \Ktwo\
+$= 65.41 \pm 0.46$\,\kms\ and minimum masses of $1.415$ and $0.552$\,\Msun; the companions of
+J0649$-$27, J0825$-$67 and J1141$-$37 remain candidates.
 
 \section*{Acknowledgements}
 
@@ -525,9 +687,11 @@ spectroscopic binary orbits.
 \section*{Data availability}
 
 The spectra are public in the ESO Science Archive. The analysis is the binaries approach of the
-seti-tools package that holds this paper (\texttt{seti.py composition binaries}), whose coverage
-store records the run as \texttt{binaries\_eblm\_known\_orbits}; the measurements, the maps and
-the survey's results are in the paper's data folder.
+seti-tools package that holds this paper (\texttt{seti.py composition binaries}, whose modes build
+the rows, search, calibrate and measure), and its coverage store records the run as
+\texttt{binaries\_eblm\_known\_orbits}. The paper's data folder holds the measurements and their
+maps, curves and profiles, the robustness and injection measurements, the calibrations, the
+survey's search results, and the tables written from them.
 
 \begin{thebibliography}{99}\small\raggedright
 
@@ -640,6 +804,21 @@ Astrophys.} \textbf{424}, 727 (2004).
 \bibitem{Lam2021}
 K.~W.~F. Lam et al., GJ 367b: a dense, ultrashort-period sub-Earth planet transiting a nearby
 red dwarf star, \emph{Science} \textbf{374}, 1271 (2021).
+
+\bibitem{Cloutier2019}
+R.~Cloutier et al., Characterization of the L 98-59 multi-planetary system with HARPS,
+\emph{Astron. Astrophys.} \textbf{629}, A111 (2019).
+
+\bibitem{Gumbel1958}
+E.~J. Gumbel, \emph{Statistics of Extremes} (Columbia University Press, New York, 1958).
+
+\bibitem{Coles2001}
+S.~Coles, \emph{An Introduction to Statistical Modeling of Extreme Values} (Springer, London,
+2001).
+
+\bibitem{Sidak1967}
+Z.~\v{S}id\'ak, Rectangular confidence regions for the means of multivariate normal
+distributions, \emph{J. Am. Stat. Assoc.} \textbf{62}, 626 (1967).
 
 \bibitem{Mayor2003}
 M.~Mayor et al., Setting new standards with HARPS, \emph{The Messenger} \textbf{114}, 20 (2003).
