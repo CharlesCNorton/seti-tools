@@ -1679,8 +1679,25 @@ def record_search(id, approach, archive=None, release=None, selection=None, code
         db.close()
 
 
+# identifier values that stand for a missing one; every target given one would share a single row of a run
+MISSING_IDS = ("", "-", "--", "---", "-1", "none", "nan", "null", "n/a")
+
+
+def missing_id(target):
+    """True when a target's identifier, before any # facet, stands for a missing one, or a gaia_dr3 identifier is not a positive source id."""
+    prefix, sep, value = str(target).partition(":")
+    value = (value if sep else prefix).split("#")[0].strip()
+    if value.lower() in MISSING_IDS:
+        return True
+    return prefix == "gaia_dr3" and not (value.isdigit() and int(value) > 0)
+
+
 def record_targets(search_id, rows, db=None):
-    """Insert per-target rows; worded vets are stored as codes with the words in the note."""
+    """Insert per-target rows; worded vets are stored as codes with the words in the note, and a target whose identifier stands for a missing one is refused."""
+    rows = list(rows)
+    missing = sorted({str(r["target"]) for r in rows if missing_id(r["target"])})
+    if missing:
+        raise ValueError("%s: identifiers that stand for a missing one: %s" % (search_id, ", ".join(missing)))
     own = db is None
     db = db or connect()
     out = []
@@ -1847,6 +1864,10 @@ def _bad_vets(db):
                    if any(c.strip() not in VET for c in v.split(";"))})
 
 
+def _missing_ids(db):
+    return sorted("%s %s" % r for r in db.execute("SELECT search_id, target FROM coverage") if missing_id(r[1]))
+
+
 def _undocumented_codes():
     path = os.path.join(ROOT, "README.md")
     text = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
@@ -1872,6 +1893,7 @@ def verify(db=None):
             "SELECT COUNT(*) FROM coverage c LEFT JOIN searches s ON s.id = c.search_id WHERE s.id IS NULL")
             if r[0]], True),
         ("vets that are not codes of setitools.core", _bad_vets(db), True),
+        ("per-target rows whose identifier stands for a missing one", _missing_ids(db), True),
         ("vet codes missing from README.md", _undocumented_codes(), True),
         ("Searched rows with no run in the store", [n for n in names if n not in linked], False),
     ]

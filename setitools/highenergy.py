@@ -1664,7 +1664,7 @@ def dynamo_polarised(record=False):
     def gaia_id(x):
         s = str(x).strip().split()[-1] if x == x and str(x).strip() else ""
         return int(s) if s.isdigit() else None
-    sources = [dict(name=str(r["Name"]), survey="V-LoTSS", gaia=gaia_id(r["Gaia"]), ra=float(r["RAGdeg"]) if r["RAGdeg"] == r["RAGdeg"] else float(r["RAJ2000"]),
+    sources = [dict(name=str(r["Name"]), survey="V-LoTSS", vlotss=str(r["VLoTSS"]).strip(), gaia=gaia_id(r["Gaia"]), ra=float(r["RAGdeg"]) if r["RAGdeg"] == r["RAGdeg"] else float(r["RAJ2000"]),
                     dec=float(r["DEGdeg"]) if r["DEGdeg"] == r["DEGdeg"] else float(r["DEJ2000"]),
                     plx=float(r["plx"]) if r["plx"] == r["plx"] else None, G=float(r["Gmag"]) if r["Gmag"] == r["Gmag"] else None,
                     bprp=float(r["BP-RP"]) if r["BP-RP"] == r["BP-RP"] else None, vI=float(r["vI"]) if r["vI"] == r["vI"] else None,
@@ -1693,7 +1693,7 @@ def dynamo_polarised(record=False):
         rot = (by_id.get(sid) if sid else None) or dynamo_match_pos(pos, ra, dec)
         if rot and len(rot) == 4:
             rot = (rot[2], rot[3])
-        rows.append(dict(name=name, survey=s["survey"], gaia=sid, G=G, bprp=bprp, plx=plx, teff=teff, lbol=lbol, vI=s["vI"], in_erass_de=bool(in_de),
+        rows.append(dict(name=name, survey=s["survey"], vlotss=s.get("vlotss"), gaia=sid, G=G, bprp=bprp, plx=plx, teff=teff, lbol=lbol, vI=s["vI"], in_erass_de=bool(in_de),
                          rx=rx, rx_limit=rx_lim, prot=rot[0] if rot else None, prot_src=rot[1] if rot else None, simbad=s["simbad"]))
     flagged = [x for x in rows if x["vI"] and x["vI"] >= 30 and x["prot"] and x["prot"] > 20 and ((x["rx"] is not None and x["rx"] < 1e-5) or (x["rx_limit"] is not None and x["rx_limit"] < 1e-5))]
     print("%d V-LoTSS stars with Gaia counterparts; %d in the eRASS1 half of the sky, %d with eRASS1 detections, %d with rotation periods; %d above 30 per cent polarisation at "
@@ -1716,7 +1716,8 @@ def dynamo_polarised(record=False):
                 len(rows), sum(1 for x in rows if x["prot"]), sum(1 for x in rows if x["rx"] is not None), sum(1 for x in rows if x["rx_limit"] is not None), len(flagged),
                 ", ".join(x["name"] for x in flagged) or "none"))
         core.clear_targets("dynamo_dead_polarised")
-        core.record_targets("dynamo_dead_polarised", [dict(target=("gaia_dr3:%s" % x["gaia"]) if x["gaia"] else "star:" + x["name"], stat=x["vI"], unit="circular polarisation per cent",
+        # a V-LoTSS source without a Gaia DR3 counterpart is keyed by its V-LoTSS identifier, a RACS star by its name
+        core.record_targets("dynamo_dead_polarised", [dict(target=("gaia_dr3:%s" % x["gaia"]) if x["gaia"] else ("vlotss:" + x["vlotss"]) if x["vlotss"] else "star:" + x["name"], stat=x["vI"], unit="circular polarisation per cent",
                                                                vet="flagged" if x in flagged else ("active or rotating (L_X/L_bol %s, P %s)" % (
                                                                    ("%.1e" % x["rx"]) if x["rx"] is not None else "unknown", ("%.1f d" % x["prot"]) if x["prot"] else "unknown")),
                                                                note="%s; %s" % (x["name"], x["simbad"])) for x in rows])

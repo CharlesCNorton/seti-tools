@@ -58,9 +58,9 @@ same data is dropped; otherwise the approach, data, prior work and decision go i
 download, and the targets are a stated slice (a distance limit, a class of star, a geometric condition), never a whole
 archive.
 
-Downloads go to `config.DATA`, Breakthrough Listen chunks to `config.CACHE`, and TESS and Kepler light curves come from
+Downloads go to `core.DATA`, Breakthrough Listen chunks to `core.CACHE`, and TESS and Kepler light curves come from
 STScI's AWS mirror (`setitools.core`). One machine's worker processes and open connections stay within
-`config.MAX_PROCS` and `config.MAX_CONNECTIONS`; GPU work runs through torch with CUDA; a streaming search takes a share
+`core.MAX_PROCS` and `core.MAX_CONNECTIONS`; GPU work runs through torch with CUDA; a streaming search takes a share
 of the target list (`--list`) and the shares merge in its `report` mode.
 
 Reusable code is the `setitools` package: archive clients, HTTP and TAP access, frames, the spectral, radio and
@@ -71,47 +71,49 @@ approach's docstring (`<approach>_DOC`) is its method, its modes run from `fetch
 injection test becomes another mode. An approach whose modes are its analysis and `record` declares every threshold as a
 keyword of its main function, and `core.run_cli` offers each as an option (`--name value`) with the keyword's default,
 so the same test runs on another catalogue cut or tolerance without a change to the code. Outputs go under
-`config.RESULTS`, and each approach has a recipe under Recipes below.
+`core.RESULTS`, and each approach has a recipe under Recipes below.
 
-A finished run calls `coverage.record_search` once (archive, release, selection as ADQL or `coverage.ids_selection`,
+A finished run calls `core.record_search` once (archive, release, selection as ADQL or `core.ids_selection`,
 the script, which is hashed, thresholds, null, sensitivity, the sample's size and
 unit, the result files it reads, and the row of the ledger's Searched table it belongs to) and
-`coverage.record_targets` with one row per target: a prefixed identifier (`gaia_dr3:`, `hip:`, `kic:`, `koi:`, `tic:`,
-`apogee:`, `mpc:`, a Breakthrough Listen file and channel), followed by `#` and a facet where a run tests one target
+`core.record_targets` with one row per target: a prefixed identifier (`gaia_dr3:`, `hip:`, `kic:`, `koi:`, `tic:`,
+`apogee:`, `mpc:`, a Breakthrough Listen file and channel, or the survey's own identifier where Gaia DR3 has none,
+such as `galah:` and `vlotss:`), followed by `#` and a facet where a run tests one target
 several ways (`planet:WASP-121 b#HARPS`, `planet:GJ 486 b#SPIRou HeI`), the statistic, a p-value or limit, and the explanation that
 removed a detection, which is stored as codes of `setitools/core.py` (listed under Vetting below) with its words in the
-note; an explanation with no code is refused. The store holds no archive data; `coverage.covered(target, approach)`
+note; an explanation with no code is refused, as is an identifier that stands for a missing one (`gaia_dr3:-1`,
+`star:--`). The store holds no archive data; `core.covered(target, approach)`
 answers before a download, `python -I seti.py store card <target>` lists one target's results, `table` writes
-`RESULTS.md`, and `verify` checks the store against the ledger and the vet codes.
+`RESULTS.md`, and `verify` checks the store against the ledger and the vet codes and for identifiers that stand for missing ones.
 
 ## Methods
 
 | Method | Implementation |
 |---|---|
 | Narrow lines | each spectrum divided by a model that cannot hold an unresolved line (median over visits, non-negative fit of similar stars, or envelope), then a matched filter against a local error (`setitools.science`); a peak must be unresolved and smooth |
-| Rest frames | `frames.line_tracks` maps a line at rest in the CMB, Solar System, stellar or planetary frame to the telescope; a feature fixed in the star's frame is the star's, one fixed in the observatory's is Earth's or the instrument's |
-| Radio tracks | `radio.track_search` sums power along the predicted, zero-drift and shifted (null) tracks; ON scans stacked, OFF scans summed along the ON track |
-| Trends | `timeseries.differential_trend`: Theil-Sen slope against comparison stars on the same plates, per series |
+| Rest frames | `science.line_tracks` maps a line at rest in the CMB, Solar System, stellar or planetary frame to the telescope; a feature fixed in the star's frame is the star's, one fixed in the observatory's is Earth's or the instrument's |
+| Radio tracks | `science.track_search` sums power along the predicted, zero-drift and shifted (null) tracks; ON scans stacked, OFF scans summed along the ON track |
+| Trends | `science.differential_trend`: Theil-Sen slope against comparison stars on the same plates, per series |
 | Band templates | `biosignatures.band_template`: each gas a set of Gaussian bands at its strongest features, averaged over each bin, fitted with an offset per spectrum; a gas counts by how much the fit worsens without it, so overlapping bands cannot share one feature |
 | Nulls | fixed before looking (absorption-like peaks, shifted tracks, random wavelengths, control apertures, comparison stars); a detection must beat the strongest null of its kind, and a recurring group counts as its second-strongest member |
 
 ## Archives
 
 Clients are in `setitools/core.py`. TAP services are named in `setitools/core.py` and queried with
-`net.tap(service, adql)`, or `net.tap_async` for long scans; `net.tap` sends MAXREC, because the Gaia archive and
+`core.tap(service, adql)`, or `core.tap_async` for long scans; `core.tap` sends MAXREC, because the Gaia archive and
 SIMBAD stop synchronous results at 50000 rows without saying so (Data Lab excepted, where MAXREC overrides LIMIT), and
 raises on maintenance pages. CDS's file tree serves curl's user agent and challenges a browser's.
 
 | Archive | Client | Notes |
 |---|---|---|
-| Gaia DR3 | `gaia`, `gaia_rvs_spectra` | ADQL on `gaiadr3.*`; RVS spectra from DataLink, 50 ids a request; epoch photometry from DataLink or VizieR `I/355/epphot`. A sync selection on `gaia_source` by anything but `source_id` answers 408 at the archive's time cap, so the selection is made on a small table (`vari_summary`, `vari_eclipsing_binary`, the nearby-stars catalogue `external.gaiaedr3_gcns_main_1`) and `gaia_source` is read by id in batches of 2000 (`net.tap_by_ids`). DataLink's epoch photometry answers 500 with `VALID_DATA=true` for a source whose every transit carries a flag; the unfiltered table carries the flags. DataLink's `XP_SAMPLED` answers 500 for some bright sources; VizieR's `I/355/xpsample` holds the same 343-sample spectra, queried by `Source` |
+| Gaia DR3 | `gaia`, `gaia_rvs_spectra` | ADQL on `gaiadr3.*`; RVS spectra from DataLink, 50 ids a request; epoch photometry from DataLink or VizieR `I/355/epphot`. A sync selection on `gaia_source` by anything but `source_id` answers 408 at the archive's time cap, so the selection is made on a small table (`vari_summary`, `vari_eclipsing_binary`, the nearby-stars catalogue `external.gaiaedr3_gcns_main_1`) and `gaia_source` is read by id in batches of 2000 (`core.tap_by_ids`). DataLink's epoch photometry answers 500 with `VALID_DATA=true` for a source whose every transit carries a flag; the unfiltered table carries the flags. DataLink's `XP_SAMPLED` answers 500 for some bright sources; VizieR's `I/355/xpsample` holds the same 343-sample spectra, queried by `Source` |
 | Pan-STARRS images | `https://ps1images.stsci.edu/cgi-bin/ps1filenames.py?ra=&dec=&filters=` lists the stack and warp files at a position, and `fitscut.cgi?ra=&dec=&size=&format=fits&red=<file>` cuts them | stacks are asinh-scaled by `BSOFTEN` and `BOFFSET` in the header; stars brighter than about 13 saturate, so a radial profile is read beyond 2 arcsec and compared with a star of like brightness in the same frame |
 | Planck | IRSA, `https://irsa.ipac.caltech.edu/data/Planck/release_3/all-sky-maps/maps/` | the HFI frequency maps are 2 GB HEALPix binary tables (NSIDE 2048, NESTED, one 40-byte row per pixel at 353 GHz); a position's pixels come from `astropy_healpix` and HTTP range requests on the FITS file, a few kilobytes per cone, without downloading the map. At 353 GHz 1 K_CMB is 287.45 MJy/sr; the polarisation angle is 0.5 atan2(-U, Q) in the IAU sense from HEALPix's sign on U, and starlight behind the dust polarises 90 deg from it with P_353 / p_V of 5.4 MJy/sr (Planck 2015 XXI) |
 | SIMBAD | `simbad` | lower-case TAP parameters, JSON; `nbref` measures how studied a star is |
 | VizieR, NASA Exoplanet Archive | `vizier`, `exoplanets` | whole catalogues through astroquery; ADQL on `toi` and `pscomppars` |
 | NIST ASD | `nist_lines` | needs the form's full parameter list; cached per ion and range |
 | JPL | radar, SBDB and Horizons APIs | Horizons `CENTER='-1@399'` for Arecibo, `'-14@399'` for Goldstone |
-| Zenodo | `remotezip.open_zip` | zip members read by byte range |
+| Zenodo | `core.open_zip` | zip members read by byte range |
 | Gaia alerts, SsODNet, HI4PI | files and JSON APIs | alerts as one CSV from `gsaweb.ast.cam.ac.uk`; HI4PI as 192 HEALPix tables (`J/A+A/594/A116`) |
 | ESO | `eso_spectra`, `eso_download` | Phase 3 1D spectra from `ivoa.ObsCore`, GET only; `SPECSYS` gives the frame (UVES is observatory-frame), `TUCDn` air or vacuum (ESPRESSO's `WAVE` is vacuum); HARPS zero-filled across 530-534 nm |
 | GALAH DR4 | `galah`, `galah_spectrum` | Data Central's SODA links serve cameras B, V, R, I normalised on barycentric wavelengths with the star's own velocity left in, so `rv_comp_1` takes a spectrum to rest; the header `RV` is the barycentric correction |
@@ -123,7 +125,7 @@ raises on maintenance pages. CDS's file tree serves curl's user agent and challe
 | IRSA | `irsa`, `spherex_images`, `spherex_pixels` | AllWISE, CatWISE2020, NEOWISE, SPHEREx; SPHEREx pixels read by byte ranges from the full images |
 | DASCH | `dasch_lightcurves` | fields wider than about 30 arcmin time out; about 0.1 mag a plate |
 | Kepler, TESS | `setitools.core` | STScI's AWS mirror; full-frame light curves from the TESS-SPOC and QLP products |
-| Breakthrough Listen | `bl_query_files`, `radio.coarse_channel` | `*.gpuspec.0000.h5`, 2.79 Hz channels, topocentric; about 30-40 MB/s in total; indexes and chunks cached |
+| Breakthrough Listen | `bl_query_files`, `science.coarse_channel` | `*.gpuspec.0000.h5`, 2.79 Hz channels, topocentric; about 30-40 MB/s in total; indexes and chunks cached |
 | ESO Phase 3 (ObsCore), CADC CAOM2 (CFHT SPIRou), KOA (Keck NIRSPEC) | `archive_spectra`, `koa_spectra`, `eso_download` | one position's spectra across the three archives with their time spans, exposures and wavelength spans; the CADC lists every SPIRou product of an exposure as its own plane and `archive_spectra` keeps the public telluric-corrected one (`t`), served at `data/pub/CFHT/<productID>.fits`; KOA's `koa_nirspec` carries `mjd`, `camera` and `koaimtyp`, and its `date_obs` holds a time of day |
 | ALMA, CASDA, VLASS, SPT-3G | `alma`, `casda`, files | early ALMA cycles hold raw visibilities; RACS-low2 Stokes V on CASDA; VLASS catalogues in CIRADA's vault |
 | TEPCat, the Encyclopaedia of Exoplanetary Systems, Zenodo, MAST high-level products | `biosignatures.tepcat`, `eu_planets`, `zenodo_search`, `rockyworlds_fetch` | TEPCat's ascii table of the transiting planets (Southworth 2011), zero-padded names (WASP-039, K2-018b) read as the catalogues write them and the file kept a week; the Encyclopaedia's TAP service (`exoplanet.epn_core`) for distances; Zenodo's records API at 25 results a page without a token, answering 429 when asked too often, its files taking HTTP byte ranges; the Rocky Worlds DDT's eclipse catalogues from its page on MAST |
@@ -274,7 +276,7 @@ on any vet that is not a code.
 | Millimetre flares on inactive stars | SPT-3G flare stars without a 2RXS source, crossed with eRASS1, 4XMM, CSC and SIMBAD; a star with no X-ray source is judged against eRASS1's reach at its distance | `seti.py highenergy mm check\|record` |
 | Radar reflectors | the PDS SBN radar compilation; a metal reflector has OC albedo near 1 and SC/OC near 0; albedos above 0.3 read with their SBDB classes | `seti.py solar_system radar_albedo` |
 | Direct-imaging candidates | per-epoch separations and angles against the background track and co-motion, both at chi2 above 25 | `seti.py neighbourhood imaging` |
-| Industrial gases | K2-18 b's MIRI reductions read from Zenodo by byte range (`remotezip.open_zip`), bands fitted against a quadratic baseline | `seti.py composition gases` |
+| Industrial gases | K2-18 b's MIRI reductions read from Zenodo by byte range (`core.open_zip`), bands fitted against a quadratic baseline | `seti.py composition gases` |
 | Asteroid surfaces | Gaia DR3 reflectance spectra fitted by principal components with and without metal templates (refractiveindex.info); injections give the covering fraction a surface needs | `seti.py solar_system surfaces` |
 | Exact commensurability | every planet pair of the Exoplanet Archive's composite table against p:q (q up to 7); counts below each distance against the density between 1e-3 and 1e-2 | `seti.py transits commensurability search\|record` |
 | Yarkovsky sign test | JPL transverse terms A2 against the obliquity of every DAMIT pole solution (orbit normal from the osculating inclination and node); the efficiency against all absorbed sunlight at the extreme and at typical density and albedo, with the published dark comets marked | `seti.py solar_system yarkovsky fetch\|analyse\|record` |
@@ -550,9 +552,9 @@ on any vet that is not a code.
 
 Technetium (4.2 Myr), promethium (17.7 yr) and the actinides Pa, Pu, Am and Cm have no natural source in a
 main-sequence star. Each star's spectra are put on one barycentric air-wavelength grid, normalised by
-`spectra.envelope`, median-stacked and moved to rest with `spectra.line_velocity`; stacks need pixel scatter under 10
-per cent and a comparison stack correlating above 0.9. `spectra.line_absorption` fits the six most similar stacks with
-the line core left out, `spectra.combined_line_score` weights the lines by lambda^2 gf exp(-E_low/kT) at 5800 K against
+`science.envelope`, median-stacked and moved to rest with `science.line_velocity`; stacks need pixel scatter under 10
+per cent and a comparison stack correlating above 0.9. `science.line_absorption` fits the six most similar stacks with
+the line core left out, `science.combined_line_score` weights the lines by lambda^2 gf exp(-E_low/kT) at 5800 K against
 400 random wavelengths, and `combined_line_threshold` gives each star's limit, which injection checks. Lines: Tc I from
 Palmeri et al. (2005), Pm II from Fivet et al. (2007), the actinides from NIST with arc intensities for gf; Korg turns
 equivalent widths into abundances. The runs are `seti.py composition elements census`, `fetch INSTRUMENT`,
@@ -560,10 +562,10 @@ equivalent widths into abundances. The runs are `seti.py composition elements ce
 
 ### Laser lines in stellar spectra
 
-Spectra are normalised by `spectra.envelope` on one grid per instrument. Stars with several visits use
-`spectra.visit_recurrence`, which keeps lines recurring at one stellar-frame wavelength across visits at different
-observatory velocities; steady lines use `spectra.twin_model` and `spectra.matched_filter`. A peak keeps a width ratio
-of 0.6-1.6 against `spectra.lsf_sigma_px` and a smooth profile, then faces the absorption-like null and
+Spectra are normalised by `science.envelope` on one grid per instrument. Stars with several visits use
+`science.visit_recurrence`, which keeps lines recurring at one stellar-frame wavelength across visits at different
+observatory velocities; steady lines use `science.twin_model` and `science.matched_filter`. A peak keeps a width ratio
+of 0.6-1.6 against `science.lsf_sigma_px` and a smooth profile, then faces the absorption-like null and
 the Vetting section above.
 
 | Archive | R | Run |
@@ -582,9 +584,9 @@ The sky-fibre search, `seti.py lasers skyfibre search`, reads each BOSS/eBOSS sp
 
 | Approach | Data and rule | Run |
 |---|---|---|
-| Century-scale dimming | DASCH plate light curves against same-plate comparisons (`timeseries.differential_trend`), judged against the sample's spread; a candidate fades in most plate series and has no blend that moves with proper motion | `seti.py dimming dasch trends\|judge\|series\|inject` |
-| Fully enclosed stars | AllWISE sources red in W2-W3 (`net.tap_async`), moving in CatWISE2020, dark in Gaia, clear of SIMBAD's young stars and clouds | `seti.py infrared enclosed` |
-| SPHEREx spectra of candidates | forced photometry in every SPHEREx image (`archives.spherex_pixels`, `photometry.spherex_point_pixels`) against two colour-matched controls undetected at 12 um | `seti.py infrared spherex spec\|controls\|compare` |
+| Century-scale dimming | DASCH plate light curves against same-plate comparisons (`science.differential_trend`), judged against the sample's spread; a candidate fades in most plate series and has no blend that moves with proper motion | `seti.py dimming dasch trends\|judge\|series\|inject` |
+| Fully enclosed stars | AllWISE sources red in W2-W3 (`core.tap_async`), moving in CatWISE2020, dark in Gaia, clear of SIMBAD's young stars and clouds | `seti.py infrared enclosed` |
+| SPHEREx spectra of candidates | forced photometry in every SPHEREx image (`core.spherex_pixels`, `science.spherex_point_pixels`) against two colour-matched controls undetected at 12 um | `seti.py infrared spherex spec\|controls\|compare` |
 | SPHEREx at every unsaturated star | the same photometry for Gaia stars within 25 pc with Ks 9.5 or fainter | `seti.py infrared volume sample\|spec` |
 | Dark companions | Gaia `binary_masses` and Hipparcos-Gaia proper-motion anomalies; the companion's main-sequence luminosity re-emitted at 200-600 K against Ks-W3 and Ks-W4 | `seti.py infrared dark`, `seti.py infrared pma` |
 | Habitable-zone stacks | hosts at 0.32-1.78 Earth insolations within 100 pc, 25 Gaia-matched controls each, W1-W3 and W1-W4 | `seti.py infrared hz fetch\|analyse\|record` |
@@ -593,7 +595,7 @@ The sky-fibre search, `seti.py lasers skyfibre search`, reads each BOSS/eBOSS sp
 | Decade infrared trends | NEOWISE-R single exposures of stars within 15 pc against field stars on the same frames | `seti.py dimming neowise fetch\|analyse` |
 | Hipparcos to Gaia dimming | Hp (1991.25) against G (2016.0) within 100 pc, explained by variability, scatter, RUWE, BP/RP excess, WDS companions and rotation | `seti.py dimming hip_gaia` |
 | Hipparcos epoch dips | `I/239/epophot`; a dip must show in both fields of view, 20.6 minutes apart | `seti.py dimming hipparcos` |
-| Transit shapes | `timeseries.shape_stats` on Kepler and TESS rejects with three or more events | `seti.py transits shapes_kepler`, `seti.py transits shapes_tess fetch\|ffi\|analyse` |
+| Transit shapes | `science.shape_stats` on Kepler and TESS rejects with three or more events | `seti.py transits shapes_kepler`, `seti.py transits shapes_tess fetch\|ffi\|analyse` |
 | Exobelts | shoulders 3-90 planetary radii beside Kepler transits against random phases, measured again with each transit's own time and fitted duration; `targets --long` and `record --long` for the planets below 2 Earth radii beyond 30 d around FGK dwarfs | `seti.py transits exobelts targets\|stream\|report\|vet\|record` |
 | Achromatic long-period modulation | ZTF periodic variables (Chen et al. 2020): BY Dra and RS CVn classes at 5-500 d, A_g 0.15 mag or more, g brighter than 18, those with catalogue A_r/A_g of 0.9 or more and 300 controls at 0.7-0.9; ZTF DR23 light curves by object identifier (IRSA objects table within 1.5 arcsec, then the light-curve service) folded at the catalogue period and fitted by a mean and two harmonics per band; grey at A_r/A_g of 0.97 or more at 3 sigma, at most 1.15, bands in phase to 0.05 cycle; Gaia DR3 neighbours, RUWE and BP/RP excess and AllWISE W1-W2 by CDS XMatch at the grey ones | `seti.py dimming achromatic select\|fetch\|analyse\|record` |
 | Chromatic-only variables | Gaia DR3 vari_summary variables brighter than G 16 with twenty or more transits: G scatter below 0.003 mag with BP and RP scatter above 0.02 each, against the ratio sqrt(s_BP^2 + s_RP^2)/s_G of the sources quiet in G (scatter below 0.01) in half-magnitude bins, a candidate beyond its 5 sigma tail; the finalists' epoch photometry by DataLink, BP against RP over the transits that hold both, which a neighbour in the windows moves together and a spectral modulator against each other | `seti.py dimming chromatic fetch\|analyse\|record` |
@@ -658,7 +660,7 @@ The sky-fibre search, `seti.py lasers skyfibre search`, reads each BOSS/eBOSS sp
 
 | Approach | Data and rule | Run |
 |---|---|---|
-| Frame-predicted lines | Breakthrough Listen cadences; HI, OH and pi x HI at rest in the CMB, Solar System, stellar or planetary frame (`frames.line_tracks`), power summed along the track (`radio.track_search`) against zero-drift and shifted tracks, ON scans stacked and OFF scans summed along the ON track | `seti.py breakthrough frames` |
+| Frame-predicted lines | Breakthrough Listen cadences; HI, OH and pi x HI at rest in the CMB, Solar System, stellar or planetary frame (`science.line_tracks`), power summed along the track (`science.track_search`) against zero-drift and shifted tracks, ON scans stacked and OFF scans summed along the ON track | `seti.py breakthrough frames` |
 | Curved tracks | half-scan straight tracks joined with drift changes up to 5 channels per spectrum on the GPU; a hit recurs in a second ON scan and is absent from the OFF scans; each survivor and the lines that switch on with it on its drift are then sought in every pointing of the session within an hour, along the drift | `seti.py breakthrough curved search\|cadences\|session\|record`, `seti.py breakthrough curved_batch` for files read from Berkeley |
 | The 2004 SETI@home candidate SHGb02+14a | Breakthrough Listen's GBT cadences on GJ 83.1 (TZ Arietis), beside the candidate's position: the coarse channel holding 1420.4 MHz in every scan of the L-band session, each spectrogram divided by its channels' medians over time, dedrifted at every rate from -40 to +40 Hz/s in steps of 0.25 and summed, peaks above ten times the robust noise, and the ON scans' peaks against every other pointing's; S-band cadences, which do not hold the line, counted as not measured | `seti.py breakthrough shgb [record] [--target gj83.1] [--line-mhz 1420.405751] [--window-mhz 0.5] [--rate-max 40] [--rate-step 0.25] [--snr 10] [--drift-min 8] [--drift-max 37]` |
 | Hopping and combs | isolated single-spectrum bursts on the target alone; comb spacings in all three ON scans and none of the OFF scans | `seti.py breakthrough hops`, `seti.py breakthrough combs` |

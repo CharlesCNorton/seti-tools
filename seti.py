@@ -225,8 +225,15 @@ def t_coverage():
         raise AssertionError("an explanation without a code was recorded")
     except KeyError:
         pass
+    for t in ("gaia_dr3:-1", "star:--"):
+        try:
+            core.record_targets("test_run", [dict(target=t, stat=1.0)], db=db)
+            raise AssertionError("the identifier %s was recorded" % t)
+        except ValueError:
+            pass
     db.close()
-    return "three targets recorded and read back; a worded vet stored as its codes; an uncoded one refused"
+    return ("three targets recorded and read back; a worded vet stored as its codes; an uncoded one and identifiers that "
+            "stand for missing ones refused")
 
 
 def synthetic_plate(nfib=40, npix=4000, seed=0, sigma=1.0):

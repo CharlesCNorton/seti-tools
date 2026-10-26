@@ -1016,9 +1016,13 @@ def fission_main(record=False, neighbours=200, snr_min=40.0):
         result="fission-like patterns rarer than the mirror at every threshold (z above 5: %d against %d); the strongest are "
                "single-element outliers in cool giants and M dwarfs; %d FGK dwarfs carry Mo and Ru" % (counts[5][0], counts[5][1], dwarf.sum()))
     core.clear_targets("fission_galah")
-    core.record_targets("fission_galah", [dict(target="gaia_dr3:%s" % rows[i]["gaiadr3_source_id"], stat=float(Z[i]),
-                                                   unit="combined fission-pattern z", note="Teff %.0f logg %.2f" % (teff[i], logg[i]))
-                                              for i in np.nonzero(good)[0] if rows[i]["gaiadr3_source_id"]])
+
+    def target(r):
+        # GALAH DR4 gives -1 for a star without a Gaia DR3 source, which is keyed by its GALAH identifier instead
+        g = str(r["gaiadr3_source_id"] or "").strip()
+        return "gaia_dr3:" + g if g.isdigit() and int(g) > 0 else "galah:%s" % r["sobject_id"]
+    core.record_targets("fission_galah", [dict(target=target(rows[i]), stat=float(Z[i]), unit="combined fission-pattern z",
+                                                   note="Teff %.0f logg %.2f" % (teff[i], logg[i])) for i in np.nonzero(good)[0]])
     print("recorded")
 
 
@@ -2233,7 +2237,7 @@ def europium_main(record=False, eu_min=1.0, err_max=0.2, snr_min=40.0, logg_min=
             "metallicity, second components, Gaia's non-single-star flag and RUWE, barium and lanthanum", "[Eu/Fe] above %g at its lower bound in a dwarf" % eu_min,
             "%d: %d metal-poor, %d with a companion, %d with an s-process pattern; %d unexplained" % (
                 len(hits), sum(s["vet"] == "metal-poor" for s in hits), sum(s["vet"] == "binary" for s in hits), sum(s["vet"] == "abundance-pattern" for s in hits), len(left)),
-            [dict(target="gaia_dr3:%s" % s["id"] if s["id"] else "galah:%s" % s["sobject"], stat=round(s["eu"], 2), unit="[Eu/Fe]", vet=s["vet"],
+            [dict(target="gaia_dr3:%s" % s["id"] if s["id"].isdigit() else "galah:%s" % s["sobject"], stat=round(s["eu"], 2), unit="[Eu/Fe]", vet=s["vet"],
                   note="[Fe/H] %s, [Ba/Fe] %s, [La/Fe] %s, %s K, log g %s, S/N %s" % (s["feh"], s["ba"], s["la"], s["teff"], s["logg"], s["snr"])) for s in hits])
         print("recorded")
 
@@ -2278,7 +2282,7 @@ def zirconium_main(record=False, zr_min=0.8, others_max=0.3, err_max=0.15, snr_m
             "second components, Gaia's non-single-star flag and RUWE, the temperature range of clean zirconium lines",
             "[Zr/Fe] above %g with [Y/Fe] and [Ba/Fe] below %g" % (zr_min, others_max), "%d: %d with a companion, %d outside the temperature range; %d unexplained" % (
                 len(hits), sum(s["vet"] == "binary" for s in hits), sum(s["vet"] == "defective-spectrum" for s in hits), len(left)),
-            [dict(target="gaia_dr3:%s" % s["id"] if s["id"] else "galah:%s" % s["sobject"], stat=round(s["zr"], 2), unit="[Zr/Fe]", vet=s["vet"],
+            [dict(target="gaia_dr3:%s" % s["id"] if s["id"].isdigit() else "galah:%s" % s["sobject"], stat=round(s["zr"], 2), unit="[Zr/Fe]", vet=s["vet"],
                   note="[Y/Fe] %.2f, [Ba/Fe] %.2f, [Fe/H] %s, %s K, log g %s, S/N %s" % (s["y"], s["ba"], s["feh"], s["teff"], s["logg"], s["snr"])) for s in hits])
         print("recorded")
 
@@ -2323,7 +2327,7 @@ def limeteoritic_main(record=False, li_min=4.3, err_max=0.15, snr_min=40.0, logg
             "the reach of planet engulfment, a dex above the meteoritic; the temperature range of the lithium line; second components, Gaia's flags and RUWE",
             "A(Li) above %g at its lower bound in a dwarf" % li_min, "%d: %d too hot for the line, %d with a companion; %d between %g and %g within engulfment's reach; %d unexplained" % (
                 len(hits), sum(s["vet"] == "defective-spectrum" for s in hits), sum(s["vet"] == "binary" for s in hits), len(engulf), engulf_min, li_min, len(left)),
-            [dict(target="gaia_dr3:%s" % s["id"] if s["id"] else "galah:%s" % s["sobject"], stat=round(s["li"], 2), unit="A(Li)", vet=s["vet"],
+            [dict(target="gaia_dr3:%s" % s["id"] if s["id"].isdigit() else "galah:%s" % s["sobject"], stat=round(s["li"], 2), unit="A(Li)", vet=s["vet"],
                   note="%s K, log g %s, [Fe/H] %s, vsini %s, S/N %s" % (s["teff"], s["logg"], s["feh"], s["vsini"], s["snr"])) for s in hits])
         print("recorded")
 
@@ -4243,13 +4247,18 @@ def companions_cli():
 
 # --------------------------------------------------------------------------------------------------------------
 
-binaries_DOC = r"""Companions of single-lined binaries along their known orbits: each archived spectrum's velocity measured against a template of the primary and the primary's orbit fitted to those velocities; the spectra put on the grid in the primary's frame at their own velocities, divided by the series' median and cross-correlated by inverse variance with an M-dwarf template; the star's pattern, the sky's pattern and five principal components taken out of the rows; the rows summed along the track the orbit gives the companion over its semi-amplitude K2 and its systemic offset from the primary's, the summit read against the orbit's phase moved and whole nights shuffled, K2 bootstrapped over whole nights, and the masses from K1 and K2.
+binaries_DOC = r"""Companions of single-lined binaries along their known orbits: each archived spectrum's velocity measured against a template of the primary and the primary's orbit fitted to those velocities; the spectra put on the grid in the primary's frame at their own velocities, divided by the series' median and cross-correlated by inverse variance with an M-dwarf template; the star's pattern, the sky's pattern and five principal components taken out of the rows; the rows summed along the track the orbit gives the companion over its semi-amplitude K2 and its systemic offset from the primary's, the summit read against the orbit's phase moved and whole nights shuffled, its false-alarm probability from ten thousand draws of each null and a Gumbel law fitted to them, for each binary and for the survey's binaries together, K2 bootstrapped over whole nights and over observing seasons with the scatter of the series' parts by date as its systematic uncertainty, and the masses from K1 and K2.
 
     python -I seti.py composition binaries plan [--min 20]                                     the ESO series of the Gaia DR3 and SB9 single-lined binaries: ROOT/plan.json
     python -I seti.py composition binaries template NAME [--inst HARPS] [--out FILE.npy]       a primary's line depths from its own spectra at its catalogue orbit's velocities
-    python -I seti.py composition binaries build NAME [NAME ...] [--inst HARPS] [--min-snr 10] [--per-star 300] [--keep]   each binary's rows: ROOT/rows
+    python -I seti.py composition binaries template --spectra DIR --object NAME [NAME ...] --out FILE.npy   a star's line depths from its spectra in DIR in its own frame
+    python -I seti.py composition binaries build NAME [NAME ...] [--inst HARPS] [--min-snr 10] [--per-star 300] [--keep] [--template FILE.npy] [--variant V] [--band LO HI]
+                                                 [--inject RATIO --inject-k2 KMS [--inject-shift 0.25] [--inject-template FILE.npy]]   each binary's rows: ROOT/rows or ROOT/rows_V
     python -I seti.py composition binaries search [NAME ...] [--inst HARPS] [--dv 1.0]          the summit over K2 at a fixed systemic offset: ROOT/results
-    python -I seti.py composition binaries measure NAME [--inst HARPS] [--incl DEG] [--k2-fixed KMS] [--dv-fixed KMS]   the peak over K2 and the offset, bootstrapped: ROOT/measure
+    python -I seti.py composition binaries calibrate [NAME ...] [--inst HARPS] [--draws 10000] [--window 5]   the summits' false-alarm probabilities: ROOT/calibrate
+    python -I seti.py composition binaries calibrate --aggregate [--inst HARPS]                the survey's binaries taken together: ROOT/calibrate/survey_<inst>.json
+    python -I seti.py composition binaries measure NAME [--inst HARPS] [--incl DEG] [--k2-fixed KMS] [--dv-fixed KMS] [--variant V] [--components K] [--shift FRAC]
+                                                 the peak over K2 and the offset, bootstrapped, with its systematic uncertainty: ROOT/measure
     python -I seti.py composition binaries record"""
 
 binaries_ROOT = core.data("binaries")
@@ -4441,8 +4450,16 @@ def binaries_fetch(target, min_snr=10.0, per_star=300, streams=4):
     return companions_spectra(paths), len(listed)
 
 
-def binaries_template(name, inst="HARPS", out=None):
-    """A primary's line depths, one minus the median of its spectra each put at its catalogue orbit's velocity: the template against which the velocities are measured, ROOT/templates/<tag>.npy unless OUT."""
+def binaries_template(name, inst="HARPS", out=None, spectra=None, objects=()):
+    """A primary's line depths, one minus the median of its spectra each put at its catalogue orbit's velocity: the template against which the velocities are measured, ROOT/templates/<tag>.npy unless OUT; given a folder of SPECTRA, the line depths of the star whose OBJECT headers hold any of OBJECTS, from its spectra in its own frame, as the M-dwarf template is made."""
+    if spectra:
+        files = sorted({f for obj in objects for f in companions_files(spectra, obj)})
+        loaded = companions_spectra(files)
+        T = companions_template(loaded, companions_vsys(loaded), "optical")
+        os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+        np.save(out, T)
+        print("%s: line depths from %d spectra, %d samples above 0.1: %s" % (" ".join(objects), len(loaded), int((T > 0.1).sum()), out))
+        return
     target = binaries_target(name, inst)
     spectra, _ = binaries_fetch(target)
     P, tp, e, w, k1, gamma = binaries_orbit(target)
@@ -4456,18 +4473,27 @@ def binaries_template(name, inst="HARPS", out=None):
     print("%s: line depths from %d spectra, %d samples above 0.1: %s" % (target["name"], len(spectra), int((T > 0.1).sum()), out))
 
 
-def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, rv_template=None, template=None, keep=False):
-    """Each named binary's rows: its spectra's velocities measured against RV_TEMPLATE and the orbit fitted to them, each spectrum put in the primary's frame at its own velocity, the residuals cross-correlated with the M-dwarf TEMPLATE and the star's pattern taken out, kept as ROOT/rows/<tag>.npz (rows, epochs, barycentric corrections, the velocities the rows were put at and the measured ones) with a note."""
+def binaries_planck(w, t2, t1):
+    """B(w, T2) / B(w, T1) at wavelengths W (A)."""
+    return np.expm1(1.4388e8 / (np.asarray(w, float) * t1)) / np.expm1(1.4388e8 / (np.asarray(w, float) * t2))
+
+
+def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, rv_template=None, template=None, keep=False, variant=None, band=None,
+                   inject=0.0, inject_k2=None, inject_shift=0.25, inject_dv=1.0, inject_template=None, teff1=6000.0, teff2=3400.0):
+    """Each named binary's rows: its spectra's velocities measured against RV_TEMPLATE and the orbit fitted to them, each spectrum put in the primary's frame at its own velocity, the residuals cross-correlated with the M-dwarf TEMPLATE (zero outside BAND where given) and the star's pattern taken out, kept as ROOT/rows/<tag>.npz, or ROOT/rows_<VARIANT>, with a note; INJECT lays the lines of INJECT_TEMPLATE (the M-dwarf template unless given) into every spectrum at that V-band flux ratio, scaled as a TEFF2 black body against a TEFF1 one, along the orbit moved by INJECT_SHIFT of a period at INJECT_K2 and offset INJECT_DV."""
     rv_template = rv_template or os.path.join(binaries_ROOT, "templates", "rv.npy")
     template = template or os.path.join(binaries_ROOT, "templates", "mdwarf.npy")
     Trv, T = np.load(rv_template), np.load(template)
-    os.makedirs(os.path.join(binaries_ROOT, "rows"), exist_ok=True)
+    Ti = np.load(inject_template) if inject_template else T
+    g = giants_grid("optical")
+    Tc = np.where((g >= band[0]) & (g < band[1]), T, 0.0) if band else T
+    folder = os.path.join(binaries_ROOT, "rows" + ("_" + variant if variant else ""))
+    os.makedirs(folder, exist_ok=True)
     for name in names:
         target = binaries_target(name, inst)
         spectra, listed = binaries_fetch(target, min_snr, per_star, streams)
         if len(spectra) < 20:
-            json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, note="too few spectra"),
-                      open(os.path.join(binaries_ROOT, "rows", binaries_tag(target) + ".json"), "w"))
+            json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, note="too few spectra"), open(os.path.join(folder, binaries_tag(target) + ".json"), "w"))
             print("%s: %d spectra loaded of %d listed; too few" % (target["name"], len(spectra), listed), flush=True)
             continue
         t = np.array([s[3]["mjd"] for s in spectra])
@@ -4475,33 +4501,42 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
         P, tp, e, w, k1, gamma, rms = binaries_refit(t, v, *binaries_orbit(target)[:5])
         for s, x in zip(spectra, v):
             s[3]["rv"] = float(x)
+        if inject:
+            # a companion's light laid in along a moved orbit, so it falls away from any real companion's track
+            v2 = gamma + inject_dv - inject_k2 * binaries_radial(t, P, tp + inject_shift * P, e, w)
+            scale = lambda wl: binaries_planck(wl, teff2, teff1) / binaries_planck(5500.0, teff2, teff1)
+            spectra = [(wl, fl * (1.0 - inject * scale(wl) * np.interp(wl, g * (1.0 + x / 299792.458), Ti, left=0.0, right=0.0)), er, meta)
+                       for (wl, fl, er, meta), x in zip(spectra, v2)]
         info = {}
         R, sd, _ = companions_residuals(spectra, gamma, "optical", info=info)
-        ccf = companions_unpattern(giants_ccf(R, T, sd))
+        ccf = companions_unpattern(giants_ccf(R, Tc, sd))
         tag = binaries_tag(target)
-        np.savez_compressed(os.path.join(binaries_ROOT, "rows", tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=np.array([s[3]["berv"] for s in spectra], float),
+        np.savez_compressed(os.path.join(folder, tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=np.array([s[3]["berv"] for s in spectra], float),
                             vstar=np.asarray(info["vstar"], float), vpred=v)
-        json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, vsys=gamma), open(os.path.join(binaries_ROOT, "rows", tag + ".json"), "w"))
-        print("%s: %d spectra of %d listed; orbit P %.5f d, K1 %.3f km/s, e %.3f, omega %.1f, gamma %.2f; scatter %.3f km/s" % (
-            target["name"], len(spectra), listed, P, k1, e, w, gamma, rms), flush=True)
+        json.dump(dict(name=target["name"], inst=inst, n=len(spectra), listed=listed, vsys=gamma, template=os.path.basename(template), band=band, inject=inject,
+                       inject_k2=inject_k2, inject_shift=inject_shift if inject else None, inject_dv=inject_dv if inject else None,
+                       inject_template=os.path.basename(inject_template or template) if inject else None), open(os.path.join(folder, tag + ".json"), "w"))
+        print("%s: %d spectra of %d listed; orbit P %.5f d, K1 %.3f km/s, e %.3f, omega %.1f, gamma %.2f; scatter %.3f km/s%s" % (
+            target["name"], len(spectra), listed, P, k1, e, w, gamma, rms, "; injected at %g, K2 %g, shift %g" % (inject, inject_k2, inject_shift) if inject else ""), flush=True)
         if not keep:
             import shutil
             shutil.rmtree(os.path.join(binaries_ROOT, "spectra", tag), ignore_errors=True)
 
 
-def binaries_rows(target):
-    """A binary's kept rows with the primary's orbit fitted to their measured velocities, the rows cleaned of the sky's pattern and five principal components and each weighted by the inverse square of its scatter away from the star: a dict."""
-    d = np.load(os.path.join(binaries_ROOT, "rows", binaries_tag(target) + ".npz"))
+def binaries_rows(target, variant=None, shift=0.0):
+    """A binary's kept rows (ROOT/rows, or ROOT/rows_<VARIANT>) with the primary's orbit fitted to their measured velocities, the companion's track taken along that orbit moved by SHIFT of a period: a dict."""
+    d = np.load(os.path.join(binaries_ROOT, "rows" + ("_" + variant if variant else ""), binaries_tag(target) + ".npz"))
     c, t, berv, vstar, vpred = (d[k].astype(float) for k in ("ccf", "mjd", "berv", "vstar", "vpred"))
     P, tp, e, w, k1, gamma, rms = binaries_refit(t, vpred, *binaries_orbit(target)[:5])
-    shape = binaries_radial(t, P, tp, e, w)
-    return dict(c=c, t=t, tell=berv - vstar, vstar=vstar, orbit=(P, tp, e, w, k1, gamma), rms=rms, shape=shape,
-                centre=gamma - float(np.median(vstar - k1 * shape)), night=np.floor(t + 0.3))
+    centre = gamma - float(np.median(vstar - k1 * binaries_radial(t, P, tp, e, w)))
+    tp = tp + shift * P
+    return dict(c=c, t=t, tell=berv - vstar, vstar=vstar, orbit=(P, tp, e, w, k1, gamma), rms=rms, shape=binaries_radial(t, P, tp, e, w),
+                centre=centre, night=np.floor(t + 0.3), shift=shift)
 
 
-def binaries_clean(b, idx):
-    """The rows of IDX cleaned of the sky's pattern and five principal components, with each row's weight, the inverse square of its robust scatter more than 50 km/s from the star."""
-    cc = companions_components(companions_untellur(b["c"][idx], b["tell"][idx]), binaries_COMPONENTS)
+def binaries_clean(b, idx, k=None):
+    """The rows of IDX cleaned of the sky's pattern and K principal components (five unless given), with each row's weight, the inverse square of its robust scatter more than 50 km/s from the star."""
+    cc = companions_components(companions_untellur(b["c"][idx], b["tell"][idx]), binaries_COMPONENTS if k is None else k)
     v = np.arange(cc.shape[1], dtype=float) - (cc.shape[1] - 1) // 2
     return cc, 1.0 / np.maximum(1.4826 * np.median(np.abs(cc[:, np.abs(v - b["centre"]) > 50]), axis=1), 1e-6) ** 2
 
@@ -4524,28 +4559,66 @@ def binaries_curve(b, idx, cc, wt, k2, dv0=0.0, offset=0.0, shape=None):
     return np.where(use.sum(1) >= max(10, len(idx) // 5), out, -np.inf)
 
 
+def binaries_nullshape(b, idx, kind, rng):
+    """One null draw's track shape for the rows IDX: the orbit's phase moved by a tenth to nine tenths of a period, and kept a tenth of a period from the real companion's track when the track is moved, or whole nights shuffled."""
+    P, tp, e, w = b["orbit"][:4]
+    t = b["t"][idx]
+    if kind == "nights":
+        return binaries_radial(companions_night_shuffle(t, rng), P, tp, e, w)
+    s = b.get("shift", 0.0) % 1.0
+    while True:
+        u = rng.uniform(0.1, 0.9)
+        if min(abs(u - s), 1.0 - abs(u - s)) >= 0.1:
+            return binaries_radial(t + u * P, P, tp, e, w)
+
+
 def binaries_summit(b, idx, cc, wt, grid, dv0, draws, rng):
     """The summit of the curve over GRID at offset DV0 against its summits with the orbit's phase moved by a tenth to nine tenths of a period and with whole nights shuffled: (index, value, significances, the stricter null's summits)."""
-    P, tp, e, w = b["orbit"][:4]
     val = binaries_curve(b, idx, cc, wt, grid, dv0)
     i = int(np.argmax(val))
     nulls, z = {}, {}
     for kind in ("phase", "nights"):
-        t = b["t"][idx]
-        tops = np.array([float(np.max(binaries_curve(b, idx, cc, wt, grid, dv0, shape=binaries_radial(
-            t + rng.uniform(0.1, 0.9) * P if kind == "phase" else companions_night_shuffle(t, rng), P, tp, e, w)))) for _ in range(draws)])
+        tops = np.array([float(np.max(binaries_curve(b, idx, cc, wt, grid, dv0, shape=binaries_nullshape(b, idx, kind, rng)))) for _ in range(draws)])
         nulls[kind], z[kind] = tops, float((val[i] - tops.mean()) / max(tops.std(), 1e-12))
     return i, val, z, nulls[min(z, key=z.get)]
 
 
 def binaries_local(b, idx, cc, wt, k2c, dvc, half_k, half_v, step):
-    """The map's peak over K2 and the offset on a grid of STEP around (K2C, DVC), then on a grid of 0.05 km/s within half a km/s of it."""
+    """The map's peak over K2 and the offset on a grid of STEP around (K2C, DVC), then on a grid of 0.05 km/s within half a km/s of it; NaN where too few rows reach the grid."""
     for hk, hv, s in ((half_k, half_v, step), (0.5, 0.5, 0.05)):
         ks, vs = np.arange(k2c - hk, k2c + hk + s / 2, s), np.arange(dvc - hv, dvc + hv + s / 2, s)
         mm = np.array([binaries_curve(b, idx, cc, wt, ks, x) for x in vs])
+        if not np.isfinite(mm.max()):
+            return np.nan, np.nan
         jj, ii = np.unravel_index(int(np.argmax(mm)), mm.shape)
         k2c, dvc = float(ks[ii]), float(vs[jj])
     return k2c, dvc
+
+
+def binaries_parts(b, k):
+    """The rows split by date into K parts of about equal numbers of spectra, whole nights kept together: a list of index arrays."""
+    nights = np.unique(b["night"])
+    counts = np.array([(b["night"] == n).sum() for n in nights])
+    part = np.minimum((k * (np.cumsum(counts) - counts / 2.0) / len(b["t"])).astype(int), k - 1)
+    return [np.where(np.isin(b["night"], nights[part == j]))[0] for j in range(k)]
+
+
+def binaries_seasons(b, gap=90.0):
+    """The rows grouped into observing seasons, runs of nights with no gap longer than GAP days: a list of index arrays."""
+    nights = np.unique(b["night"])
+    season = np.concatenate([[0], np.cumsum(np.diff(nights) > gap)])
+    return [np.where(np.isin(b["night"], nights[season == s]))[0] for s in np.unique(season)]
+
+
+def binaries_tail(obs, null):
+    """An observed summit against null summits: its height in units of the nulls' scatter, the empirical false-alarm probability (one more than the draws as high over one more than the draws), the tail probability of a Gumbel law fitted to the nulls by their moments with its one-sided Gaussian equivalent, the generalised extreme-value shape fitted to them (zero for Gumbel's, negative for a lighter tail), and the highest null in units of their scatter."""
+    from scipy import stats
+    null = np.asarray(null, float)
+    null = null[np.isfinite(null)]
+    m, s = float(null.mean()), float(null.std())
+    p = science.gumbel_p(null, obs)
+    return dict(z=(obs - m) / s, p_emp=(1 + int((null >= obs).sum())) / (len(null) + 1.0), p_gumbel=p, sigma_gumbel=float(stats.norm.isf(max(p, 1e-300))),
+                xi=-float(stats.genextreme.fit(null)[0]), top=(float(null.max()) - m) / s, draws=len(null))
 
 
 def binaries_masses(b, k2, incl=90.0):
@@ -4588,61 +4661,93 @@ def binaries_search(names=(), inst="HARPS", dv=1.0, draws=300, detect=5.0):
             target["name"], res["rows"], P, k1, e, b["rms"], res["k2"], res["z"], z["phase"], z["nights"], m1, m2), flush=True)
 
 
-def binaries_measure(name, inst="HARPS", draws=300, incl=90.0, k2_fixed=None, dv_fixed=1.0):
-    """One binary measured with the offset free: the map over K2 and the offset with its peak refined and bootstrapped over whole nights, the curve at the peak's offset against the nulls and at zero offset, each half by date and each set of alternate nights measured alone, the profile in the companion's frame, the masses at INCL, and the rows read at a published K2_FIXED and offset DV_FIXED against 2000 null draws; ROOT/measure/<tag>.json with the curve and profile as CSV and the map as an array."""
+def binaries_stem(target, variant=None, components=None, shift=0.0):
+    """The file stem of a binary's analysis: its tag, then the rows' variant, the principal components where not the default and the track's shift."""
+    return binaries_tag(target) + ("_" + variant if variant else "") + ("_pc%d" % components if components is not None else "") + ("_shift%g" % shift if shift else "")
+
+
+def binaries_measure(name, inst="HARPS", draws=300, incl=90.0, k2_fixed=None, dv_fixed=1.0, variant=None, components=None, shift=0.0, window=5.0):
+    """One binary measured with the offset free: the map over K2 and the offset with its peak within WINDOW km/s of zero offset refined and bootstrapped over whole nights and over observing seasons, the curve at the peak's offset against the nulls and at zero offset, the series in four parts by date (two below 60 spectra) and in alternate nights each measured alone, the larger of the parts' standard error (Bessel-corrected) and the season bootstrap's half 16-84 width as the systematic uncertainty of K2 and the night bootstrap's half 16-84 width as its statistical one, the profile in the companion's frame, the masses at INCL, and the rows read at a published K2_FIXED and offset DV_FIXED against 2000 null draws; VARIANT reads ROOT/rows_<VARIANT>, COMPONENTS takes that many principal components out, SHIFT moves the track by that fraction of a period; ROOT/measure/<stem>.json with the curve and profile as CSV and the map as an array."""
     target = binaries_target(name, inst)
-    tag = binaries_tag(target)
+    stem = binaries_stem(target, variant, components, shift)
     out = os.path.join(binaries_ROOT, "measure")
     os.makedirs(out, exist_ok=True)
-    rng = np.random.default_rng(zlib.crc32(tag.encode()))
-    b = binaries_rows(target)
+    rng = np.random.default_rng(zlib.crc32(stem.encode()))
+    b = binaries_rows(target, variant, shift)
     allrows = np.arange(len(b["t"]))
-    cc, wt = binaries_clean(b, allrows)
+    cc, wt = binaries_clean(b, allrows, components)
     k1 = b["orbit"][4]
     grid = np.arange(max(k1, 5.0), 250.001, 0.25)
     k2m, dvs = np.arange(max(k1, 5.0), 160.001, 0.5), np.arange(-30.0, 30.001, 0.5)
     m = np.array([binaries_curve(b, allrows, cc, wt, k2m, x) for x in dvs])
     m = np.where(np.isfinite(m), m, np.nan)
-    j, i = np.unravel_index(int(np.nanargmax(m)), m.shape)
+    j, i = np.unravel_index(int(np.nanargmax(np.where(np.abs(dvs)[:, None] <= window, m, np.nan))), m.shape)
     far = (np.abs(k2m[None, :] - k2m[i]) > 25) | (np.abs(dvs[:, None] - dvs[j]) > 15)
     ref = m[far & np.isfinite(m)]
     snr = (m - np.median(ref)) / (1.4826 * np.median(np.abs(ref - np.median(ref))))
-    np.savez_compressed(os.path.join(out, tag + "_map.npz"), k2=k2m, dv=dvs, snr=snr)
+    np.savez_compressed(os.path.join(out, stem + "_map.npz"), k2=k2m, dv=dvs, snr=snr)
     k2p, dvp = binaries_local(b, allrows, cc, wt, float(k2m[i]), float(dvs[j]), 4.0, 3.0, 0.1)
     ii, val, z, worst = binaries_summit(b, allrows, cc, wt, grid, dvp, draws, rng)
     zc = (val - worst.mean()) / max(worst.std(), 1e-12)
     ok = np.isfinite(zc)
-    np.savetxt(os.path.join(out, tag + "_k2curve.csv"), np.c_[grid[ok], zc[ok]], delimiter=",", header="k2,z", comments="", fmt="%.3f")
+    np.savetxt(os.path.join(out, stem + "_k2curve.csv"), np.c_[grid[ok], zc[ok]], delimiter=",", header="k2,z", comments="", fmt="%.3f")
     i0, _, z0, _ = binaries_summit(b, allrows, cc, wt, grid, 0.0, draws, rng)
     nights = np.unique(b["night"])
     boot = []
     for _ in range(draws):
         pick = np.concatenate([np.where(b["night"] == n)[0] for n in rng.choice(nights, size=len(nights), replace=True)])
-        c2, w2 = binaries_clean(b, pick)
+        c2, w2 = binaries_clean(b, pick, components)
         boot.append(binaries_local(b, pick, c2, w2, k2p, dvp, 6.0, 4.0, 0.25))
     boot = np.array(boot)
+    boot = boot[np.isfinite(boot).all(1)]
     m1, m2 = binaries_masses(b, boot[:, 0], incl)
     pct = lambda x: [float(q) for q in np.percentile(x, [16, 50, 84])]
-    order, half, alt = np.argsort(b["t"]), len(b["t"]) // 2, np.isin(b["night"], nights[::2])
+    parts = []
+    for idx in binaries_parts(b, 4 if len(allrows) >= 60 else 2):
+        c2, w2 = binaries_clean(b, idx, components)
+        k2s, dv2 = binaries_local(b, idx, c2, w2, k2p, dvp, 6.0, 4.0, 0.25)
+        zs = binaries_summit(b, idx, c2, w2, grid, dvp, max(draws // 3, 50), rng)[2]
+        parts.append(dict(k2=k2s, dv=dv2, z=min(zs.values()), rows=len(idx), mjd=[float(b["t"][idx].min()), float(b["t"][idx].max())]))
+    alt = np.isin(b["night"], nights[::2])
     splits = {}
-    for label, idx in (("first half by date", np.sort(order[:half])), ("second half by date", np.sort(order[half:])),
-                       ("alternate nights, one set", np.where(alt)[0]), ("alternate nights, other set", np.where(~alt)[0])):
-        c2, w2 = binaries_clean(b, idx)
+    for label, idx in (("alternate nights, one set", np.where(alt)[0]), ("alternate nights, other set", np.where(~alt)[0])):
+        c2, w2 = binaries_clean(b, idx, components)
         k2s, dv2 = binaries_local(b, idx, c2, w2, k2p, dvp, 6.0, 4.0, 0.25)
         zs = binaries_summit(b, idx, c2, w2, grid, dvp, max(draws // 3, 50), rng)[2]
         splits[label] = dict(k2=k2s, dv=dv2, z=min(zs.values()), rows=len(idx))
+    seasons, sboot = binaries_seasons(b), []
+    if len(seasons) >= 4:
+        for _ in range(draws):
+            pick = np.concatenate([seasons[s] for s in rng.choice(len(seasons), size=len(seasons), replace=True)])
+            c2, w2 = binaries_clean(b, pick, components)
+            sboot.append(binaries_local(b, pick, c2, w2, k2p, dvp, 6.0, 4.0, 0.25)[0])
+        sboot = [x for x in sboot if np.isfinite(x)]
+    pk = np.array([p["k2"] for p in parts])
+    bk = pct(boot[:, 0])
+    stat = 0.5 * (bk[2] - bk[0])
+    # the parts' standard error as the EBLM analyses take it, or the season bootstrap's half width where that is larger or the parts fail
+    by_parts = float(np.std(pk, ddof=1) / np.sqrt(len(pk))) if np.isfinite(pk).all() else np.nan
+    by_seasons = 0.5 * (np.percentile(sboot, 84) - np.percentile(sboot, 16)) if sboot else np.nan
+    syst = float(np.nanmax([by_parts, by_seasons])) if np.isfinite([by_parts, by_seasons]).any() else np.nan
+    total = float(np.hypot(stat, syst)) if np.isfinite(syst) else np.nan
+    mt = binaries_masses(b, [k2p - total, k2p, k2p + total], incl) if np.isfinite(total) else (np.full(3, np.nan), np.full(3, np.nan))
     offs = np.arange(-100.0, 100.001, 1.0)
     prof = np.array([binaries_curve(b, allrows, cc, wt, [k2p], dvp, o)[0] for o in offs])
     prof = np.where(np.isfinite(prof), prof, np.nan)
     side = np.abs(offs) > 30
     prof = (prof - np.nanmedian(prof[side])) / (1.4826 * np.nanmedian(np.abs(prof[side] - np.nanmedian(prof[side]))))
     ok = np.isfinite(prof)
-    np.savetxt(os.path.join(out, tag + "_profile.csv"), np.c_[offs[ok], prof[ok]], delimiter=",", header="offset,snr", comments="", fmt="%.3f")
+    np.savetxt(os.path.join(out, stem + "_profile.csv"), np.c_[offs[ok], prof[ok]], delimiter=",", header="offset,snr", comments="", fmt="%.3f")
     P, tp, e, w, k1, gamma = b["orbit"]
-    res = dict(name=target["name"], inst=inst, gaia=target.get("gaia"), rows=len(allrows), nights=int(len(nights)), span_days=float(b["t"].max() - b["t"].min()),
-               orbit=dict(period=P, t_peri_mjd=tp, e=e, omega=w, k1=k1, gamma=gamma, rms_kms=b["rms"]), peak=dict(k2=k2p, dv=dvp),
+    note = os.path.join(binaries_ROOT, "rows" + ("_" + variant if variant else ""), binaries_tag(target) + ".json")
+    res = dict(name=target["name"], inst=inst, gaia=target.get("gaia"), variant=variant, components=binaries_COMPONENTS if components is None else components, shift=shift,
+               window=window, rows_note=json.load(open(note)) if os.path.exists(note) else None, rows=len(allrows), nights=int(len(nights)),
+               span_days=float(b["t"].max() - b["t"].min()), orbit=dict(period=P, t_peri_mjd=tp, e=e, omega=w, k1=k1, gamma=gamma, rms_kms=b["rms"]), peak=dict(k2=k2p, dv=dvp),
+               peak_value=float(binaries_curve(b, allrows, cc, wt, [k2p], dvp)[0]),
                summit=dict(k2=float(grid[ii]), z_phase=z["phase"], z_nights=z["nights"], z=min(z.values())), summit_zero_offset=dict(k2=float(grid[i0]), z=min(z0.values())),
-               bootstrap=dict(draws=draws, k2_16_50_84=pct(boot[:, 0]), dv_16_50_84=pct(boot[:, 1])), incl=incl, m1_16_50_84=pct(m1), m2_16_50_84=pct(m2), splits=splits)
+               bootstrap=dict(draws=draws, k2_16_50_84=bk, dv_16_50_84=pct(boot[:, 1])), incl=incl, m1_16_50_84=pct(m1), m2_16_50_84=pct(m2),
+               parts=parts, splits=splits, seasons=len(seasons), season_bootstrap=dict(draws=len(sboot), k2_16_50_84=pct(sboot)) if sboot else None,
+               k2_stat=stat, k2_sys_parts=by_parts, k2_sys_seasons=float(by_seasons), k2_sys=syst, k2_total=total, m1_total=[float(x) for x in mt[0]], m2_total=[float(x) for x in mt[1]])
     if k2_fixed:
         at = float(binaries_curve(b, allrows, cc, wt, [k2_fixed], dv_fixed)[0])
         fixed = []
@@ -4651,11 +4756,80 @@ def binaries_measure(name, inst="HARPS", draws=300, incl=90.0, k2_fixed=None, dv
             fixed.append(float(binaries_curve(b, allrows, cc, wt, [k2_fixed], dv_fixed, shape=binaries_radial(t, P, tp, e, w))[0]))
         fixed = np.array([x for x in fixed if np.isfinite(x)])
         res["fixed"] = dict(k2=k2_fixed, dv=dv_fixed, z=float((at - fixed.mean()) / fixed.std()), as_high=int((fixed >= at).sum()), of=len(fixed))
-    json.dump(res, open(os.path.join(out, tag + ".json"), "w"), indent=1)
-    bk = res["bootstrap"]["k2_16_50_84"]
-    print("%s %s: peak K2 %.2f (%.2f-%.2f) at offset %+.2f km/s, %.1f sigma (phases %.1f, nights %.1f); M1 %.4f M2 %.4f at i %.3f%s" % (
-        inst, target["name"], k2p, bk[0], bk[2], dvp, res["summit"]["z"], z["phase"], z["nights"], res["m1_16_50_84"][1], res["m2_16_50_84"][1], incl,
+    json.dump(res, open(os.path.join(out, stem + ".json"), "w"), indent=1)
+    print("%s %s: peak K2 %.2f (%.2f-%.2f) +- %.2f (stat) +- %.2f (sys, %d parts) at offset %+.2f km/s, %.1f sigma (phases %.1f, nights %.1f); M1 %.4f M2 %.4f at i %.3f%s" % (
+        inst, stem, k2p, bk[0], bk[2], stat, syst, len(parts), dvp, res["summit"]["z"], z["phase"], z["nights"], res["m1_16_50_84"][1], res["m2_16_50_84"][1], incl,
         "; at K2 %.2f: %.1f sigma, %d of %d nulls as high" % (k2_fixed, res["fixed"]["z"], res["fixed"]["as_high"], res["fixed"]["of"]) if k2_fixed else ""), flush=True)
+
+
+def binaries_calibrate(names=(), inst="HARPS", draws=10000, dv=1.0, window=5.0, step=0.5):
+    """Each binary with kept rows (or the named ones) against DRAWS draws of each null, the orbit's phase moved and whole nights shuffled: the summit over K2 at the fixed offset DV, and the summit over K2 and over offsets within WINDOW km/s of zero in steps of STEP, of the rows and of every draw, each observed summit set against its nulls by binaries_tail and the null of the larger Gumbel probability adopted; ROOT/calibrate/<tag>.json with the null summits as ROOT/calibrate/<tag>.npz."""
+    out = os.path.join(binaries_ROOT, "calibrate")
+    os.makedirs(out, exist_ok=True)
+    targets = [binaries_target(n, inst) for n in names] if names else [x for x in binaries_plan_entries(inst) if os.path.exists(os.path.join(binaries_ROOT, "rows", binaries_tag(x) + ".npz"))]
+    offs = np.arange(-window, window + step / 2, step)
+    for target in targets:
+        tag = binaries_tag(target)
+        if not os.path.exists(os.path.join(binaries_ROOT, "rows", tag + ".npz")):
+            continue
+        rng = np.random.default_rng(zlib.crc32((tag + ":calibrate").encode()))
+        b = binaries_rows(target)
+        idx = np.arange(len(b["t"]))
+        cc, wt = binaries_clean(b, idx)
+        grid = np.arange(max(b["orbit"][4], 5.0), 250.001, 0.25)
+
+        def summits(shape=None):
+            fixed = float(np.max(binaries_curve(b, idx, cc, wt, grid, dv, shape=shape)))
+            return fixed, max([fixed] + [float(np.max(binaries_curve(b, idx, cc, wt, grid, o, shape=shape))) for o in offs])
+        obs = summits()
+        if not np.isfinite(obs[0]):
+            print("%-12s %3d rows: too few rows reach the track" % (target["name"], len(idx)), flush=True)
+            continue
+        nulls, res = {}, dict(name=target["name"], inst=inst, rows=len(idx), nights=int(len(np.unique(b["night"]))), draws=draws, dv=dv, window=window, step=step,
+                              observed=dict(fixed=obs[0], free=obs[1]))
+        for kind in ("phase", "nights"):
+            x = np.array([summits(binaries_nullshape(b, idx, kind, rng)) for _ in range(draws)])
+            x[~np.isfinite(x)] = np.nan
+            nulls[kind + "_fixed"], nulls[kind + "_free"] = x[:, 0], x[:, 1]
+            res[kind] = dict(fixed=binaries_tail(obs[0], x[:, 0]), free=binaries_tail(obs[1], x[:, 1]))
+        res["adopted"] = {st: dict(null=max(("phase", "nights"), key=lambda k: res[k][st]["p_gumbel"]), **max((res[k][st] for k in ("phase", "nights")), key=lambda r: r["p_gumbel"]))
+                          for st in ("fixed", "free")}
+        np.savez_compressed(os.path.join(out, tag + ".npz"), **nulls)
+        json.dump(res, open(os.path.join(out, tag + ".json"), "w"), indent=1)
+        a, f = res["adopted"]["fixed"], res["adopted"]["free"]
+        print("%-12s %3d rows: offset %+.1f: %.1f in the nulls' scatter, highest null %.1f, p %.2g (empirical %.2g), %.1f sigma; offset free within %g: %.1f, p %.2g, %.1f sigma" % (
+            target["name"], len(idx), dv, a["z"], a["top"], a["p_gumbel"], a["p_emp"], a["sigma_gumbel"], window, f["z"], f["p_gumbel"], f["sigma_gumbel"]), flush=True)
+
+
+def binaries_survey(inst="HARPS"):
+    """The calibrated binaries of one instrument taken together: for each null and each draw the highest of the binaries' null summits, each in units of its own nulls' scatter, and each binary's observed summit in those units set against the highest values, empirically and by a Gumbel law fitted to them, beside its own Gumbel probability compounded over the number of binaries (Sidak); the larger of the two and of the two nulls adopted; ROOT/calibrate/survey_<inst>.json."""
+    from scipy import stats
+    folder = os.path.join(binaries_ROOT, "calibrate")
+    tags = [binaries_tag(x) for x in binaries_plan_entries(inst) if os.path.exists(os.path.join(folder, binaries_tag(x) + ".npz"))]
+    per = {t: json.load(open(os.path.join(folder, t + ".json"))) for t in tags}
+    arrays = {t: np.load(os.path.join(folder, t + ".npz")) for t in tags}
+    n, d = len(tags), min(r["draws"] for r in per.values())
+    sigma = lambda p: float(stats.norm.isf(max(p, 1e-300)))
+    res = dict(inst=inst, binaries=n, draws=d, highest={}, targets={per[t]["name"]: {} for t in tags})
+    for st in ("fixed", "free"):
+        for kind in ("phase", "nights"):
+            Z = np.array([(arrays[t][kind + "_" + st][:d] - np.nanmean(arrays[t][kind + "_" + st])) / np.nanstd(arrays[t][kind + "_" + st]) for t in tags])
+            top = np.nanmax(Z, axis=0)
+            res["highest"]["%s_%s" % (kind, st)] = dict(mean=float(top.mean()), sd=float(top.std()), max=float(top.max()), xi=-float(stats.genextreme.fit(top)[0]))
+            for t in tags:
+                z, own = per[t][kind][st]["z"], per[t][kind][st]["p_gumbel"]
+                r = dict(null=kind, z=z, p_emp=(1 + int((top >= z).sum())) / (d + 1.0), p_gumbel=science.gumbel_p(top, z),
+                         sidak=float(-np.expm1(n * np.log1p(-min(own, 1.0 - 1e-16)))))
+                r["p"] = max(r["p_gumbel"], r["sidak"])
+                r["sigma"] = sigma(r["p"])
+                prev = res["targets"][per[t]["name"]].get(st)
+                if prev is None or r["p"] > prev["p"]:
+                    res["targets"][per[t]["name"]][st] = r
+    json.dump(res, open(os.path.join(folder, "survey_%s.json" % inst), "w"), indent=1)
+    for name, r in sorted(res["targets"].items(), key=lambda kv: kv[1]["fixed"]["p"]):
+        f, v = r["fixed"], r["free"]
+        print("%-12s of %d: offset fixed p %.2g (highest of the survey's nulls %.2g, empirical %.2g; Sidak %.2g), %.1f sigma; offset free p %.2g, %.1f sigma" % (
+            name, n, f["p"], f["p_gumbel"], f["p_emp"], f["sidak"], f["sigma"], v["p"], v["sigma"]))
 
 
 def binaries_record(detect=5.0):
@@ -4697,34 +4871,53 @@ def binaries_record(detect=5.0):
 def binaries_cli():
     quiet_warnings()
     p = argparse.ArgumentParser(prog="seti.py composition binaries")
-    p.add_argument("mode", choices=("plan", "template", "build", "search", "measure", "record"))
+    p.add_argument("mode", choices=("plan", "template", "build", "search", "calibrate", "measure", "record"))
     p.add_argument("names", nargs="*")
     p.add_argument("--inst", default="HARPS")
     p.add_argument("--min", type=int, default=20)
     p.add_argument("--out")
+    p.add_argument("--spectra", help="template: a folder of a star's spectra")
+    p.add_argument("--object", nargs="+", default=[], help="template: the OBJECT headers of that star's spectra")
     p.add_argument("--min-snr", type=float, default=10.0)
     p.add_argument("--per-star", type=int, default=300)
     p.add_argument("--streams", type=int, default=4)
     p.add_argument("--rv-template")
     p.add_argument("--template")
     p.add_argument("--keep", action="store_true")
+    p.add_argument("--variant", help="build, measure: the rows kept as ROOT/rows_<variant>")
+    p.add_argument("--band", nargs=2, type=float, default=None, help="build: the template kept between these wavelengths (A)")
+    p.add_argument("--inject", type=float, default=0.0, help="build: the V-band flux ratio of the companion laid into the spectra")
+    p.add_argument("--inject-k2", type=float, default=None)
+    p.add_argument("--inject-shift", type=float, default=0.25)
+    p.add_argument("--inject-dv", type=float, default=1.0)
+    p.add_argument("--inject-template")
     p.add_argument("--dv", type=float, default=1.0)
-    p.add_argument("--draws", type=int, default=300)
+    p.add_argument("--draws", type=int, default=None, help="null draws: 300, or 10000 to calibrate")
+    p.add_argument("--window", type=float, default=5.0, help="calibrate, measure: the offsets searched, km/s either side of zero")
+    p.add_argument("--aggregate", action="store_true", help="calibrate: the survey's binaries taken together")
     p.add_argument("--detect", type=float, default=5.0)
     p.add_argument("--incl", type=float, default=90.0)
     p.add_argument("--k2-fixed", type=float, default=None)
     p.add_argument("--dv-fixed", type=float, default=1.0)
+    p.add_argument("--components", type=int, default=None)
+    p.add_argument("--shift", type=float, default=0.0, help="measure: the track moved by this fraction of a period")
     a = p.parse_args()
     if a.mode == "plan":
         binaries_plan(a.min)
     elif a.mode == "template":
-        binaries_template(a.names[0], a.inst, a.out)
+        binaries_template(a.names[0] if a.names else None, a.inst, a.out, a.spectra, a.object)
     elif a.mode == "build":
-        binaries_build(a.names, a.inst, a.min_snr, a.per_star, a.streams, a.rv_template, a.template, a.keep)
+        binaries_build(a.names, a.inst, a.min_snr, a.per_star, a.streams, a.rv_template, a.template, a.keep, a.variant, a.band, a.inject, a.inject_k2, a.inject_shift,
+                       a.inject_dv, a.inject_template)
     elif a.mode == "search":
-        binaries_search(a.names, a.inst, a.dv, a.draws, a.detect)
+        binaries_search(a.names, a.inst, a.dv, a.draws or 300, a.detect)
+    elif a.mode == "calibrate":
+        if a.aggregate:
+            binaries_survey(a.inst)
+        else:
+            binaries_calibrate(a.names, a.inst, a.draws or 10000, a.dv, a.window)
     elif a.mode == "measure":
-        binaries_measure(a.names[0], a.inst, a.draws, a.incl, a.k2_fixed, a.dv_fixed)
+        binaries_measure(a.names[0], a.inst, a.draws or 300, a.incl, a.k2_fixed, a.dv_fixed, a.variant, a.components, a.shift, a.window)
     else:
         binaries_record(a.detect)
 
