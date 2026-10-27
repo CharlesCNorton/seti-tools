@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +28,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{Glints, Nightside Light, Satellite Belts, Timing Steps and Occulter Shapes:\\ Photometric Technosignature Searches in Kepler, TESS and Cepheid Timing}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Glints, nightside light, satellite belts, timing steps and occulter shapes: photometric technosignature searches in Kepler, TESS and Cepheid timing}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 Artificial objects around other stars could show in their photometry as glints of
@@ -59,6 +57,13 @@ Cepheids over $14.6$ years. Those of $1116$ Kepler and $255$ TESS rejected candi
 whose light curves fold to a stable profile are eclipsing binaries, stellar variability,
 heartbeat binaries and smooth dips of constant depth.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Techniques: photometric \sep Planets and satellites: detection \sep
+Stars: variables: Cepheids \sep Occultations
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}

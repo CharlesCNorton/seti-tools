@@ -1,33 +1,35 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
 \usepackage{enumitem}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\hzs}{Hz\,s$^{-1}$}
 \newcommand{\mss}{m\,s$^{-2}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{The Eight Breakthrough Listen Signals of Interest\\ of Ma et al.\ (2023) Traced Through Their Sessions}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{The eight Breakthrough Listen signals of interest of Ma et al.\ (2023) traced through their sessions}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 Ma et al.\ (2023) reported eight narrowband signals of interest from a deep-learning search of Breakthrough Listen's
@@ -43,6 +45,13 @@ $-0.85$\,\hzs\ in the first two where a transmitter at rest at HIP~13402 would d
 Ma et al.\ gives the drift rates with the sign opposite to $d\nu/dt$ and, for seven of the signals, each scan's file
 label in place of its MJD.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Radio frequency interference \sep Radio lines: general \sep
+Breakthrough Listen \sep Methods: data analysis
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}
@@ -147,7 +156,7 @@ on its line at $1.24$, $1.19$ and $1.77$ against parallel tracks at $0.05$ to $0
 $0.44$, $7$ per cent of its ON level and below the threshold of a per-scan search. A source at the star is received most strongly when the telescope
 points at it; MLc8 is received several times more strongly at pointings of other stars.
 
-\begin{figure}[t]
+\begin{figure}[tp]
 \centering
 \includegraphics[width=0.82\textwidth]{mlc8_session.pdf}
 \caption{Session AGBT16A\_999\_213 near MLc8: every scan's $16$ spectra at their times, in the $2.84$\,Hz channels,

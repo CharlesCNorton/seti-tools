@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +28,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{A Search for Technetium, Promethium and Short-Lived Actinides\\ in Nearby Sun-like Stars}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{A search for technetium, promethium and short-lived actinides in nearby Sun-like stars}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 Technetium, promethium and the actinides from protactinium to curium have no isotope
@@ -61,6 +59,13 @@ $\sci{7}{20}$\,kg of \nuc{235}{U}, several thousand times the uranium of the Ear
 search constrains disposal on a scale far beyond a planet's fuel, as dilution through a
 sun-like star's convective envelope requires.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Stars: abundances \sep Stars: solar-type \sep
+Nuclear reactions, nucleosynthesis, abundances \sep Techniques: spectroscopic
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}

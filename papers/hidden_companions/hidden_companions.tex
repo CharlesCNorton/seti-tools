@@ -1,33 +1,38 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
+\usepackage{enumitem}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
+% ---- notation ---------------------------------------------------------------
 \newcommand{\kms}{km\,s$^{-1}$}
 \newcommand{\ms}{m\,s$^{-1}$}
 \newcommand{\Msun}{M$_\odot$}
 \newcommand{\Mjup}{M$_\mathrm{J}$}
 \newcommand{\Mearth}{M$_\oplus$}
 
-\title{Companions Hidden in Public HARPS Velocities:\\ New Stellar Companions, a Dark 1.2\,M$_\odot$ Companion\\ to the Giant HD\,20037, and Three Planet Candidates}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Companions hidden in public HARPS velocities: new stellar companions, a dark 1.2\,M$_\odot$ companion to the giant HD\,20037, and two planet candidates}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 HARPS-RVBank holds 212\,562 public velocities of 2\,912 stars, and Gaia DR3 measures the same
@@ -44,10 +49,17 @@ along its own track, where a main-sequence star of that mass, at 4 per cent of t
 read at $7\sigma$, so the companion is a massive white dwarf or a close pair of M dwarfs. A second
 census of the per-night velocities for periodic signals, with every star's activity indicators,
 its Ca\,{\sc ii} H and K emission measured in the HARPS spectra, its TESS photometry and a curved
-long-term trend tested against each signal, leaves three planet candidates in no catalogue: HD\,129814\,b,
-$m\sin i = 0.69 \pm 0.07$\,\Mjup\ on a 1120\,d orbit beside a stellar companion; HD\,111564\,b,
-$0.29^{+0.11}_{-0.08}$\,\Mjup\ at 856\,d; and HD\,222480\,b, $23.6 \pm 2.3$\,\Mearth\ at 23.4\,d.
+long-term trend and an offset across HARPS's 2015 fibre upgrade tested against each signal, leaves
+two planet candidates in no catalogue: HD\,111564\,b, $m\sin i = 0.29^{+0.11}_{-0.08}$\,\Mjup\ at
+856\,d, and HD\,222480\,b, $23.6 \pm 2.3$\,\Mearth\ at 23.4\,d.
 \end{abstract}
+
+\begin{keyword}
+Techniques: radial velocities \sep Astrometry \sep Binaries: spectroscopic \sep
+White dwarfs \sep Planets and satellites: detection
+\end{keyword}
+
+\end{frontmatter}
 
 \section{Introduction}\label{sec:intro}
 
@@ -213,20 +225,14 @@ catalogue, the Open Exoplanet Catalogue, arXiv by every name of the star and SIM
 references, which return the known planets and companions. The strongest were fitted again with a
 Keplerian, a linear trend and a jitter sampled with emcee from 1.5\,d upward, so that a one-day
 alias cannot stand in for a long period; the long periods were fitted again beside a quadratic
-trend, since a stellar companion's curvature can mimic a partial orbit; each star's Ca\,{\sc ii}
+trend, since a stellar companion's curvature can mimic a partial orbit, and with a free offset
+across HARPS's fibre upgrade of 2015 June where a series spans it; each star's Ca\,{\sc ii}
 H and K index was measured in every public HARPS spectrum and searched for the signal's period
 and correlated with the velocities; and each short period's TESS light curve was searched for
 rotation at the period or half of it and for transits.
 
-Three candidates stand every test and appear in no catalogue or paper (Table~\ref{tab:planets}).
-HD\,129814, a G5 dwarf at 42\,pc in the Solar Twin Planet Search's sample, is the proper-motion
-binary whose velocities curve under a companion above 0.5\,\Msun~\cite{dosSantos2017}, with a
-Hipparcos-Gaia anomaly of $198\sigma$. Beside that curvature its velocities carry an orbit of
-1120\,d at 14.6\,\ms, $m\sin i = 0.69$\,\Mjup; with a quadratic in place of the line the orbit
-reads 1265\,d and 21\,\ms, and the Keplerian improves the Bayesian information criterion by 63.7
-over the quadratic alone. Its calcium index shows no power near the period and does not follow
-the velocities ($r = -0.27$), though it carries a separate period of 107\,d that the velocities'
-residuals share. HD\,111564, a G0 dwarf at 51\,pc, carries a Saturn-mass candidate at 856\,d,
+Two candidates stand every test and appear in no catalogue or paper (Table~\ref{tab:planets}),
+each observed on one side of the fibre upgrade. HD\,111564, a G0 dwarf at 51\,pc, carries a Saturn-mass candidate at 856\,d,
 the highest peak of its residuals once a quadratic is taken out, with its calcium index flat at
 the period ($r = 0.00$). HD\,222480, a G1 dwarf at 44\,pc, carries a Neptune-mass candidate at
 23.4\,d beside a slow fall of 1.4\,\ms\ a year; its calcium index is flat at the period
@@ -245,7 +251,6 @@ Keplerian over a quadratic trend alone.}\label{tab:planets}
 \toprule
 Planet & Host, distance & Nights (span, d) & $P$ (d) & $K$ (\ms) & $e$ & $m\sin i$ & Ca\,{\sc ii} at $P$; $r$ & BIC gain\\
 \midrule
-HD\,129814\,b & G5\,V, 42\,pc & 33 (1826) & 1120 (1084--1153) & 14.6 (13.2--16.0) & 0.20 (0.10--0.35) & 0.69 (0.63--0.76)\,\Mjup & 1.00; $-0.27$ & 63.7\\
 HD\,111564\,b & G0\,V, 51\,pc & 40 (2731) & 856 (827--878) & 6.6 (4.6--10.0) & 0.39 (0.15--0.60) & 0.29 (0.21--0.40)\,\Mjup & 1.00; 0.00 & 20.5\\
 HD\,222480\,b & G1\,V, 44\,pc & 21 (731) & 23.41 (23.34--23.49) & 5.3 (4.8--5.8) & 0.21 (0.10--0.31) & 23.6 (21.3--25.8)\,\Mearth & 1.00; $-0.35$ & --\\
 \bottomrule
@@ -258,8 +263,12 @@ $r = 0.65$: the magnetic cycle found by ref.~\cite{PenaRojas2025}. GJ\,3102, HIP
 HD\,6790, Neptune-mass signals at 16.1, 16.0 and 12.4\,d, vary in TESS near their periods or half
 of them, HIP\,92451 at 7.5 to 8.6\,d in seven of nine sectors, and GJ\,3102's rotation is estimated
 near 13\,d~\cite{Mignon2024}; they are the stars' rotation until shown otherwise. GJ\,2049's
-874\,d signal runs to an eccentricity of 0.95 beside a quadratic. None of the four short periods
-shows a transit that repeats in TESS.
+874\,d signal runs to an eccentricity of 0.95 beside a quadratic. HD\,129814, the solar twin whose
+velocities curve under a companion above 0.5\,\Msun~\cite{dosSantos2017}, carries a signal of
+1120\,d and 14.6\,\ms\ beside a linear trend, but its series spans the fibre upgrade with six of
+its 34 velocities after it, and with a free offset across the upgrade the orbit falls to an
+eccentricity of 0.83 to 0.95 at 500 to 600\,d, so the signal is not separated from the instrument.
+None of the four short periods shows a transit that repeats in TESS.
 
 \section{Conclusion}\label{sec:conclusion}
 
@@ -268,10 +277,9 @@ substellar companions with no published orbit, among them a 13-day M dwarf in a 
 brown-dwarf-desert minimum mass that the astrometry turns into a low-mass star. They give the
 giant HD\,20037 a dark companion of $1.18 \pm 0.05$\,\Msun\ on a 28.5-year orbit, whose lines are
 absent where a main-sequence star of its mass would stand at $7\sigma$: a massive white dwarf or a
-pair of M dwarfs. And after the activity, rotation and curvature that most periodic signals in
-the archive turn out to be, they leave three planet candidates: a Jupiter-mass planet beside a
-stellar companion around the solar twin HD\,129814, a Saturn-mass planet around HD\,111564 and a
-Neptune-mass planet around HD\,222480.
+pair of M dwarfs. And after the activity, rotation, curvature and instrumental offsets that most
+periodic signals in the archive turn out to be, they leave two planet candidates: a Saturn-mass
+planet around HD\,111564 and a Neptune-mass planet around HD\,222480.
 
 \section*{Acknowledgements}
 
@@ -284,6 +292,7 @@ operated by the California Institute of Technology under contract with NASA; and
 database and the VizieR catalogue access tool, operated at CDS, Strasbourg, France.
 
 \begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
 
 \bibitem{Trifonov2020}
 T.~Trifonov et al., Public HARPS radial velocity database corrected for systematic errors,

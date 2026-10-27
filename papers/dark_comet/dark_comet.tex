@@ -1,5 +1,5 @@
 % !TEX program = pdflatex
-\documentclass[review,12pt,authoryear]{elsarticle}
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
@@ -14,7 +14,6 @@
 \def\UrlBigBreaks{}
 \usepackage{adjustbox}
 \usepackage{graphicx}
-\usepackage{lineno}
 \usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
 % first-page footer: the page number alone
@@ -37,7 +36,7 @@
 
 \begin{frontmatter}
 
-\title{(883607) 2016 TA56: A candidate dark comet on a Jupiter-family orbit}
+\title{(883607) 2016 TA56: a candidate dark comet on a Jupiter-family orbit}
 
 \author{Charles C. Norton}
 
@@ -70,8 +69,6 @@ Comets \sep Near-Earth objects \sep Asteroids \sep Celestial mechanics \sep Orbi
 \end{keyword}
 
 \end{frontmatter}
-
-\linenumbers
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}
@@ -845,7 +842,8 @@ behind the tables and figures and the command that produces it. Tables S1 to S3 
 orbit solutions, NEOWISE detections, CFHT images and spin models are publicly available
 from the archives cited in the text.
 
-\begin{thebibliography}{99}
+\begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{Astropy Collaboration et~al.(2022)}]{Astropy2022}

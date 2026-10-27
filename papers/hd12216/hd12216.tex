@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -29,13 +27,13 @@
 \newcommand{\Msun}{M_\odot}
 \newcommand{\Rsun}{R_\odot}
 
-% ---- front matter -----------------------------------------------------------
-\title{A Variable, Circularly Polarised 144\,MHz Source\\ on the A2V Star 50 Cassiopeiae}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{A variable, circularly polarised 144\,MHz source on the A2V star 50~Cassiopeiae}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 An A star has no convective envelope to drive a corona, and the A stars LOFAR has
@@ -60,6 +58,13 @@ star reads as a magnetic A star with surface spots turning in $1.6$ days, whose
 electron-cyclotron emission is beamed across Earth at some rotational phases; no
 measurement of its field exists, and one would settle it.
 \end{abstract}
+
+\begin{keyword}
+Radio continuum: stars \sep Stars: individual: 50~Cassiopeiae \sep Stars: chemically peculiar \sep
+Stars: magnetic field \sep Stars: rotation \sep Masers
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}
@@ -125,7 +130,7 @@ survey~\cite{Isaacson2017}.
 \section{Data and method}\label{sec:method}
 % =============================================================================
 
-\paragraph{LoTSS-DR3.} Each DR3 pointing is an $8$\,h observation of one epoch. The
+\paragraph{LoTSS-DR3} Each DR3 pointing is an $8$\,h observation of one epoch. The
 ASTRON VO's table of DR3 pointings gives the midpoint of each observation, and the SURF
 Data Repository holds each pointing's products as tar archives, from which the $6''$
 dirty Stokes~I and V images and the $6''$ restored Stokes~I image with astrometric
@@ -139,14 +144,14 @@ placeholder colour or an absolute magnitude fainter than $3.5$ and are later sta
 leaving $129$ A and early-F stars at a median $5\sigma$ limit of $0.54$\,mJy. For 50~Cas
 every pointing within $3^\circ$ was read, three of which cover it.
 
-\paragraph{TESS.} The two-minute PDCSAP light curves of sectors 18, 19, 25, 52, 58, 59,
+\paragraph{TESS} The two-minute PDCSAP light curves of sectors 18, 19, 25, 52, 58, 59,
 78, 79 and 86, $141552$ cadences of quality zero from 2019 to 2024, in mmag about each
 sector's median, were fitted with a fundamental frequency and its first three harmonics
 and one offset per sector over a fine grid of frequencies, the frequency's error from
 the curvature of $\chi^2$ with the residual scatter as the noise. The ephemeris for
 phases is $0.62635569$\,d$^{-1}$ with phase zero at BJD~2457000.
 
-\paragraph{DAO spectra.} The Canadian Astronomy Data Centre holds $19$ McKellar coud\'e
+\paragraph{DAO spectra} The Canadian Astronomy Data Centre holds $19$ McKellar coud\'e
 spectra of 50~Cas from the Dominion Astrophysical Observatory's $1.2$\,m telescope, from
 1990, 1992, 2000 and 2006. The $13$ of 1992 December 18 cover $3.12$\,h on one setup at
 $2.4$\,\AA\,mm$^{-1}$ near $4486$--$4558$\,\AA, with $39$ flats and Th--Ar arcs

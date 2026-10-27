@@ -1,14 +1,5 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
@@ -18,7 +9,15 @@
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +29,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{Lines in the Blank Sky: a Search of the SDSS Sky Fibres\\ for Laser Emission, and the Galaxies Behind Them}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Lines in the blank sky: a search of the SDSS sky fibres for laser emission, and the galaxies behind them}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 Every BOSS and eBOSS plate of the Sloan Digital Sky Survey places some eighty fibres on
@@ -69,6 +68,13 @@ $10$\,m aperture at $37$\,W from $10$\,pc and $3.7$\,kW from $100$\,pc, and with
 of such lines recovered, the $0.093$\,deg$^2$ the fibres cover bound such transmitters to
 fewer than about $850$ per square degree.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Lasers \sep Galaxies: emission lines \sep Techniques: spectroscopic \sep
+Surveys
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}

@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +28,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{Dimming, Orbits, Clocks and Abundances:\\ Archival Tests for Technosignatures Among the Stars}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Dimming, orbits, clocks and abundances: archival tests for technosignatures among the stars}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 A technology at a star could change the star's light, the motions of the bodies around
@@ -58,6 +56,13 @@ or processed carbon and nitrogen without a natural cause. The one result that re
 open, a $5.5$ per cent polarisation assigned to an unreddened star in 1977, is the
 subject of its own note.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Stars: variables: general \sep Binaries: general \sep
+Stars: abundances \sep Astrometry
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}

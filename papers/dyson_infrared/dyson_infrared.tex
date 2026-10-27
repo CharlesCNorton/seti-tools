@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +28,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{A Search for Waste Heat from Dyson Spheres\\ Around Nearby Stars in Archival Infrared Surveys}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{A search for waste heat from Dyson spheres around nearby stars in archival infrared surveys}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 A structure that intercepts a star's light re-radiates it as heat, so a Dyson sphere
@@ -62,6 +60,13 @@ finds a $30$ to $100$\,K shell holding $0.2$ per cent of a solar luminosity at $
 and a vanished source of $R=19$ enclosed at $200$ to $600$\,K would have been detected
 by WISE.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Dyson spheres \sep Infrared: stars \sep Circumstellar matter \sep
+Solar neighbourhood
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}

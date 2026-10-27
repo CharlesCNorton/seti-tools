@@ -1,24 +1,24 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
+\usepackage{enumitem}
 \usepackage{graphicx}
+\usepackage{tikz}
 \usepackage{pgfplots}
 \usepgfplotslibrary{groupplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 % a table body read from a file, expandable so that a rule may follow it
 \makeatletter
 \newcommand{\tabinput}[1]{\@@input #1 }
@@ -31,13 +31,13 @@
 \newcommand{\Ktwo}{$K_2$}
 \newcommand{\dvsys}{$\Delta v_\mathrm{sys}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{Double-Lined from the Archive:\\ Independent Dynamical Masses of M Dwarfs in Eclipsing Binaries\\ from Public HARPS and ESPRESSO Spectra}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Double-lined from the archive: independent dynamical masses of M dwarfs in eclipsing binaries from public HARPS and ESPRESSO spectra}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 An eclipsing binary of a solar-type star and an M dwarf gives model-independent masses for both
@@ -68,6 +68,13 @@ the 41 and four more are candidates. NIRPS spectra recover J1540$-$09's publishe
 shows none, and the TESS eclipses turn nine of these binaries' minimum masses into masses and
 radii, J0535$-$08's $0.970 \pm 0.011$ and $0.521 \pm 0.003$\,\Msun.
 \end{abstract}
+
+\begin{keyword}
+Binaries: eclipsing \sep Binaries: spectroscopic \sep Stars: low-mass \sep
+Stars: fundamental parameters \sep Techniques: radial velocities
+\end{keyword}
+
+\end{frontmatter}
 
 \section{Introduction}\label{sec:intro}
 
@@ -837,6 +844,7 @@ maps, curves and profiles, the robustness and injection measurements, the calibr
 survey's search results, the eclipse fits, and the tables written from them.
 
 \begin{thebibliography}{99}\small\raggedright
+\setlength{\itemsep}{1pt}
 
 \bibitem{Torres2010}
 G.~Torres, J.~Andersen and A.~Gim\'enez, Accurate masses and radii of normal stars: modern

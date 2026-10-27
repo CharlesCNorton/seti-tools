@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -30,13 +28,13 @@
 \newcommand{\nuc}[2]{$^{#1}$#2}
 \newcommand{\lxl}{$L_X/L_\mathrm{bol}$}
 
-% ---- front matter -----------------------------------------------------------
-\title{A Search for Laser Lines in Five Large Spectroscopic Surveys\\ of Nearby Stars}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{A search for laser lines in five large spectroscopic surveys of nearby stars}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 A laser aimed at Earth from another star adds an unresolved emission line to the
@@ -62,6 +60,13 @@ transmitter of $10^{19}$ to $10^{20}$\,W radiating isotropically or of $5$\,kW t
 $70$\,kW behind a $10$\,m aperture at the median star, and of $5$ to $50$\,W at the
 nearest.
 \end{abstract}
+
+\begin{keyword}
+Technosignatures \sep Lasers \sep Techniques: spectroscopic \sep Solar neighbourhood \sep
+Surveys
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}
@@ -262,7 +267,7 @@ search, megawatts for a $10$\,m aperture at their stars' distances~\cite{TellisM
 are reached here at every survey's median star, with the three-to-five-fold completeness
 factor of the previous paragraph still to be applied.
 
-\begin{table}[t]
+\begin{table}[tp]
 \centering\small
 \setlength{\tabcolsep}{4pt}
 \caption{The line flux at each search's threshold: the median over the stars (for
@@ -286,7 +291,7 @@ LAMOST DR10 MRS & $1163$ & $3.0\times10^{-15}$ & $2.0\times10^{20}$ & $5\times10
 \end{tabular}
 \end{table}
 
-\begin{table}[t]
+\begin{table}[tp]
 \centering\small
 \setlength{\tabcolsep}{5pt}
 \caption{The $19$ LAMOST features that pass the tests against other stars, fibres and

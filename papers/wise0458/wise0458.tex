@@ -1,24 +1,22 @@
 % !TEX program = pdflatex
-\documentclass[11pt]{article}
-\setlength{\textwidth}{6.5in}
-\setlength{\oddsidemargin}{0pt}
-\setlength{\evensidemargin}{0pt}
-\setlength{\textheight}{9in}
-\setlength{\topmargin}{0pt}
-\addtolength{\topmargin}{-\headheight}
-\addtolength{\topmargin}{-\headsep}
-\ifdefined\pdfpagewidth \pdfpagewidth=8.5in \pdfpageheight=11in \fi
-\ifdefined\pagewidth \pagewidth=8.5in \pageheight=11in \fi
+\documentclass[3p,11pt]{elsarticle}
 \usepackage{amsmath,amssymb}
 \usepackage{array}
 \usepackage{booktabs}
 \usepackage[tableposition=top]{caption}
-\usepackage{longtable}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
+\usepackage{url}
+\urlstyle{same}
+\usepackage[hidelinks]{hyperref}
 \emergencystretch=3em
+% first-page footer: the page number alone
+\makeatletter
+\def\ps@pprintTitle{\let\@oddhead\@empty\let\@evenhead\@empty
+  \def\@oddfoot{\hfil\thepage\hfil}\let\@evenfoot\@oddfoot}
+\makeatother
 
 % ---- notation ---------------------------------------------------------------
 \newcommand{\um}{\,$\mu$m}
@@ -28,13 +26,13 @@
 \newcommand{\lnu}{erg\,s$^{-1}$\,Hz$^{-1}$}
 \newcommand{\sci}[2]{#1\times10^{#2}}
 
-% ---- front matter -----------------------------------------------------------
-\title{Radio Emission at 144\,MHz and 3\,GHz\\ from the T8.5+T9.5 Binary WISE 0458+6434}
-\author{Charles C. Norton}
-\date{}
-
 \begin{document}
-\maketitle
+
+\begin{frontmatter}
+
+\title{Radio emission at 144\,MHz and 3\,GHz from the T8.5+T9.5 binary WISE~0458+6434}
+
+\author{Charles C. Norton}
 
 \begin{abstract}
 Electron-cyclotron maser emission from brown dwarfs measures the magnetic fields of
@@ -60,6 +58,13 @@ emission, which at $3$\,GHz requires a field of about $1.1$\,kG where it forms. 
 components are later than the T8 dwarf WISE J062309.94$-$045624.6, the coldest brown
 dwarf detected at radio wavelengths before.
 \end{abstract}
+
+\begin{keyword}
+Brown dwarfs \sep Radio continuum: stars \sep Stars: individual: WISE~0458+6434 \sep
+Stars: magnetic field \sep Masers \sep Aurorae
+\end{keyword}
+
+\end{frontmatter}
 
 % =============================================================================
 \section{Introduction}\label{sec:intro}
@@ -122,13 +127,13 @@ this note are carried from the census's position at epoch 2016.45 along that mot
 \section{Data and method}\label{sec:method}
 % =============================================================================
 
-\paragraph{The DR3 component catalogue.} The $156$ objects of the Gaia Catalogue of
+\paragraph{The DR3 component catalogue} The $156$ objects of the Gaia Catalogue of
 Nearby Stars within $10$\,pc and the $80$ T and Y dwarfs of the $20$\,pc census north of
 the equator were carried to 2019.5 and matched to the DR3 component catalogue (VizieR
 J/A+A/707/A198) within $3''$, the same positions moved $2'$ in four directions serving as
 the null. The chance of a match follows from DR3's local density of components.
 
-\paragraph{The per-pointing images.} The DR3 mosaic at a position combines several
+\paragraph{The per-pointing images} The DR3 mosaic at a position combines several
 pointings, each an $8$\,h observation of one epoch. The ASTRON VO's table of DR3
 pointings gives their dates, and the SURF Data Repository holds each pointing's products
 as tar archives of $10$--$23$\,GB, from which the $6''$ Stokes~I image with astrometric
@@ -139,7 +144,7 @@ the pointing's date, its noise from the robust scatter of the annulus $12''$--$3
 and epochs are combined by inverse variance. The field's other compact sources and
 random positions in the same images are the null.
 
-\paragraph{VLASS.} The quick-look images of the four VLASS epochs~\cite{Lacy2020} come
+\paragraph{VLASS} The quick-look images of the four VLASS epochs~\cite{Lacy2020} come
 from the Canadian Astronomy Data Centre as cutouts. In each, the brightest pixel within
 $2.5''$ of the binary's position on the image's date is set against the image's robust
 noise, a Gaussian fitted to it gives its offset, and the same statistic at $2000$ random
