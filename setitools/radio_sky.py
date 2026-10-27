@@ -4652,13 +4652,47 @@ def glitchsched_main(record=False, min_glitches=5, cv_max=0.3, draws=4000):
         print("recorded")
 
 
-switchoff_DOC = r"""Radio sources that switched off: NVSS (VizieR VIII/65) sources north of -40 deg and more than 10 deg from the Galactic plane, brighter than 100 mJy at 1.4 GHz and compact, with major axes under 25 arcsec, against the VLASS epoch-1 quick-look components (J/ApJS/255/30) within 20 arcsec by CDS XMatch; a source of that strength falls below VLASS's limit only by fading a hundredfold between 1995 and 2019, which a switched-off transmitter does and a blazar in a deep low state can; each missing source read in SIMBAD, for its NVSS size, since a resolved source VLASS's short baselines dissolve is no fading, for a source above 5 Jy within half a degree, whose sidelobes spoil the quick-look image around it, in RACS-low (J/other/PASA/38.58, 888 MHz, 2019-2020, south of +41 deg), where a source still shining has not faded whatever VLASS lists, and for the catalogue's own holes, a quarter degree holding no component at all, which the component list leaves where its images failed.
+switchoff_DOC = r"""Radio sources that switched off: NVSS (VizieR VIII/65) sources north of -40 deg and more than 10 deg from the Galactic plane, brighter than 100 mJy at 1.4 GHz and compact, with major axes under 25 arcsec, against the VLASS epoch-1 quick-look components (J/ApJS/255/30) within 20 arcsec by CDS XMatch; a source of that strength falls below VLASS's limit only by fading a hundredfold between 1995 and 2019, which a switched-off transmitter does and a blazar in a deep low state can; each missing source read in SIMBAD, for its NVSS size, since a resolved source VLASS's short baselines dissolve is no fading, for a source above 5 Jy within half a degree, whose sidelobes spoil the quick-look image around it, in RACS-low (J/other/PASA/38.58, 888 MHz, 2019-2020, south of +41 deg), where a source still shining has not faded whatever VLASS lists, and for the catalogue's own holes, a quarter degree holding no component at all, which the component list leaves where its images failed; the rest in the surveys made after VLASS epoch 1 (RACS-mid, RACS-high, RACS-low3, LoTSS DR2) within 30 arcsec, as a lobe or hotspot of a brighter source that RACS-mid or TGSS catalogue as one source within 90 arcsec, and in the VLASS quick-look images themselves at the CADC, where a source above 10 sigma within 30 arcsec in any epoch is one the component list dropped.
 
-    python -I seti.py radio_sky switchoff [record] [--flux-min-mjy 100] [--major-max-arcsec 25] [--radius-arcsec 20] [--dec-min -40] [--hole-deg 0.25] [--b-min 10] [--bright-jy 5] [--bright-deg 0.5] [--racs-dec-max 41]"""
+    python -I seti.py radio_sky switchoff [record] [--flux-min-mjy 100] [--major-max-arcsec 25] [--radius-arcsec 20] [--dec-min -40] [--hole-deg 0.25] [--b-min 10] [--bright-jy 5] [--bright-deg 0.5] [--racs-dec-max 41] [--later-arcsec 30] [--lobe-arcsec 90] [--image-sigma 10]"""
+
+
+def switchoff_vlass_images(ra, dec, radius_arcsec=30.0):
+    """The brightest pixel within RADIUS_ARCSEC of a position in every VLASS quick-look image the CADC holds of it, in units of the image's noise: [(epoch, sigma, mJy within the radius)]."""
+    import io
+    from astropy.io import fits
+    from astropy.io.votable import parse_single_table
+    from astropy.wcs import WCS
+    base = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/sia/v2query?"
+    out = []
+    t = parse_single_table(io.BytesIO(core.get(base + urllib.parse.urlencode({"POS": "CIRCLE %.5f %.5f 0.01" % (ra, dec), "COLLECTION": "VLASS"}), timeout=120))).to_table()
+    for r in t:
+        try:
+            links = parse_single_table(io.BytesIO(core.get(str(r["access_url"]), timeout=120))).to_table()
+            url = next((str(x["access_url"]) for x in links if str(x["semantics"]) == "#this" and all(k in str(x["access_url"]) for k in ("pbcor", "tt0", "subim"))), None)
+            if not url:
+                continue
+            h = fits.open(io.BytesIO(core.get(url + "?" + urllib.parse.urlencode({"CIRCLE": "%.6f %.6f %.4f" % (ra, dec, 2 * radius_arcsec / 3600)}), timeout=300)))
+            d = np.squeeze(h[0].data).astype(float)
+            w = WCS(h[0].header).celestial
+            pix = abs(h[0].header.get("CDELT1") or h[0].header.get("CD1_1"))
+            beam = 1.1331 * h[0].header["BMAJ"] * h[0].header["BMIN"] / pix ** 2
+            x, y = w.world_to_pixel_values(ra, dec)
+            yy, xx = np.mgrid[:d.shape[0], :d.shape[1]]
+            rr = np.hypot(xx - x, yy - y) * pix * 3600
+            ok = np.isfinite(d)
+            inner, outer = d[(rr <= radius_arcsec) & ok], d[(rr > radius_arcsec) & ok]
+            if not len(inner) or len(outer) < 50:
+                continue
+            noise = 1.4826 * float(np.median(np.abs(outer - np.median(outer))))
+            out.append((str(r["obs_id"]).split(".")[0], float(inner.max() / noise), float(inner.sum() / beam * 1e3)))
+        except Exception:
+            continue
+    return out
 
 
 def switchoff_main(record=False, flux_min_mjy=100.0, major_max_arcsec=25.0, radius_arcsec=20.0, dec_min=-40.0, hole_deg=0.25, b_min=10.0, bright_jy=5.0, bright_deg=0.5,
-                   racs_dec_max=41.0):
+                   racs_dec_max=41.0, later_arcsec=30.0, lobe_arcsec=90.0, image_sigma=10.0):
     rows = core.tap("vizier", 'SELECT NVSS, RAJ2000, DEJ2000, "S1.4", MajAxis, MinAxis FROM "VIII/65/nvss" WHERE "S1.4" > %g AND DEJ2000 > %g' % (flux_min_mjy, dec_min), timeout=600)
     sk = next(k for k in rows[0] if k.replace("_", ".").lower() == "s1.4") if rows else "S1.4"
     src = [dict(name=str(r["NVSS"]).strip(), ra=float(r["RAJ2000"]), dec=float(r["DEJ2000"]), s=float(r[sk]), maj=num(r["MajAxis"]), min_=num(r["MinAxis"])) for r in rows]
@@ -4700,6 +4734,27 @@ def switchoff_main(record=False, flux_min_mjy=100.0, major_max_arcsec=25.0, radi
             s["around"] = int(n[0]["n"]) if n else 0
             if s["around"] == 0:
                 s["vet"] = "catalogue-dropped"
+    # the rest in the surveys made after VLASS epoch 1 (RACS-mid of 2020-21, RACS-high, RACS-low3, LoTSS DR2), as a lobe of a brighter source those surveys and TGSS catalogue
+    # as one source within LOBE_ARCSEC (five times the NVSS flux at 1.4 GHz, or twenty-five times at 150 MHz), and in the VLASS images themselves
+    later = (("J/other/PASA/41.3/sourcesm", "RACS-mid"), ("J/other/PASA/42.38/sourcesh", "RACS-high"), ("J/other/PASA/43.89/sources", "RACS-low3"), ("J/A+A/659/A1/catalog", "LoTSS DR2"))
+    rest = [s for s in gone if s["vet"] is None]
+    for cat, label in later:
+        for m in core.xmatch([dict(source_id=s["name"], ra=s["ra"], dec=s["dec"]) for s in rest if s["vet"] is None], cat, later_arcsec):
+            f = num(m.get("Ftot")) or num(m.get("Stotal")) or num(m.get("SpeakTot")) or num(m.get("Fpk"))
+            for s in rest:
+                if s["name"] == m["source_id"] and s["vet"] is None:
+                    s["vet"], s["later"] = "catalogue-dropped", "%s %s mJy at %.0f arcsec" % (label, "%.0f" % f if f else "?", float(m["angDist"]))
+    for cat, label, factor in (("J/other/PASA/41.3/sourcesm", "RACS-mid", 5.0), ("J/A+A/598/A78/table3", "TGSS", 25.0)):
+        for m in core.xmatch([dict(source_id=s["name"], ra=s["ra"], dec=s["dec"]) for s in rest if s["vet"] is None], cat, lobe_arcsec):
+            f = num(m.get("Ftot")) or num(m.get("Stotal"))
+            for s in rest:
+                if s["name"] == m["source_id"] and s["vet"] is None and f and f > factor * s["s"] and float(m["angDist"]) > later_arcsec:
+                    s["vet"], s["later"] = "radio-hotspot", "%s %.0f mJy at %.0f arcsec" % (label, f, float(m["angDist"]))
+    for s in rest:
+        if s["vet"] is None:
+            seen_img = [x for x in switchoff_vlass_images(s["ra"], s["dec"]) if x[1] > image_sigma]
+            if seen_img:
+                s["vet"], s["later"] = "catalogue-dropped", "VLASS images %s" % ", ".join("%s %.0f sigma, %.0f mJy" % x for x in seen_img)
     left = [s for s in gone if s["vet"] is None]
     print("%d NVSS sources above %g mJy north of %g deg, %d compact under %g arcsec more than %g deg from the Galactic plane; without a VLASS component within %g arcsec: %d (%d of "
           "known SIMBAD types, %d within %g deg of a source above %g Jy, %d still shining in RACS-low of 2019-2020 or in holes of the catalogue with no component within %g deg, %d of "
@@ -4708,9 +4763,9 @@ def switchoff_main(record=False, flux_min_mjy=100.0, major_max_arcsec=25.0, radi
                                            sum(s["vet"] == "catalogue-dropped" for s in gone), hole_deg, sum(1 for s in gone if s["racs_mjy"] is not None), len(left)))
     for s in sorted(gone, key=lambda s: -s["s"]):
         if s["vet"] != "natural-type":
-            print("  NVSS %s: %.0f mJy, %.0f x %.0f arcsec at RA %.4f Dec %+.4f, b %+.1f, RACS %s mJy, %s components within %g deg%s; SIMBAD %s; %s" % (
+            print("  NVSS %s: %.0f mJy, %.0f x %.0f arcsec at RA %.4f Dec %+.4f, b %+.1f, RACS %s mJy, %s components within %g deg%s; SIMBAD %s%s; %s" % (
                 s["name"], s["s"], s["maj"], s["min_"] or 0, s["ra"], s["dec"], s["b"], s["racs_mjy"], s["around"], hole_deg, ", near " + s["bright"] if s.get("bright") else "",
-                s["simbad"], s["vet"] or "unexplained"))
+                s["simbad"], "; " + s["later"] if s.get("later") else "", s["vet"] or "unexplained"))
     json.dump(dict(n=len(src), compact=len(compact), gone=gone), open(core.results("radio_switchoffs.json"), "w"), indent=1)
     if record:
         core.record_run(
@@ -4725,8 +4780,9 @@ def switchoff_main(record=False, flux_min_mjy=100.0, major_max_arcsec=25.0, radi
                 len(gone), len(compact), sum(s["vet"] == "natural-type" for s in gone), sum(s["vet"] == "bright-neighbour" for s in gone), bright_jy,
                 sum(s["vet"] == "catalogue-dropped" for s in gone), len(left)),
             [dict(target="nvss:%s" % s["name"], stat=s["s"], unit="mJy at 1.4 GHz, absent from VLASS", vet=s["vet"],
-                  note="%.0f x %.0f arcsec; b %+.1f; RACS %s mJy; %s components within %g deg%s; SIMBAD %s" % (s["maj"], s["min_"] or 0, s["b"], s["racs_mjy"], s["around"], hole_deg,
-                                                                                                     ", near " + s["bright"] if s.get("bright") else "", s["simbad"])) for s in gone])
+                  note="%.0f x %.0f arcsec; b %+.1f; RACS %s mJy; %s components within %g deg%s; SIMBAD %s%s" % (s["maj"], s["min_"] or 0, s["b"], s["racs_mjy"], s["around"], hole_deg,
+                                                                                                     ", near " + s["bright"] if s.get("bright") else "", s["simbad"],
+                                                                                                     "; " + s["later"] if s.get("later") else "")) for s in gone])
         print("recorded")
 
 
@@ -5058,9 +5114,9 @@ def hostlesssed_main(record=False, controls=200):
         print("recorded")
 
 
-hostlessnir_DOC = r"""Hosts of the hostless radio sources in the near infrared: the compact CRATES sources the hostless test left bare, against VISTA's VHS DR5 and VIKING DR2 and UKIDSS's LAS DR9 within 2 arcsec, coverage judged by any catalogue source within 1 arcmin, and each K magnitude, or the survey's depth where none is found, turned into a redshift by the K-z relation of radio galaxies (Willott et al. 2003: K = 17.37 + 4.53 log z - 0.31 (log z)^2); a radio galaxy's host follows that relation, so a detection dates the source and a deep non-detection puts it far away.
+hostlessnir_DOC = r"""Hosts of the hostless radio sources in the near infrared: the compact CRATES sources the hostless test left bare, against VISTA's VHS DR5 and VIKING DR2 and UKIDSS's LAS DR9 within 2 arcsec, coverage judged by any catalogue source within 1 arcmin, and each K magnitude, or the survey's depth where none is found, turned into a redshift by the K-z relation of radio galaxies (Willott et al. 2003: K = 17.37 + 4.53 log z - 0.31 (log z)^2); a radio galaxy's host follows that relation, so a detection dates the source and a deep non-detection puts it far away; and the HSC-SSP DR3 g, r and z images through the Legacy Survey viewer, the signal within an arcsecond against the same aperture at 200 random places in the cutout.
 
-    python -I seti.py radio_sky hostlessnir [record] [--arcsec 2]"""
+    python -I seti.py radio_sky hostlessnir [record] [--arcsec 2] [--hsc-pix 0.168]"""
 
 HOSTLESS_NIR = (("VHS DR5", "II/367/vhs_dr5", 18.1), ("VIKING DR2", "II/343/viking2", 19.2), ("UKIDSS LAS DR9", "II/319/las9", 18.2))
 
@@ -5077,7 +5133,7 @@ def kz_redshift(k):
     return 10 ** (0.5 * (lo + hi))
 
 
-def hostlessnir_main(record=False, arcsec=2.0):
+def hostlessnir_main(record=False, arcsec=2.0, hsc_pix=0.168):
     bare = [b for b in json.load(open(core.results("crates_hostless.json"))) if b.get("vet") is None]
     up = [dict(source_id=k, ra=b["ra"], dec=b["dec"]) for k, b in enumerate(bare)]
     for b in bare:
@@ -5106,9 +5162,33 @@ def hostlessnir_main(record=False, arcsec=2.0):
             b["k"], b["z"], b["z_kind"] = depth, kz_redshift(depth), "lower limit"
         else:
             b["k"], b["z"], b["z_kind"] = None, None, "not covered"
+    # HSC-SSP DR3 through the Legacy Survey viewer: the signal within an arcsecond against the same aperture placed at random in the cutout
+    import io
+    from astropy.io import fits
+    rng = np.random.default_rng(5)
+    for b in bare:
+        b["hsc"] = None
+        raw = core.get("https://www.legacysurvey.org/viewer/fits-cutout?" + urllib.parse.urlencode(
+            dict(ra="%.6f" % b["ra"], dec="%.6f" % b["dec"], layer="hsc-dr3", pixscale=hsc_pix, bands="grz", size=101)), timeout=120, soft=True)
+        if not raw:
+            continue
+        cube = np.atleast_3d(fits.open(io.BytesIO(raw))[0].data.astype(float))
+        cube = cube if cube.shape[0] == 3 else np.moveaxis(cube, -1, 0)
+        if not np.any(np.nan_to_num(cube)):
+            continue
+        yy, xx = np.mgrid[:101, :101]
+        snr = []
+        for img in cube:
+            img = np.nan_to_num(img)
+            ap = np.hypot(xx - 50, yy - 50) * hsc_pix <= 1.0
+            rand = [img[np.hypot(xx - x, yy - y) * hsc_pix <= 1.0].sum() for x, y in rng.integers(10, 91, size=(200, 2))]
+            snr.append(round(float((img[ap].sum() - np.median(rand)) / (1.4826 * np.median(np.abs(rand - np.median(rand))))), 1))
+        b["hsc"] = snr
     det = [b for b in bare if b["z_kind"] == "estimate"]
     lim = [b for b in bare if b["z_kind"] == "lower limit"]
-    print("%d hostless sources: %d with a near-infrared counterpart within %g arcsec, %d covered with none, %d outside the surveys" % (len(bare), len(det), arcsec, len(lim), len(bare) - len(det) - len(lim)))
+    hsc = [b for b in bare if b["hsc"] is not None]
+    print("%d hostless sources: %d with a near-infrared counterpart within %g arcsec, %d covered with none, %d outside the surveys; HSC-SSP DR3 covers %d: %s" % (
+        len(bare), len(det), arcsec, len(lim), len(bare) - len(det) - len(lim), len(hsc), "; ".join("%s S/N g r z %s" % (b["name"], b["hsc"]) for b in hsc)))
     for b in sorted(bare, key=lambda b: -(b["z"] or 0)):
         print("  %s: %s; K %s, z %s (%s)" % (b["name"], b["nir"] or ("covered by " + ", ".join(b["covered"]) if b["covered"] else "not covered"), "%.2f" % b["k"] if b["k"] else "-",
                                               "%.1f" % b["z"] if b["z"] else "-", b["z_kind"]))
@@ -5118,10 +5198,12 @@ def hostlessnir_main(record=False, arcsec=2.0):
             "crates_hostless_nir", "Hosts of the hostless radio sources in the near infrared", "VHS DR5, VIKING DR2 and UKIDSS LAS DR9 by CDS XMatch; the K-z relation of Willott et al. (2003)",
             "the hostless sources of crates_hostless_flat_spectrum: %d" % len(bare), os.path.abspath(__file__), "hostlessnir", len(bare), "sources", dict(arcsec=arcsec),
             "each survey's depth (Ks 18.1, 19.2 and K 18.2) on the K-z relation", "a host in the near infrared, or a depth that puts it far away",
-            "%d with a counterpart, redshifts %s; %d covered with none, lower limits %s; %d outside the surveys" % (
-                len(det), ", ".join("%.1f" % b["z"] for b in det), len(lim), ", ".join("%.1f" % b["z"] for b in lim), len(bare) - len(det) - len(lim)),
+            "%d with a counterpart, redshifts %s; %d covered with none, lower limits %s; %d outside the surveys; %d in HSC-SSP DR3, %d of them detected at S/N 5 in g, r or z" % (
+                len(det), ", ".join("%.1f" % b["z"] for b in det), len(lim), ", ".join("%.1f" % b["z"] for b in lim), len(bare) - len(det) - len(lim),
+                len(hsc), sum(max(b["hsc"]) >= 5 for b in hsc)),
             [dict(target="crates:%s" % b["name"], stat=round(b["z"], 2) if b["z"] else None, unit="redshift on the K-z relation (%s)" % b["z_kind"], vet=None,
-                  note="K %s from %s" % ("%.2f" % b["k"] if b["k"] else "-", ", ".join(b["nir"]) or ", ".join(b["covered"]) or "no survey")) for b in bare])
+                  note="K %s from %s%s" % ("%.2f" % b["k"] if b["k"] else "-", ", ".join(b["nir"]) or ", ".join(b["covered"]) or "no survey",
+                                           "; HSC S/N g r z %s" % b["hsc"] if b["hsc"] is not None else "")) for b in bare])
         print("recorded")
 
 

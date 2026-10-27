@@ -1361,7 +1361,9 @@ darkcomet_DOC = r"""One dark-comet candidate: NEOWISE NEATM size and albedo, and
     python -I seti.py solar_system darkcomet locus DESIG --night YYYY-MM-DD   (the positions the other apparitions allow, A2 held at each value)
     python -I seti.py solar_system darkcomet forecast DESIG      (daily ephemeris of both orbits at the next apparition, and the A2 it would measure)
     python -I seti.py solar_system darkcomet census DESIG --night YYYY-MM-DD [--workers 6]   (moving sources in the whole CFHT frames, injected
-                                                                 copies of the object, and the locus searched; needs the frames in cfht_<night>/full)"""
+                                                                 copies of the object, and the locus searched; needs the frames in cfht_<night>/full)
+    python -I seti.py solar_system darkcomet normal DESIG [--ephem DIR]   (gravity, A2, A2 and A3, all three terms, with and without JPL's radar delays)
+    python -I seti.py solar_system darkcomet normal-record DESIG"""
 
 darkcomet_ROOT = os.environ.get("DARKCOMET_ROOT", core.data("darkcomet"))
 darkcomet_BANDS = {"w1": (3.3526e-6, 309.540), "w2": (4.6028e-6, 171.787)}  # isophotal wavelength (m), zero point (Jy)
@@ -1640,8 +1642,8 @@ def darkcomet_observers(rows, sites, eph):
     return tdb, out
 
 
-def darkcomet_propagate(eph, t0, state, a2, times, a1=0.0):
-    """Barycentric positions at TDB JDs from a state at t0 in ASSIST, with transverse a2 and radial a1 (au/d^2 at 1 au, r^-2)."""
+def darkcomet_propagate(eph, t0, state, a2, times, a1=0.0, a3=0.0):
+    """Barycentric positions at TDB JDs from a state at t0 in ASSIST, with transverse a2, radial a1 and normal a3 (au/d^2 at 1 au, r^-2)."""
     import assist
     import rebound
     out = np.zeros((len(times), 3))
@@ -1655,7 +1657,7 @@ def darkcomet_propagate(eph, t0, state, a2, times, a1=0.0):
         sim.t = t0 - eph.jd_ref
         sim.dt = -1.0 if times[sel[0]] < t0 else 1.0
         ex = assist.Extras(sim, eph)
-        ex.particle_params = np.array([a1, a2, 0.0])
+        ex.particle_params = np.array([a1, a2, a3])
         ex.alpha, ex.nk, ex.nm, ex.nn, ex.r0 = 1.0, 0.0, 2.0, 1.0, 1.0
         for i in sel:
             sim.integrate(times[i] - eph.jd_ref)
@@ -1937,6 +1939,198 @@ def darkcomet_refit(desig, ephem_dir=None):
         print("  %s: the two orbits %.1f arcsec apart, V %.1f, elongation %.0f deg" % (x["date"], x["sep"], x["V"], x["elong"]))
     json.dump(out, open(os.path.join(d, "refit.json"), "w"), indent=1)
     return out
+
+
+# radar stations of the JPL radar astrometry: geodetic longitude, latitude (deg) and height (m)
+darkcomet_RADAR_SITES = {"-1": (-66.75278, 18.34417, 497.0), "-13": (-116.79445, 35.24773, 1071.0), "-14": (-116.88954, 35.42590, 1002.0)}
+darkcomet_NG = ("A1", "A2", "A3")
+darkcomet_NG_SETS = ([], [1], [1, 2], [0, 1, 2])
+
+
+def darkcomet_radar(desig):
+    """JPL's centre-of-mass round-trip delays of a body from stations with known coordinates: [(UTC receive time, delay s, sigma s, receiver, transmitter)]."""
+    d = darkcomet_dir(desig)
+    path = os.path.join(d, "radar.json")
+    if not os.path.exists(path):
+        open(path, "wb").write(core.get("https://ssd-api.jpl.nasa.gov/sb_radar.api?" + urllib.parse.urlencode({"des": desig}), timeout=60))
+    js = json.load(open(path))
+    # a body without radar comes back as the JSON text quoted once more
+    js = json.loads(js) if isinstance(js, str) else js
+    rows = [dict(zip(js["fields"], r)) for r in js.get("data", [])]
+    return [(r["epoch"], float(r["value"]) * 1e-6, float(r["sigma"]) * 1e-6, r["rcvr"], r["xmit"]) for r in rows
+            if r["units"] == "us" and r["bp"] == "C" and r["rcvr"] in darkcomet_RADAR_SITES and r["xmit"] in darkcomet_RADAR_SITES]
+
+
+def darkcomet_delay(eph, t0, q, ng, epoch, rcvr, xmit):
+    """Computed round-trip delay (s) received at a UTC epoch: light time iterated on each leg, with the Sun's Shapiro delay on both."""
+    import astropy.units as u
+    from astropy.coordinates import EarthLocation
+    from astropy.time import Time
+    c = 2.99792458e8
+
+    def station(code, t):
+        lon, lat, h = darkcomet_RADAR_SITES[code]
+        e = eph.get_particle("earth", t.tdb.jd - eph.jd_ref)
+        g, _ = EarthLocation.from_geodetic(lon * u.deg, lat * u.deg, h * u.m).get_gcrs_posvel(t)
+        return np.array([e.x, e.y, e.z]) + np.array([g.x.to_value(u.m), g.y.to_value(u.m), g.z.to_value(u.m)]) / darkcomet_AU
+
+    def body(tb):
+        return darkcomet_propagate(eph, t0, q, ng[1], np.array([tb]), a1=ng[0], a3=ng[2])[0]
+
+    t_rx = Time(epoch.replace(" ", "T"), scale="utc")
+    r_rx = station(rcvr, t_rx)
+    t_b, down = t_rx.tdb.jd, 0.0
+    for _ in range(4):
+        r_b = body(t_b)
+        down = np.linalg.norm(r_b - r_rx) * darkcomet_AU / c
+        t_b = t_rx.tdb.jd - down / 86400.0
+    up, t_tx = 0.0, t_rx
+    for _ in range(4):
+        r_tx = station(xmit, t_tx)
+        up = np.linalg.norm(r_b - r_tx) * darkcomet_AU / c
+        t_tx = t_rx - (down + up) * u.s
+    s = eph.get_particle("sun", t_b - eph.jd_ref)
+    sun = np.array([s.x, s.y, s.z])
+
+    def shapiro(a, b):
+        ra_, rb_, rho = (np.linalg.norm(a - sun) * darkcomet_AU, np.linalg.norm(b - sun) * darkcomet_AU, np.linalg.norm(a - b) * darkcomet_AU)
+        return 2 * 1.32712440018e20 / c ** 3 * math.log((ra_ + rb_ + rho) / (ra_ + rb_ - rho))
+    return up + down + shapiro(r_tx, r_b) + shapiro(r_b, r_rx)
+
+
+def darkcomet_ngfit(eph, t0, p0, free, t_emit, obs_pos, ra, dec, sigma, radar=(), iters=12):
+    """Gauss-Newton on the state and the free terms among A1, A2, A3 (indices into darkcomet_NG), with any radar delays as further residuals."""
+    p = np.array(list(p0[:6]) + [0.0] * len(free), float)
+    h = np.array([1e-9] * 3 + [1e-11] * 3 + [1e-14] * len(free))
+    keep = np.ones(len(ra), bool)
+
+    def terms(q):
+        ng = [0.0, 0.0, 0.0]
+        for k, j in enumerate(free):
+            ng[j] = q[6 + k]
+        return ng
+
+    def resid(q):
+        ng = terms(q)
+        pos = darkcomet_propagate(eph, t0, q[:6], ng[1], t_emit, a1=ng[0], a3=ng[2]) - obs_pos
+        mra, mdec = darkcomet_radec(pos)
+        dra = ((ra - mra + 180.0) % 360.0 - 180.0) * np.cos(np.radians(dec)) * 3600.0
+        out = [dra / sigma, (dec - mdec) * 3600.0 / sigma]
+        out += [np.array([(tau - darkcomet_delay(eph, t0, q[:6], ng, ep, rx, tx)) / sg for ep, tau, sg, rx, tx in radar])]
+        return np.concatenate(out)
+
+    cov = None
+    n = len(ra)
+    for _ in range(iters):
+        r0 = resid(p)
+        J = np.zeros((len(r0), len(p)))
+        for k in range(len(p)):
+            q = p.copy()
+            q[k] += h[k]
+            J[:, k] = (resid(q) - r0) / h[k]
+        kk = np.concatenate([keep, keep, np.ones(len(radar), bool)])
+        A, b = J[kk], r0[kk]
+        s = np.linalg.norm(A, axis=0)
+        cov = np.linalg.inv((A / s).T @ (A / s)) / np.outer(s, s)
+        dp = -cov @ (A.T @ b)
+        p = p + dp
+        r1 = resid(p)
+        new = r1[:n] ** 2 + r1[n:2 * n] ** 2 < darkcomet_CHI2_OUT
+        if np.all(np.abs(dp) < 1e-3 * np.sqrt(np.diag(cov))) and np.array_equal(new, keep):
+            break
+        keep = new
+    r = resid(p)
+    chi = r[:n] ** 2 + r[n:2 * n] ** 2
+    return p, cov, chi, keep, r[2 * n:]
+
+
+def darkcomet_normal(desig, ephem_dir=None):
+    """Refits with gravity alone, A2, A2 and A3, and A1, A2 and A3, with and without JPL's radar delays, under site weights and with each night as one position; A3 with each apparition left out."""
+    S = darkcomet_setup(desig, ephem_dir)
+    d, eph, rows, tdb, obs_pos, ra, dec, lab, t0, p0, t_emit, sigma = (S[k] for k in (
+        "d", "eph", "rows", "tdb", "obs_pos", "ra", "dec", "lab", "t0", "p0", "t_emit", "sigma"))
+    radar = darkcomet_radar(desig)
+    out = dict(n_obs=len(rows), radar=[dict(epoch=ep, delay_s=tau, sigma_s=sg, rcvr=rx, xmit=tx) for ep, tau, sg, rx, tx in radar], fits={}, left_out={},
+               apparitions=["%d-%02d" % darkcomet_ym(tdb[lab == k].min()) for k in range(lab.max() + 1)])
+    for scheme in ("none", "night"):
+        sg = sigma * darkcomet_night_factor(rows, scheme)
+        fits = {}
+        for use in ((False, True) if radar else (False,)):
+            for free in darkcomet_NG_SETS:
+                p, cov, chi, keep, rr = darkcomet_ngfit(eph, t0, p0, free, t_emit, obs_pos, ra, dec, sg, radar if use else ())
+                name = "%s|%s|%s" % (scheme, "radar" if use else "optical", " ".join(darkcomet_NG[j] for j in free) or "gravity only")
+                ng = [0.0, 0.0, 0.0]
+                for k, j in enumerate(free):
+                    ng[j] = p[6 + k]
+                res = [float((tau - darkcomet_delay(eph, t0, p[:6], ng, ep, rx, tx)) * 1e6) for ep, tau, s_, rx, tx in radar]
+                fits[name] = dict(chi=chi.tolist(), keep=keep.tolist(), npar=6 + len(free), radar_residual_us=res,
+                                  terms={darkcomet_NG[j]: [float(p[6 + k]), float(math.sqrt(cov[6 + k, 6 + k]))] for k, j in enumerate(free)})
+        # each model judged on the observations every model of this weighting keeps
+        common = np.logical_and.reduce([np.array(f["keep"]) for f in fits.values()])
+        for name, f in fits.items():
+            f["chi2_common"] = float(np.sum(np.array(f["chi"])[common]))
+            f["n_common"] = int(common.sum())
+            f["bic"] = f["chi2_common"] + f["npar"] * math.log(2 * common.sum())
+            f["kept"] = int(np.sum(f.pop("keep")))
+            f.pop("chi")
+            print("%-36s chi2 %7.1f on %d common, kept %d, BIC %7.1f; delay residuals %s us; %s" % (
+                name, f["chi2_common"], f["n_common"], f["kept"], f["bic"], ", ".join("%+.2f" % x for x in f["radar_residual_us"]) or "none",
+                ", ".join("%s %+.3e +- %.1e (%.1f sigma)" % (k, v[0], v[1], v[0] / v[1]) for k, v in f["terms"].items())), flush=True)
+        out["fits"].update(fits)
+    for k in range(lab.max() + 1):
+        m = lab != k
+        try:
+            p, cov = darkcomet_ngfit(eph, t0, p0, [1, 2], t_emit[m], obs_pos[m], ra[m], dec[m], sigma[m], radar)[:2]
+        except np.linalg.LinAlgError:
+            # the remaining apparitions do not determine the orbit with both terms
+            print("  without %s (%d obs): A2 and A3 undetermined by the rest" % (out["apparitions"][k], (~m).sum()), flush=True)
+            continue
+        out["left_out"][out["apparitions"][k]] = dict(n=int((~m).sum()), A3=float(p[7]), A3_sigma=float(math.sqrt(cov[7, 7])))
+        x = out["left_out"][out["apparitions"][k]]
+        print("  without %s (%d obs): A3 %+.3e +- %.1e (%.1f sigma)" % (out["apparitions"][k], x["n"], x["A3"], x["A3_sigma"], x["A3"] / x["A3_sigma"]), flush=True)
+    json.dump(out, open(os.path.join(d, "normal.json"), "w"), indent=1)
+    return out
+
+
+def darkcomet_normal_record(desig):
+    """Record the normal-term refits: A3 with A2 and with all three terms, radar included, under both weightings, and the BIC margins."""
+    d = darkcomet_dir(desig)
+    nf = json.load(open(os.path.join(d, "normal.json")))
+    f = nf["fits"]
+    src = "radar" if nf["radar"] else "optical"
+
+    def a3(key):
+        t = f[key]["terms"]["A3"]
+        return "%+.2e +- %.1e (%.1f sigma)" % (t[0], t[1], t[0] / t[1])
+
+    def margin(scheme):
+        b = {k.split("|")[2]: v["bic"] for k, v in f.items() if k.startswith("%s|%s|" % (scheme, src))}
+        best_without = min(v for k, v in b.items() if "A3" not in k)
+        return best_without - min(b["A2 A3"], b["A1 A2 A3"])
+
+    loo = nf["left_out"]
+    n3 = min(abs(v["A3"] / v["A3_sigma"]) for v in loo.values())
+    lead = min(("none", "night"), key=lambda s: abs(f["%s|%s|A1 A2 A3" % (s, src)]["terms"]["A3"][0] / f["%s|%s|A1 A2 A3" % (s, src)]["terms"]["A3"][1]))
+    lt = f["%s|%s|A1 A2 A3" % (lead, src)]["terms"]["A3"]
+    run = "darkcomet_normal_" + desig.replace(" ", "_").lower()
+    radar_txt = ("; %d radar delay%s fitted to %s us" % (len(nf["radar"]), "" if len(nf["radar"]) == 1 else "s",
+                                                         ", ".join("%+.1f" % x for x in f["none|radar|A1 A2 A3"]["radar_residual_us"]))
+                 if nf["radar"] else "")
+    core.record_search(
+        run, "Normal acceleration of a dark comet", archive="MPC observations; JPL SBDB, Horizons and radar astrometry",
+        release="%d observations, %d radar delays" % (nf["n_obs"], len(nf["radar"])),
+        selection=desig, code=os.path.abspath(__file__), entry="darkcomet", n_targets=1, n_unit="asteroids",
+        params=dict(sigma_default=0.5, sigma_site=darkcomet_SIGMA, chi2_out=darkcomet_CHI2_OUT, g_r="r^-2", models=[" ".join(darkcomet_NG[j] for j in s) or "gravity" for s in darkcomet_NG_SETS]),
+        null_summary={k: dict(chi2=v["chi2_common"], n=v["n_common"], bic=v["bic"]) for k, v in f.items()},
+        sensitivity="A3 under site weights and with each night as one position, with and without the radar delays, and with each apparition left out",
+        ledger="Bodies pushed out of their orbital planes",
+        result="A3 with A1 and A2 free %s with site weights and %s with each night as one position; the BIC margin of a normal term is %+.0f and %+.0f, positive favouring it; "
+               "with one apparition left out at a time A3 stays at %.1f sigma or more%s"
+               % (a3("none|%s|A1 A2 A3" % src), a3("night|%s|A1 A2 A3" % src), margin("none"), margin("night"), n3, radar_txt))
+    core.clear_targets(run)
+    core.record_targets(run, [dict(target="mpc:" + desig, stat=lt[0] / lt[1], unit="A3 / sigma with A1 and A2 free, the less significant weighting",
+                                   vet="dark-comet", note="A3 %+.2e au/d^2; Seligman et al. (2024) dark comet" % lt[0])])
+    print("recorded %s" % run)
 
 
 darkcomet_POOL = {}
@@ -3498,7 +3692,7 @@ def darkcomet_stack(desig, vmax=21.6, half=20):
 def darkcomet_cli():
     p = argparse.ArgumentParser()
     p.add_argument("mode", choices=("fetch", "thermal", "refit", "record", "images", "precovery", "robust", "frames", "field", "stack",
-                                    "blockcov", "locus", "forecast", "census", "variants"))
+                                    "blockcov", "locus", "forecast", "census", "variants", "normal", "normal-record"))
     p.add_argument("desig")
     p.add_argument("--ephem", default=None)
     p.add_argument("--night", default=None, help="UTC date of the CFHT images to re-measure (precovery, frames, field)")
@@ -3534,6 +3728,10 @@ def darkcomet_cli():
         darkcomet_census(a.desig, a.night, a.workers)
     elif a.mode == "variants":
         darkcomet_thermal_variants(a.desig)
+    elif a.mode == "normal":
+        darkcomet_normal(a.desig, a.ephem)
+    elif a.mode == "normal-record":
+        darkcomet_normal_record(a.desig)
     else:
         darkcomet_record(a.desig)
 
@@ -6104,9 +6302,13 @@ def spinsurvey_main(record=False, rho=2000.0, d_min_km=0.3, kpa_min=1.0, km_d=1.
         print("recorded")
 
 
-fireballs_DOC = r"""Fireballs from outside the Solar System: every fireball of the CNEOS database (the JPL fireball API) with a location and a pre-entry velocity vector, the vector taken in Earth-fixed axes into barycentric axes, Earth's gravity removed from its speed, Earth's orbital velocity added, and the heliocentric speed set against the Sun's escape speed at Earth's distance; an interstellar body or probe striking Earth would arrive faster than that speed allows for anything bound, and for each fast one the fraction by which its speed would have to be overestimated for the orbit to be bound; the entries whose listed speed and vector disagree by more than 0.5 km/s are counted apart. Each fast one is redrawn with the errors that CNEOS shows against ground-based networks (Peña-Asensio et al. 2025: about 6 km/s in speed and 20 deg in radiant before 2018, 0.55 km/s and 1.1 deg from 2018), and one bound in more than 1 per cent of the draws is within the sensors' errors.
+fireballs_DOC = r"""Fireballs from outside the Solar System: every fireball of the CNEOS database (the JPL fireball API) with a location and a pre-entry velocity vector, the vector taken in Earth-fixed axes into barycentric axes, Earth's gravity removed from its speed, Earth's orbital velocity added, and the heliocentric speed set against the Sun's escape speed at Earth's distance; an interstellar body or probe striking Earth would arrive faster than that speed allows for anything bound, and for each fast one the fraction by which its speed would have to be overestimated for the orbit to be bound; the entries whose listed speed and vector disagree by more than 0.5 km/s are counted apart. Each fast one is redrawn with the errors that CNEOS shows against ground-based networks (Peña-Asensio et al. 2025: about 6 km/s in speed and 20 deg in radiant before 2018, 0.55 km/s and 1.1 deg from 2018), and one bound in more than 1 per cent of the draws is within the sensors' errors; so is one that an independent published velocity (fireballs_STEREO: two satellites' lightning imagers triangulating the trail) brings below the escape speed.
 
     python -I seti.py solar_system fireballs [record] [--margin-kms 0] [--mismatch-kms 0.5] [--draws 20000] [--p-bound 0.01]"""
+
+# independent pre-entry velocities (Earth-fixed km/s) with their speed errors, by CNEOS date: Silber et al. (2026, RNAAS 10, 183) triangulate
+# 2026-04-01 from GOES-East's Geostationary Lightning Mapper and MTG-I1's Lightning Imager, 83 deg apart, in two models
+fireballs_STEREO = {"2026-04-01 02:13:14": (((3.5, -28.3, 49.7), 2.0), ((3.5, -27.7, 49.4), 3.0))}
 
 
 def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, p_bound=0.01):
@@ -6116,6 +6318,7 @@ def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, 
     d = json.loads(core.get("https://ssd-api.jpl.nasa.gov/fireball.api?req-loc=true&req-vel=true&vel-comp=true", timeout=120))
     f = d["fields"]
     out = []
+    rng0 = np.random.default_rng(29)
     for row in d["data"]:
         r = dict(zip(f, row))
         if not all(r.get(k) for k in ("vx", "vy", "vz", "lat", "lon", "alt", "vel")):
@@ -6146,8 +6349,17 @@ def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, 
                 mid = 0.5 * (lo_s + hi_s)
                 lo_s, hi_s = (mid, hi_s) if helio(mid) < vesc_s else (lo_s, mid)
         cut = 1 - lo_s / float(np.linalg.norm(vg)) if vh > vesc_s else 0.0
+        # an independent velocity's heliocentric speed and the share of draws within its speed error that stay hyperbolic
+        stereo = []
+        for vs_, sv_ in fireballs_STEREO.get(r["date"], ()):
+            it2 = ITRS(CartesianRepresentation(loc.x, loc.y, loc.z, differentials=CartesianDifferential(*(np.array(vs_) * u.km / u.s))), obstime=t)
+            vg2 = it2.transform_to(GCRS(obstime=t)).velocity.d_xyz.to(u.km / u.s).value
+            u2, s2 = vg2 / np.linalg.norm(vg2), float(np.linalg.norm(vg2))
+            sp2 = s2 + sv_ * rng0.standard_normal(draws)
+            vh2 = np.linalg.norm(u2[None, :] * np.sqrt(np.clip(sp2 ** 2 - vesc_e ** 2, 0, None))[:, None] + vearth[None, :], axis=1)
+            stereo.append((float(np.linalg.norm(u2 * math.sqrt(max(s2 ** 2 - vesc_e ** 2, 0.0)) + vearth)), float(np.mean(vh2 > vesc_s))))
         out.append(dict(date=r["date"], energy_kt=core.num(r["impact-e"]), vel=float(r["vel"]), vmag=float(np.linalg.norm(v)), v_helio=vh, v_esc=vesc_s, cut=cut,
-                        _u=unit, _s=float(np.linalg.norm(vg)), _ve=vesc_e, _vE=vearth,
+                        _u=unit, _s=float(np.linalg.norm(vg)), _ve=vesc_e, _vE=vearth, stereo=stereo,
                         lat=lat, lon=lon, alt=float(r["alt"])))
     for o in out:
         o["consistent"] = abs(o["vel"] - o["vmag"]) <= mismatch_kms
@@ -6169,7 +6381,7 @@ def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, 
         vh_d = np.linalg.norm(uu * vinf[:, None] + o["_vE"][None, :], axis=1)
         o["p_bound"] = float(np.mean(vh_d < o["v_esc"]))
         o["era"] = "from 2018" if late else "before 2018"
-        o["vet"] = "sensor-error" if o["p_bound"] > p_bound else None
+        o["vet"] = "sensor-error" if o["p_bound"] > p_bound or (o["stereo"] and min(x[0] for x in o["stereo"]) < o["v_esc"]) else None
     for o in out:
         for k in ("_u", "_s", "_ve", "_vE"):
             o.pop(k, None)
@@ -6179,8 +6391,9 @@ def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, 
           "bound in more than %g of the draws within CNEOS's errors: %d; beyond them: %d" % (len(out), sum(o["consistent"] for o in out), mismatch_kms, len(hyp), len(hyp_ok), p_bound,
                                                                                          len(hyp) - len(left), len(left)))
     for o in sorted(hyp, key=lambda o: -o["excess"]):
-        print("  %s: %.1f km/s listed (vector %.1f), heliocentric %.1f against %.1f km/s (+%.1f), bound if the speed is %.1f per cent too high, bound in %.3f of the draws (%s); impact energy %s kt, %.1f %.1f; %s" % (
-            o["date"], o["vel"], o["vmag"], o["v_helio"], o["v_esc"], o["excess"], 100 * o["cut"], o["p_bound"], o["era"], o["energy_kt"], o["lat"], o["lon"], o["vet"] or "unexplained"))
+        print("  %s: %.1f km/s listed (vector %.1f), heliocentric %.1f against %.1f km/s (+%.1f), bound if the speed is %.1f per cent too high, bound in %.3f of the draws (%s)%s; impact energy %s kt, %.1f %.1f; %s" % (
+            o["date"], o["vel"], o["vmag"], o["v_helio"], o["v_esc"], o["excess"], 100 * o["cut"], o["p_bound"], o["era"],
+            "; triangulated %s" % ", ".join("%.1f km/s, hyperbolic in %.2f" % x for x in o["stereo"]) if o["stereo"] else "", o["energy_kt"], o["lat"], o["lon"], o["vet"] or "unexplained"))
     json.dump(out, open(core.results("cneos_fireballs.json"), "w"), indent=1, default=float)
     if record:
         core.record_run(
@@ -6190,8 +6403,10 @@ def fireballs_main(record=False, margin_kms=0.0, mismatch_kms=0.5, draws=20000, 
             "a fireball arriving faster than anything bound to the Sun beyond the sensors' errors",
             "%d above the escape speed, %d of them bound in more than %g of the draws within CNEOS's errors; %d beyond them" % (len(hyp), len(hyp) - len(left), p_bound, len(left)),
             [dict(target="fireball:%s" % o["date"].replace(" ", "T"), stat=round(o["excess"], 2), unit="km/s above the Sun's escape speed", vet=o["vet"],
-                  note="listed %.1f km/s, heliocentric %.1f, bound if the speed is %.1f per cent too high, bound in %.3f of the draws (%s)" % (
-                      o["vel"], o["v_helio"], 100 * o["cut"], o["p_bound"], o["era"])) for o in hyp])
+                  note="listed %.1f km/s, heliocentric %.1f, bound if the speed is %.1f per cent too high, bound in %.3f of the draws (%s)%s" % (
+                      o["vel"], o["v_helio"], 100 * o["cut"], o["p_bound"], o["era"],
+                      "; two lightning imagers' triangulated velocity (Silber et al. 2026) gives %s" % " and ".join("%.1f km/s heliocentric, hyperbolic in %.2f of draws" % x for x in o["stereo"])
+                      if o["stereo"] else "")) for o in hyp])
         print("recorded")
 
 

@@ -5089,7 +5089,96 @@ def daylines_main(record=False, sigma=5.0, frac=0.1, wide_um=0.05, min_bins=5, e
         print("recorded")
 
 
+ttvzip_DOC = r"""Transit-timing residuals that compress: Kepler transit times of Holczer et al. (2016) for every KOI with thirty or more clean times, a line and the two strongest sinusoids removed, the residual divided by its errors, cut into four quantile symbols in transit order and compressed with zlib, against the same symbols shuffled and against first-order autoregressive surrogates at the residual's own lag-one correlation; a sequence below both nulls at the smallest p the draws allow carries structure beyond a line, two periods and red noise, and a published TTV system or an expected count of such sequences explains it.
+
+    python -I seti.py transits ttvzip [record] [--min-n 30] [--draws 300] [--seed 31]"""
+
+
+def ttvzip_main(record=False, min_n=30, draws=300, seed=31):
+    import zlib
+    from astropy.timeseries import LombScargle
+
+    def fit(A, y, w):
+        p = np.linalg.lstsq(A * np.sqrt(w)[:, None], y * np.sqrt(w), rcond=None)[0]
+        return y - A @ p
+
+    def strip(x, y, w):
+        cols, periods = [np.ones_like(x), x], []
+        r = fit(np.vstack(cols).T, y, w)
+        for _ in range(2):
+            fr, pw = LombScargle(x, r, 1 / np.sqrt(w)).autopower(minimum_frequency=1 / (2 * np.ptp(x) + 1), maximum_frequency=0.5, samples_per_peak=5)
+            f = float(fr[int(np.argmax(pw))])
+            periods.append(1 / f)
+            cols += [np.sin(2 * np.pi * f * x), np.cos(2 * np.pi * f * x)]
+            r = fit(np.vstack(cols).T, y, w)
+        return r, periods
+
+    def code(z):
+        q = np.quantile(z, [0.25, 0.5, 0.75])
+        return len(zlib.compress(bytes(np.searchsorted(q, z).astype(np.uint8) + 65), 9))
+
+    cats = core.vizier("J/ApJS/225/9")
+    t2 = {str(r["KOI"]): r for r in cats[0]}
+    by = {}
+    for r in cats[1]:
+        if any(str(r[c]).strip() not in ("", "--", "0", "None", "nan") for c in ("f_O-C", "Out", "Over")):
+            continue
+        oc, e = num(r["O-C"]), num(r["e_O-C"])
+        if oc is not None and e and np.isfinite(oc) and np.isfinite(e) and e > 0:
+            by.setdefault(str(r["KOI"]), []).append((int(r["N"]), oc, e))
+    rng = np.random.default_rng(seed)
+    res = []
+    for koi, rows in by.items():
+        if len(rows) < min_n:
+            continue
+        a = np.array(sorted(rows))
+        r, periods = strip(a[:, 0], a[:, 1], 1 / a[:, 2] ** 2)
+        z = r / a[:, 2]
+        obs = code(z)
+        sh = np.array([code(rng.permutation(z)) for _ in range(draws)])
+        rho = min(max(float(np.corrcoef(z[:-1], z[1:])[0, 1]), 0.0), 0.95)
+        ar = []
+        for _ in range(draws):
+            u = np.empty(len(z))
+            u[0] = rng.normal()
+            for i in range(1, len(z)):
+                u[i] = rho * u[i - 1] + rng.normal() * math.sqrt(1 - rho ** 2)
+            ar.append(code(u))
+        res.append(dict(koi=koi, kic=str(t2[koi]["KIC"]) if koi in t2 else "", n=len(z), obs=obs, sh=float(sh.mean()), rho=rho, periods=periods,
+                        p_sh=float((1 + np.sum(sh <= obs)) / (draws + 1)), p_ar=float((1 + np.sum(np.array(ar) <= obs)) / (draws + 1)),
+                        chi2=float(np.sum(z ** 2) / max(len(z) - 6, 1))))
+    floor = 1 / (draws + 1)
+    both = [r for r in res if r["p_sh"] <= floor and r["p_ar"] <= floor]
+    expected = len(res) * floor ** 2
+    # residual structure a published TTV system explains: reduced chi2 well above one after the two sinusoids
+    for r in res:
+        r["vet"] = "timing-variation" if r in both and r["chi2"] > 3.0 else None
+    rest = [r for r in both if r["vet"] is None]
+    # the rest are the chance count when the Poisson tail at the expected number is not small
+    p_rest = 1.0 - sum(math.exp(-expected) * expected ** i / math.factorial(i) for i in range(len(rest)))
+    for r in rest:
+        r["vet"] = "chance-rate" if p_rest > 0.01 else None
+    frac = float(np.mean([r["p_sh"] < 0.01 for r in res])) if res else 0.0
+    print("%d KOIs with %d or more clean transit times; below p %.4f on both nulls: %d (about %.2f by chance); p_sh below 0.01 in %.3f of them" % (
+        len(res), min_n, floor, len(both), expected, frac))
+    for r in both:
+        print("  KOI %s (KIC %s) n %d: %d bytes against %.1f shuffled, lag-1 %.2f, periods %.1f and %.1f transits removed, reduced chi2 %.2f; %s" % (
+            r["koi"], r["kic"], r["n"], r["obs"], r["sh"], r["rho"], r["periods"][0], r["periods"][1], r["chi2"], r["vet"] or "unexplained"))
+    if record:
+        core.record_run(
+            "kepler_ttv_compressibility", "Transit-timing residuals that compress", "Holczer et al. (2016) Kepler transit times (VizieR J/ApJS/225/9)",
+            "%d KOIs with %d or more clean transit times" % (len(res), min_n), os.path.abspath(__file__), "ttvzip", len(res), "KOIs",
+            dict(min_n=min_n, draws=draws, seed=seed), dict(below_both=len(both), expected=expected, frac_p_sh_001=frac),
+            "zlib length of four quantile symbols below every shuffle and every AR(1) surrogate (p %.4f)" % floor,
+            "%d below both nulls at p %.4f against %.2f by chance; %.1f%% below 0.01 against shuffles alone; %d unexplained" % (
+                len(both), floor, expected, 100 * frac, sum(r["vet"] is None for r in both)),
+            [dict(target="koi:%s" % r["koi"], stat=r["obs"], p=max(r["p_sh"], r["p_ar"]), unit="zlib bytes of the quantile symbols", vet=r["vet"],
+                  note="KIC %s; %d times; %.1f shuffled; lag-1 %.2f; reduced chi2 %.2f" % (r["kic"], r["n"], r["sh"], r["rho"], r["chi2"])) for r in both])
+        print("recorded")
+
+
 APPROACHES = {
+    "ttvzip": (lambda: core.run_cli(ttvzip_main), ttvzip_DOC),
     "daylines": (lambda: core.run_cli(daylines_main), daylines_DOC),
     "polar": (lambda: core.run_cli(polar_main), polar_DOC),
     "translines": (lambda: core.run_cli(translines_main), translines_DOC),

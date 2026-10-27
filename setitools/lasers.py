@@ -4996,7 +4996,123 @@ def skyfibre_cli():
         skyfibre_summary()
 
 
+telecom_DOC = r"""Telecom-band laser lines: the cached NIRPS and SPIRou spectra of the shoreline programme's M dwarfs, unresolved emission two to six samples wide above six local deviations in the O band (1260-1330 nm) and the C and L bands (1530-1625 nm), Paschen beta masked, recurring within 1.5 km/s in the star's frame on three or more nights whose barycentric corrections spread over 3 km/s, so a feature fixed at the telescope cannot recur, against the absorption-like dips the same test finds, the mirror; a recurring peak whose wavelengths scatter less in the telescope's frame than in the star's is sky emission the subtraction left, and one seen in more than one star sits on the stars' shared molecular pseudo-continuum rather than on one star.
+
+    python -I seti.py lasers telecom [record] [--sig 6] [--tol-kms 1.5] [--min-nights 3] [--min-berv-spread 3] [--edge 30]"""
+
+telecom_WINDOWS = ((12600.0, 13300.0), (15300.0, 16250.0))
+telecom_MASK = ((12815.0, 12822.0),)  # Paschen beta in air, in emission in active M dwarfs
+
+
+def telecom_features(w, f, sign, sig, edge):
+    """Unresolved features of one sign above SIG local deviations in the windows: (wavelength, significance)."""
+    from scipy.ndimage import median_filter
+    out = []
+    for lo, hi in telecom_WINDOWS:
+        m = (w > lo) & (w < hi) & np.isfinite(f)
+        if m.sum() < 500:
+            continue
+        ww, ff = w[m], f[m]
+        r = sign * (ff / median_filter(ff, size=41, mode="nearest") - 1.0)
+        n = len(r)
+        sd = 1.4826 * median_filter(np.abs(r - median_filter(r, size=401, mode="nearest")), size=401, mode="nearest")
+        sd = np.where(sd > 0.2 * np.nanmedian(sd), sd, np.inf)
+        # zero-filled stretches repeat a value exactly
+        z = np.where(np.r_[False, np.diff(ff) == 0], 0.0, r / sd)
+        for i in np.nonzero((z > sig) & (z >= np.roll(z, 1)) & (z >= np.roll(z, -1)))[0]:
+            if i < 3 or i > n - 4 or any(a < ww[i] < b for a, b in telecom_MASK) or not lo + edge < ww[i] < hi - edge:
+                continue
+            j0, j1 = i, i
+            while j0 > 0 and z[j0 - 1] > z[i] / 2:
+                j0 -= 1
+            while j1 < n - 1 and z[j1 + 1] > z[i] / 2:
+                j1 += 1
+            # a line through the spectrograph spans two to six samples above half its height; one sample is a hit on the detector
+            if 2 <= j1 - j0 + 1 <= 6:
+                out.append((float(ww[i]), float(z[i])))
+    return out
+
+
+def telecom_main(record=False, sig=6.0, tol_kms=1.5, min_nights=3, min_berv_spread=3.0, edge=30.0):
+    from astropy.io import fits
+    from setitools import biosignatures, composition
+    c = 299792.458
+    root = os.path.join(biosignatures.shoreline_ROOT, "spectra")
+    groups = collections.defaultdict(list)
+    for inst in ("NIRPS", "SPIRou"):
+        for p in sorted(glob.glob(os.path.join(root, inst, "*.fits"))):
+            try:
+                obj = str(fits.getheader(p).get("OBJECT", "")).strip().upper()
+            except Exception:
+                continue
+            groups[(inst, re.sub(r"[ _-]", "", obj))].append(p)
+    res, n_dips, n_spec = [], 0, sum(len(v) for v in groups.values())
+    for (inst, obj), paths in sorted(groups.items()):
+        if len(paths) < min_nights:
+            continue
+        loaded = []
+        for p in paths:
+            try:
+                loaded.append(biosignatures.shoreline_load(p))
+            except Exception:
+                continue
+        if not loaded:
+            continue
+        vsys = composition.companions_vsys(loaded)
+        found = {+1: [], -1: []}
+        for w, f, e, meta in loaded:
+            rv = meta.get("rv") if meta.get("rv") is not None else vsys
+            berv = meta.get("berv") or 0.0
+            for sign in (+1, -1):
+                for lam, z in telecom_features(np.asarray(w, float), np.asarray(f, float), sign, sig, edge):
+                    found[sign].append(dict(rest=lam / (1.0 + rv / c), obs=lam / (1.0 + berv / c), z=z, night=math.floor(meta["mjd"] + 0.3), berv=berv))
+        rec = {}
+        for sign in (+1, -1):
+            runs = []
+            for x in sorted(found[sign], key=lambda x: x["rest"]):
+                if runs and (x["rest"] - runs[-1][-1]["rest"]) / x["rest"] * c < tol_kms:
+                    runs[-1].append(x)
+                else:
+                    runs.append([x])
+            # scatter of the feature's wavelength in the star's frame and in the telescope's, in km/s
+            rec[sign] = [dict(rest=float(np.median([x["rest"] for x in g])), nights=len({x["night"] for x in g}), z=max(x["z"] for x in g),
+                              spread=max(x["berv"] for x in g) - min(x["berv"] for x in g),
+                              sd_star=float(np.std([x["rest"] for x in g]) / g[0]["rest"] * c), sd_tel=float(np.std([x["obs"] for x in g]) / g[0]["obs"] * c))
+                         for g in runs if len({x["night"] for x in g}) >= min_nights]
+            rec[sign] = [r for r in rec[sign] if r["spread"] > min_berv_spread]
+        for r in rec[+1]:
+            res.append(dict(inst=inst, obj=obj, **r))
+        n_dips += len(rec[-1])
+        print("%-7s %-16s %3d spectra: recurring peaks %d, recurring dips %d" % (inst, obj[:16], len(paths), len(rec[+1]), len(rec[-1])), flush=True)
+    # a peak at one rest wavelength in two or more stars belongs to the M dwarfs' shared spectrum
+    # a peak that holds its wavelength better at the telescope than in the star is sky emission left by the subtraction
+    for r in res:
+        others = {(x["inst"], x["obj"]) for x in res if abs(x["rest"] - r["rest"]) / r["rest"] * c < 3 * tol_kms and x["obj"] != r["obj"]}
+        r["vet"] = "atmospheric-line" if r["sd_tel"] <= r["sd_star"] else "shared-feature" if others else None
+    left = [r for r in res if r["vet"] is None]
+    print("%d spectra in %d groups; %d recurring peaks against %d recurring dips; %d steadier at the telescope than in the star, %d seen in more than one star, %d left" % (
+        n_spec, len(groups), len(res), n_dips, sum(r["vet"] == "atmospheric-line" for r in res), sum(r["vet"] == "shared-feature" for r in res), len(left)))
+    for r in left:
+        print("  %s %s: %.3f A in the star's frame, %d nights, %.1f sigma, BERV spread %.1f km/s, scatter %.2f km/s in the star and %.2f at the telescope" % (
+            r["inst"], r["obj"], r["rest"], r["nights"], r["z"], r["spread"], r["sd_star"], r["sd_tel"]))
+    if record:
+        # one-star peaks are the photometric tail when the dips, which no laser makes, outnumber them
+        mirror = len(left) <= n_dips
+        core.record_run(
+            "telecom_band_lasers", "Telecom-band laser lines", "ESO Phase 3 (NIRPS) and the CADC (CFHT SPIRou): the shoreline programme's cached spectra",
+            "%d spectra of %d instrument-star groups" % (n_spec, len(groups)), os.path.abspath(__file__), "telecom", len(groups), "instrument-star groups",
+            dict(sig=sig, tol_kms=tol_kms, min_nights=min_nights, min_berv_spread=min_berv_spread, edge=edge, windows=telecom_WINDOWS),
+            dict(peaks=len(res), dips=n_dips), "an unresolved feature above %g local deviations recurring on %d nights in the star's frame" % (sig, min_nights),
+            "%d recurring peaks against %d recurring dips; %d steadier at the telescope than in the star, %d in more than one star; %d left" % (
+                len(res), n_dips, sum(r["vet"] == "atmospheric-line" for r in res), sum(r["vet"] == "shared-feature" for r in res), len(left)),
+            [dict(target="%s#%.3f" % (r["obj"], r["rest"]), stat=round(r["z"], 1), unit="sigma, the strongest night", vet=r["vet"] or ("chance-rate" if mirror else None),
+                  note="%s; %d nights; BERV spread %.1f km/s; scatter %.2f km/s in the star, %.2f at the telescope" % (
+                      r["inst"], r["nights"], r["spread"], r["sd_star"], r["sd_tel"])) for r in res])
+        print("recorded")
+
+
 APPROACHES = {
+    "telecom": (lambda: core.run_cli(telecom_main), telecom_DOC),
     "skyfibre": (skyfibre_cli, skyfibre_DOC),
     "rvs": (rvs_cli, rvs_DOC),
     "eso": (eso_cli, eso_DOC),

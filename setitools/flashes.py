@@ -4907,7 +4907,84 @@ def chirps_main(record=False, rate_max=60.0, rate_min=1.0, p_max=1e-12, tmag_max
         print("recorded")
 
 
+hipflash_DOC = r"""Single-transit brightenings in Hipparcos epoch photometry: stars within 100 pc with a Gaia DR3 best neighbour and a robust scatter below 0.02 mag, a clean transit brighter than the star's median by 0.3 mag and five robust deviations, against the transits as much fainter, the mirror; each read for a catalogue-wide event (two or more other stars within half an hour, the satellite's own), a recurrence on the same star, Hipparcos's variability type, SIMBAD's type and RUWE, and for the pass partner 20.6 minutes away, which sees the same star through the other field of view and shares a real flash.
+
+    python -I seti.py flashes hipflash [record] [--mag 0.3] [--sig 5] [--quiet 0.02] [--pair-days 0.02] [--plx-min 10]"""
+
+
+def hipflash_main(record=False, mag=0.3, sig=5.0, quiet=0.02, pair_days=0.02, plx_min=10.0):
+    from collections import Counter
+    from setitools import dimming
+    hep = dimming.hipparcos_read_hep()
+    g = core.gaia("SELECT h.original_ext_source_id AS hip, g.source_id, g.parallax, g.bp_rp, g.ruwe, g.phot_variable_flag "
+                  "FROM gaiadr3.hipparcos2_best_neighbour AS h JOIN gaiadr3.gaia_source AS g ON h.source_id = g.source_id WHERE g.parallax > %g" % plx_min)
+    near = {int(r["hip"]): r for r in g}
+    events_all, cand, n_quiet = {+1: [], -1: []}, {+1: [], -1: []}, 0
+    for hip, s in hep.items():
+        t, m, q = (np.array(s[k]) for k in ("t", "m", "q"))
+        ok = (q & dimming.hipparcos_BAD) == 0
+        t, m = t[ok], m[ok]
+        if len(t) < 40:
+            continue
+        med = float(np.median(m))
+        sd = float(1.4826 * np.median(np.abs(m - med)))
+        quiet_star = hip in near and sd < quiet
+        n_quiet += quiet_star
+        for sign in (+1, -1):
+            d = sign * (med - m)
+            hit = d > max(sig * sd, mag)
+            events_all[sign] += list(t[hit])
+            if quiet_star and hit.any():
+                i = int(np.argmax(np.where(hit, d, -np.inf)))
+                partners = np.nonzero((np.abs(t - t[i]) < pair_days) & (np.arange(len(t)) != i))[0]
+                cand[sign].append(dict(hip=hip, t=float(t[i]), d=float(d[i]), sd=sd, partners=int(partners.size), n_hits=int(hit.sum()),
+                                       shared=bool(partners.size) and bool(np.any(sign * (med - m[partners]) > 0.5 * d[i])), vtype=s["vtype"],
+                                       gaia=near[hip]["source_id"], ruwe=float(near[hip]["ruwe"] or 0)))
+    sim = {}
+    hips = sorted({c["hip"] for k in cand for c in cand[k]})
+    for k in range(0, len(hips), 300):
+        for r in core.simbad("SELECT i.id, b.main_id, b.otype FROM ident AS i JOIN basic AS b ON i.oidref = b.oid WHERE i.id IN (%s)" % ",".join("'HIP %d'" % h for h in hips[k:k + 300])):
+            sim[int(r["id"].split()[-1])] = (" ".join(str(r["main_id"]).split()), str(r["otype"]).strip())
+    for sign in (+1, -1):
+        ev = np.sort(np.array(events_all[sign]))
+        for c in cand[sign]:
+            c["same_time"] = int(np.searchsorted(ev, c["t"] + pair_days) - np.searchsorted(ev, c["t"] - pair_days)) - 1
+            c["simbad"] = sim.get(c["hip"], ("", ""))
+            ot = c["simbad"][1]
+            c["vet"] = ("field-event" if c["same_time"] >= 2 else "variable-star" if c["n_hits"] > 1 or c["vtype"] in ("P", "D", "M", "U") else
+                        "flare" if ot in ("UV*", "Fl*") else "variable-star" if any(ot.startswith(x) for x in dimming.hipparcos_SIMBAD_EXPLAINED) else
+                        "binary" if c["ruwe"] > 1.4 else None)
+    left = {sign: [c for c in cand[sign] if c["vet"] is None] for sign in (+1, -1)}
+    print("%d quiet stars within %g pc; transits %.1f mag and %g deviations brighter on %d stars, fainter on %d" % (
+        n_quiet, 1000 / plx_min, mag, sig, len(cand[1]), len(cand[-1])))
+    for sign, name in ((+1, "brighter"), (-1, "fainter")):
+        print("%s: %s; %d unexplained, %d shared by the pass partner" % (name, dict(Counter(c["vet"] for c in cand[sign] if c["vet"])), len(left[sign]),
+                                                                         sum(c["shared"] for c in left[sign])))
+        for c in sorted(left[sign], key=lambda c: -c["d"])[:20]:
+            print("   HIP %d %-24s %-5s %+.2f mag (scatter %.3f) on JD %.4f, pass partner %s" % (
+                c["hip"], c["simbad"][0][:24], c["simbad"][1][:5], -sign * c["d"], c["sd"], c["t"] + 2440000.0,
+                "shares" if c["shared"] else ("does not" if c["partners"] else "missing")))
+    # unshared single transits are photometric outliers when the brighter ones are no commoner than the fainter
+    mirror = len(left[1]) <= len(left[-1]) + 2 * math.sqrt(max(len(left[-1]), 1))
+    if record:
+        core.record_run(
+            "hipparcos_single_flashes", "Single-transit flashes in Hipparcos", "Hipparcos epoch photometry (hep); Gaia DR3 hipparcos2_best_neighbour; SIMBAD",
+            "%d stars within %g pc with Hipparcos scatter below %g mag" % (n_quiet, 1000 / plx_min, quiet), os.path.abspath(__file__), "hipflash",
+            n_quiet, "stars", dict(mag=mag, sig=sig, quiet=quiet, pair_days=pair_days, plx_min=plx_min),
+            dict(brighter=len(cand[1]), fainter=len(cand[-1]), unexplained_brighter=len(left[1]), unexplained_fainter=len(left[-1])),
+            "a transit %.1f mag and %g robust deviations from the median of a star steady to %g mag" % (mag, sig, quiet),
+            "%d brighter against %d fainter; unexplained %d against %d, %d of the brighter shared by the pass partner" % (
+                len(cand[1]), len(cand[-1]), len(left[1]), len(left[-1]), sum(c["shared"] for c in left[1])),
+            [dict(target="hip:%d#%s" % (c["hip"], "brighter" if sign > 0 else "fainter"), stat=round(-sign * c["d"], 3), unit="mag from the median, one transit",
+                  vet=c["vet"] or ("chance-rate" if mirror and not c["shared"] else None),
+                  note="JD %.4f; scatter %.3f; %d other stars within %g d; pass partner %s; SIMBAD %s" % (
+                      c["t"] + 2440000.0, c["sd"], c["same_time"], pair_days, "shares" if c["shared"] else ("does not" if c["partners"] else "missing"), c["simbad"]))
+             for sign in (+1, -1) for c in cand[sign]])
+        print("recorded")
+
+
 APPROACHES = {
+    "hipflash": (lambda: core.run_cli(hipflash_main), hipflash_DOC),
     "chirps": (lambda: core.run_cli(chirps_main), chirps_DOC),
     "tones": (lambda: core.run_cli(tones_main), tones_DOC),
     "flareecho": (lambda: core.run_cli(flareecho_main), flareecho_DOC),

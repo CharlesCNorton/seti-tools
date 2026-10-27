@@ -3183,7 +3183,7 @@ def bigdwarfs_main(record=False, ratio=1.2, sigma=3.0, logg_min=4.0, plx_min=10.
         print("recorded")
 
 
-etzwarm_DOC = r"""Warm stars in Earth's transit zone: Gaia Catalogue of Nearby Stars objects (probability above 0.9, not white dwarfs, RUWE below 1.4, one IPD peak) with WISE W1 and a W3 or W4 detection at S/N 10 or 5, whose W1-W3 or W1-W4 colour lies more than five robust widths and three errors above the locus of single stars of the same BP-RP; the share of such stars within 0.264 deg of the ecliptic, where Earth's transits across the Sun are seen, against the share 1-5 deg away. A watcher of Earth's transits with a civilisation's waste heat would raise the share in the zone.
+etzwarm_DOC = r"""Warm stars in Earth's transit zone: Gaia Catalogue of Nearby Stars objects (probability above 0.9, not white dwarfs, RUWE below 1.4, one IPD peak) with WISE W1 and a W3 or W4 detection at S/N 10 or 5, whose W1-W3 or W1-W4 colour lies more than five robust widths and three errors above the locus of single stars of the same BP-RP, and still does with AllWISE's plain profile W1 in place of the catalogue's proper-motion-fitted W1, which runs faint for bright and fast stars; the share of such stars within 0.264 deg of the ecliptic, where Earth's transits across the Sun are seen, against the share 1-5 deg away. A watcher of Earth's transits with a civilisation's waste heat would raise the share in the zone.
 
 With `--planet NAME` the zone is that planet's transit zone, the Sun's angular radius at the planet's distance either side of its orbital plane, where a watcher sees the giant planet rather than Earth, and the control band is measured from that plane.
 
@@ -3206,7 +3206,7 @@ def etzwarm_main(record=False, planet="", zone_deg=0.264, control_min_deg=1.0, c
         x, y, z = math.cos(de) * math.cos(ra), math.cos(de) * math.sin(ra), math.sin(de)
         ye, ze = y * math.cos(eps) + z * math.sin(eps), -y * math.sin(eps) + z * math.cos(eps)
         return abs(math.degrees(math.asin(max(-1.0, min(1.0, x * normal[0] + ye * normal[1] + ze * normal[2])))))
-    rows = catalogues.gcns("source_id, ra, dec, parallax, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe, ipd_frac_multi_peak, w1mpro_pm_wise, "
+    rows = catalogues.gcns("source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe, ipd_frac_multi_peak, w1mpro_pm_wise, "
                            "w1sigmpro_pm_wise, w3mpro_wise, w3sigmpro_wise, w4mpro_wise, w4sigmpro_wise",
                            "gcns_prob > 0.9 AND wd_prob < 0.1 AND ruwe < 1.4 AND ipd_frac_multi_peak <= 2 AND w1mpro_pm_wise IS NOT NULL", ranges=12)
     st = []
@@ -3216,8 +3216,9 @@ def etzwarm_main(record=False, planet="", zone_deg=0.264, control_min_deg=1.0, c
             continue
         st.append(dict(id=r["source_id"], beta=latitude(float(r["ra"]), float(r["dec"])), bprp=bprp, w1=num(r["w1mpro_pm_wise"]),
                        s1=num(r["w1sigmpro_pm_wise"]), w3=num(r["w3mpro_wise"]), s3=num(r["w3sigmpro_wise"]), w4=num(r["w4mpro_wise"]),
-                       s4=num(r["w4sigmpro_wise"]), g=num(r["phot_g_mean_mag"]), plx=num(r["parallax"])))
-    warm = {}
+                       s4=num(r["w4sigmpro_wise"]), g=num(r["phot_g_mean_mag"]), plx=num(r["parallax"]), ra=float(r["ra"]), dec=float(r["dec"]),
+                       pmra=num(r["pmra"]) or 0.0, pmdec=num(r["pmdec"]) or 0.0))
+    warm, loci = {}, {}
     for band, lim in (("3", w3_err_max), ("4", w4_err_max)):
         use = [s for s in st if s["w" + band] is not None and s["s" + band] is not None and s["s" + band] < lim and s["s1"] is not None]
         col = np.array([s["w1"] - s["w" + band] for s in use])
@@ -3234,6 +3235,32 @@ def etzwarm_main(record=False, planet="", zone_deg=0.264, control_min_deg=1.0, c
                 err = math.hypot(s["s1"], s["s" + band])
                 if col[i] - med > max(widths * wid, errors * err):
                     warm.setdefault(s["id"], {})[band] = round(float(col[i] - med), 2)
+                    loci[(s["id"], band)] = (med, wid, err)
+    # the catalogue's W1 is AllWISE's proper-motion fit, which runs up to a magnitude faint of the plain profile W1 for bright and fast stars:
+    # each warm star's colour taken again with the plain W1 at its 2010.5 position, against the same locus
+    by_id = {s["id"]: s for s in st}
+    pts = [dict(source_id=str(i), ra=core.star_at(by_id[i]["ra"], by_id[i]["dec"], by_id[i]["pmra"], by_id[i]["pmdec"], 2016.0, 2010.5)[0] % 360,
+                dec=core.star_at(by_id[i]["ra"], by_id[i]["dec"], by_id[i]["pmra"], by_id[i]["pmdec"], 2016.0, 2010.5)[1]) for i in warm]
+    plain = {}
+    for k in range(0, len(pts), 2000):
+        for m in core.xmatch(pts[k:k + 2000], "II/328/allwise", 3.0):
+            w1 = num(m.get("W1mag"))
+            if w1 is not None and (m["source_id"] not in plain or float(m["angDist"]) < plain[m["source_id"]][0]):
+                plain[m["source_id"]] = (float(m["angDist"]), w1)
+    fitted = 0
+    for i in list(warm):
+        p = plain.get(str(i))
+        if p is None:
+            continue
+        s = by_id[i]
+        still = {band: round(float(p[1] - s["w" + band] - loci[(i, band)][0]), 2) for band in warm[i]
+                 if p[1] - s["w" + band] - loci[(i, band)][0] > max(widths * loci[(i, band)][1], errors * loci[(i, band)][2])}
+        if not still:
+            del warm[i]
+            fitted += 1
+        else:
+            warm[i] = still
+    print("%d warm by the catalogue's proper-motion-fitted W1 lose their excess with AllWISE's plain W1" % fitted)
     zone = [s for s in st if s["beta"] < zone_deg and (s["w3"] is not None or s["w4"] is not None)]
     near = [s for s in st if control_min_deg <= s["beta"] < control_max_deg and (s["w3"] is not None or s["w4"] is not None)]
     wz = [s for s in zone if s["id"] in warm]
@@ -3329,14 +3356,14 @@ def w2only_main(record=False, widths=5.0, errors=5.0, w3_widths=2.0, colour_min=
         print("recorded")
 
 
-w3only_DOC = r"""Light at 12 um alone: Gaia Catalogue of Nearby Stars objects (probability above 0.9, white-dwarf probability below 0.1, RUWE below 1.4, one IPD peak) at BP-RP 0.5-2.5 with WISE W1 8-14 and W1, W3 and W4 measured to 0.05, 0.1 and 0.2 mag, whose W1-W3 lies more than five robust widths and five errors above the single-star locus at their BP-RP while W1-W4 stays within two widths of its own; warm dust that shines at 12 um shines at 22 um as well, and an emitter confined to the 12 um band does not, though the silicate feature at 10 um can lift W3 alone. The stars as far below the W1-W3 locus are the mirror null. Each candidate read in AllWISE for its contamination and variability flags and in SIMBAD; a W3 fainter than 11 mag is an AllWISE faint detection biased bright, a W1-W4 excess at three errors is dust after all, and a second Gaia source within 10 arcsec and five magnitudes shares the 12 um beam.
+w3only_DOC = r"""Light at 12 um alone: Gaia Catalogue of Nearby Stars objects (probability above 0.9, white-dwarf probability below 0.1, RUWE below 1.4, one IPD peak) at BP-RP 0.5-2.5 with WISE W1 8-14 and W1, W3 and W4 measured to 0.05, 0.1 and 0.2 mag, whose W1-W3 lies more than five robust widths and five errors above the single-star locus at their BP-RP while W1-W4 stays within two widths of its own; warm dust that shines at 12 um shines at 22 um as well, and an emitter confined to the 12 um band does not, though the silicate feature at 10 um can lift W3 alone. The stars as far below the W1-W3 locus are the mirror null. Each candidate read in AllWISE at its 2010.5 position for its contamination and variability flags and its plain profile W1, against which the catalogue's proper-motion-fitted W1 runs faint for bright and fast stars, and in SIMBAD; a W3 fainter than 11 mag is an AllWISE faint detection biased bright, a W1-W4 excess at three errors is dust after all, and a second Gaia source within 10 arcsec and five magnitudes shares the 12 um beam.
 
     python -I seti.py infrared w3only [record] [--widths 5] [--errors 5] [--w4-widths 2] [--colour-min 0.5] [--colour-max 2.5] [--w1-min 8] [--w1-max 14] [--w3-faint 11] [--beam-arcsec 10]"""
 
 
 def w3only_main(record=False, widths=5.0, errors=5.0, w4_widths=2.0, colour_min=0.5, colour_max=2.5, w1_min=8.0, w1_max=14.0, w3_faint=11.0, beam_arcsec=10.0):
     rows = catalogues.gcns("source_id, parallax, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, w1mpro_pm_wise, w1sigmpro_pm_wise, w3mpro_wise, w3sigmpro_wise, "
-                           "w4mpro_wise, w4sigmpro_wise, ra, dec",
+                           "w4mpro_wise, w4sigmpro_wise, ra, dec, pmra, pmdec",
                            "gcns_prob > 0.9 AND wd_prob < 0.1 AND ruwe < 1.4 AND ipd_frac_multi_peak <= 2 AND w1mpro_pm_wise BETWEEN %g AND %g "
                            "AND w1sigmpro_pm_wise < 0.05 AND w3sigmpro_wise < 0.1 AND w4sigmpro_wise < 0.2" % (w1_min, w1_max), ranges=12)
     st = []
@@ -3345,9 +3372,9 @@ def w3only_main(record=False, widths=5.0, errors=5.0, w4_widths=2.0, colour_min=
         if bp is None or rp is None or not colour_min <= bp - rp <= colour_max or num(r["w3mpro_wise"]) is None or num(r["w4mpro_wise"]) is None:
             continue
         w1, w3, w4 = float(r["w1mpro_pm_wise"]), float(r["w3mpro_wise"]), float(r["w4mpro_wise"])
-        st.append(dict(id=r["source_id"], c=bp - rp, g=num(r["phot_g_mean_mag"]), w3=w3, c13=w1 - w3, c14=w1 - w4,
+        st.append(dict(id=r["source_id"], c=bp - rp, g=num(r["phot_g_mean_mag"]), w1=w1, w3=w3, c13=w1 - w3, c14=w1 - w4,
                        e13=math.hypot(float(r["w1sigmpro_pm_wise"]), float(r["w3sigmpro_wise"])), e14=math.hypot(float(r["w1sigmpro_pm_wise"]), float(r["w4sigmpro_wise"])),
-                       ra=float(r["ra"]), dec=float(r["dec"])))
+                       ra=float(r["ra"]), dec=float(r["dec"]), pmra=num(r["pmra"]) or 0.0, pmdec=num(r["pmdec"]) or 0.0))
     bins = np.floor(np.array([s["c"] for s in st]) / 0.1).astype(int)
     for key in ("c13", "c14"):
         val = np.array([s[key] for s in st])
@@ -3361,9 +3388,15 @@ def w3only_main(record=False, widths=5.0, errors=5.0, w4_widths=2.0, colour_min=
     down = [s for s in st if s["rc13"] and s["rc14"] and -s["rc13"][0] > max(widths * s["rc13"][1], errors * s["e13"]) and abs(s["rc14"][0]) < w4_widths * s["rc14"][1]]
     flags = {}
     if up:
-        for m in core.xmatch([dict(source_id=s["id"], ra=s["ra"], dec=s["dec"]) for s in up], "II/328/allwise", 3.0):
+        # AllWISE at each star's 2010.5 position, its flags and its plain profile W1
+        pts = []
+        for s in up:
+            ra10, de10 = core.star_at(s["ra"], s["dec"], s["pmra"], s["pmdec"], 2016.0, 2010.5)
+            pts.append(dict(source_id=s["id"], ra=ra10 % 360, dec=de10))
+        for m in core.xmatch(pts, "II/328/allwise", 3.0):
             if m["source_id"] not in flags or float(m["angDist"]) < flags[m["source_id"]][0]:
-                flags[m["source_id"]] = (float(m["angDist"]), (m.get("ccf") or "").strip(), (m.get("ex") or "").strip(), (m.get("var") or m.get("Var") or "").strip())
+                flags[m["source_id"]] = (float(m["angDist"]), (m.get("ccf") or "").strip(), (m.get("ex") or "").strip(), (m.get("var") or m.get("Var") or "").strip(),
+                                         num(m.get("W1mag")))
     sim = {}
     for k in range(0, len(up), 200):
         for r in core.simbad("SELECT i.id, b.main_id, b.otype, b.sp_type FROM ident AS i JOIN basic AS b ON i.oidref = b.oid WHERE i.id IN (%s)" % ",".join(
@@ -3372,9 +3405,12 @@ def w3only_main(record=False, widths=5.0, errors=5.0, w4_widths=2.0, colour_min=
     for s in up:
         f = flags.get(s["id"])
         s["simbad"] = sim.get(s["id"])
-        s["flags"] = f
+        s["flags"] = f[:4] if f else None
+        # the excess taken again with AllWISE's plain profile W1, since the catalogue's proper-motion-fitted W1 runs faint for bright and fast stars
+        s["w1_plain"] = f[4] if f else None
+        plain_gone = s["w1_plain"] is not None and s["rc13"][0] + (s["w1_plain"] - s["w1"]) <= max(widths * s["rc13"][1], errors * s["e13"])
         # AllWISE W3 beyond 11 mag is a faint detection biased bright; a W4 excess at three errors is dust, which shines at 22 um as well
-        s["vet"] = ("artefact" if (f and (f[1].strip("0") or f[2] not in ("", "0"))) or s["w3"] > w3_faint else
+        s["vet"] = ("artefact" if (f and (f[1].strip("0") or f[2] not in ("", "0"))) or s["w3"] > w3_faint or plain_gone else
                     "dust" if s["rc14"][0] > 3 * s["e14"] else
                     "natural-type" if s["simbad"] and s["simbad"][1] not in ("*", "PM*", "HV*", "low-mass*") else None)
     # a second Gaia source inside the 6.5 arcsec W3 beam, within five magnitudes, shares the 12 um flux
@@ -3520,12 +3556,12 @@ def warmgalaxies_main(record=False, d_max_mpc=150.0, ssfr_max=-11.0, heat_min=-1
         print("recorded")
 
 
-irdim_DOC = r"""Infrared dimming next door: Gaia Catalogue of Nearby Stars objects within 20 pc with an AllWISE W1 between 8 and 15 mag, carried to 2015.0 and matched to CatWISE2020 (II/365) within 3 arcsec by CDS XMatch, whose profile W1 changed by more than 0.3 mag between the 2010 AllWISE mean (II/328, matched at the 2010.5 position) and the 2010-2018 CatWISE mean, a star whose 3.4 um light fell or rose by a third over the decade while nothing in the optical is asked; each read for its Gaia variability flag, its RUWE and image flags, its SIMBAD type and the AllWISE and CatWISE flags, with the stars that brightened as the mirror; CatWISE saturates brighter than W1 8.5, a match beyond 1.5 arcsec at a star next door is another source, and a star moving faster than a second a year is split between the epochs of CatWISE's coadds.
+irdim_DOC = r"""Infrared dimming next door: Gaia Catalogue of Nearby Stars objects within 20 pc with an AllWISE W1 between 8 and 15 mag, carried to 2015.0 and matched to CatWISE2020 (II/365) within 3 arcsec by CDS XMatch, whose profile W1 changed by more than 0.3 mag between the 2010 AllWISE mean (II/328, matched at the 2010.5 position) and the 2010-2018 CatWISE mean, a star whose 3.4 um light fell or rose by a third over the decade while nothing in the optical is asked; each read for its Gaia variability flag, its RUWE and image flags, its SIMBAD type and the AllWISE and CatWISE flags, with the stars that brightened as the mirror; CatWISE saturates brighter than W1 8.5, a match beyond 1.5 arcsec at a star next door is another source, and a star moving faster than a second a year is split between the epochs of CatWISE's coadds; a star still unexplained is read in NEOWISE's single exposures of 2014-2024 at its own position on each date, and one holding AllWISE's W1 there to 0.15 mag did not fade, CatWISE's proper-motion-fitted W1 of a fast star having moved instead.
 
-    python -I seti.py infrared irdim [record] [--plx-min 50] [--dmag 0.3] [--radius-arcsec 3] [--saturation 8.5] [--match-arcsec 1.5] [--fast-mas-yr 1000]"""
+    python -I seti.py infrared irdim [record] [--plx-min 50] [--dmag 0.3] [--radius-arcsec 3] [--saturation 8.5] [--match-arcsec 1.5] [--fast-mas-yr 1000] [--neowise-tol 0.15]"""
 
 
-def irdim_main(record=False, plx_min=50.0, dmag=0.3, radius_arcsec=3.0, saturation=8.5, match_arcsec=1.5, fast_mas_yr=1000.0):
+def irdim_main(record=False, plx_min=50.0, dmag=0.3, radius_arcsec=3.0, saturation=8.5, match_arcsec=1.5, fast_mas_yr=1000.0, neowise_tol=0.15):
     rows = catalogues.gcns("source_id, ra, dec, pmra, pmdec, parallax, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, ruwe, ipd_frac_multi_peak, w1mpro_pm_wise, "
                            "w1sigmpro_pm_wise", "gcns_prob > 0.9 AND parallax > %g AND w1mpro_pm_wise BETWEEN 8 AND 15 AND w1sigmpro_pm_wise < 0.05" % plx_min, ranges=12)
     # AllWISE's profile magnitude at 2010.5 and CatWISE's at 2015.0, each matched at the star's position for its epoch
@@ -3552,6 +3588,7 @@ def irdim_main(record=False, plx_min=50.0, dmag=0.3, radius_arcsec=3.0, saturati
             continue
         st.append(dict(id=str(r["source_id"]), w1_all=a[1], w1_cat=c[1], d=c[1] - a[1], e=math.hypot(a[2] or 0, c[2] or 0), sep=c[0], flags=(a[3] + "/" + c[3]).strip("/"),
                        g=num(r["phot_g_mean_mag"]), ruwe=num(r["ruwe"]), multi=num(r["ipd_frac_multi_peak"]), var="", pm=math.hypot(num(r["pmra"]) or 0.0, num(r["pmdec"]) or 0.0),
+                       ra=float(r["ra"]), dec=float(r["dec"]), pmra=num(r["pmra"]) or 0.0, pmdec=num(r["pmdec"]) or 0.0, neowise=None,
                        c=(num(r["phot_bp_mean_mag"]) - num(r["phot_rp_mean_mag"])) if num(r["phot_bp_mean_mag"]) is not None and num(r["phot_rp_mean_mag"]) is not None else None))
     d = np.array([s["d"] for s in st])
     off = float(np.median(d)) if len(d) else 0.0
@@ -3577,6 +3614,24 @@ def irdim_main(record=False, plx_min=50.0, dmag=0.3, radius_arcsec=3.0, saturati
                     "blend" if (s["ruwe"] or 0) > 1.4 or (s["multi"] or 0) > 2 or typ in ("**", "SB*") else
                     "artefact" if s["flags"].replace("/", "").strip("0") or s["w1_all"] < saturation else
                     "astrometry" if s["sep"] > match_arcsec or s["pm"] > fast_mas_yr else None)
+    # the rest against NEOWISE's single exposures of 2014-2024, each read at the star's own position on its date: a star whose 3.4 um light holds at
+    # AllWISE's level there did not fade, and CatWISE's proper-motion-fitted W1 of a fast star is what moved
+    for s in both:
+        if s["vet"] is not None:
+            continue
+        ra19, de19 = core.star_at(s["ra"], s["dec"], s["pmra"], s["pmdec"], 2016.0, 2019.5)
+        found = core.tap("irsa", "SELECT mjd, ra, dec, w1mpro, qual_frame FROM neowiser_p1bs_psd WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %.6f)) = 1"
+                         % (ra19 % 360, de19, 9 / 3600.0), timeout=900)
+        w = []
+        for x in found:
+            if num(x["w1mpro"]) is None or (num(x["qual_frame"]) or 0) <= 0:
+                continue
+            pr, pd = core.star_at(s["ra"], s["dec"], s["pmra"], s["pmdec"], 2016.0, 2000.0 + (float(x["mjd"]) - 51544.5) / 365.25)
+            if math.hypot((float(x["ra"]) - pr) * math.cos(math.radians(pd)), float(x["dec"]) - pd) * 3600 < 2.0:
+                w.append(float(x["w1mpro"]))
+        s["neowise"] = (len(w), float(np.median(w))) if w else (0, None)
+        if len(w) >= 10 and abs(s["neowise"][1] - s["w1_all"]) < neowise_tol:
+            s["vet"] = "artefact"
     left = [s for s in both if s["vet"] is None]
     count = {v: sum(s["vet"] == v for s in both) for v in ("variable-star", "blend", "artefact", "astrometry")}
     print("%d stars within %.0f pc with AllWISE and CatWISE W1; CatWISE minus AllWISE median %+.3f, robust scatter %.3f; fainter by %g: %d, brighter by as much: %d; variables %d, "
@@ -3599,8 +3654,9 @@ def irdim_main(record=False, plx_min=50.0, dmag=0.3, radius_arcsec=3.0, saturati
             "%d fainter against %d brighter; %d variables, %d blends, %d flagged or saturated, %d matched to another source; %d unexplained" % (
                 len(dim), len(bright), count["variable-star"], count["blend"], count["artefact"], count["astrometry"], len(left)),
             [dict(target="gaia_dr3:%s" % s["id"], stat=round(s["d"] - off, 3), unit="CatWISE minus AllWISE W1 less the offset, mag", vet=s["vet"],
-                  note="W1 %.3f to %.3f +- %.3f at %.1f arcsec, flags %s; G %s, RUWE %s, %s, %.0f mas/yr; SIMBAD %s" % (
-                      s["w1_all"], s["w1_cat"], s["e"], s["sep"], s["flags"] or "-", s["g"], s["ruwe"], s["var"], s["pm"], s["simbad"])) for s in both])
+                  note="W1 %.3f to %.3f +- %.3f at %.1f arcsec, flags %s; G %s, RUWE %s, %s, %.0f mas/yr; SIMBAD %s%s" % (
+                      s["w1_all"], s["w1_cat"], s["e"], s["sep"], s["flags"] or "-", s["g"], s["ruwe"], s["var"], s["pm"], s["simbad"],
+                      "; NEOWISE 2014-2024: %d single exposures, median W1 %.3f" % s["neowise"] if s.get("neowise") and s["neowise"][1] is not None else "")) for s in both])
         print("recorded")
 
 
@@ -4516,7 +4572,80 @@ def coldcomp_main(record=False, t_min=2.8, t_max=10.0, sigmas=2.0, dust_alpha=2.
         print("recorded")
 
 
+pvedge_DOC = r"""A silicon photovoltaic edge: a star wrapped in silicon collectors absorbs below 1.1 um and passes the J band, so RP-J rises at fixed BP-RP while J-Ks stays on its locus; Gaia Catalogue of Nearby Stars members at BP-RP 0.5-3.0 with RUWE below 1.4, one image peak and J and Ks measured to 0.03 mag, RP-J more than five locus widths and five errors above the running median at their colour with J-Ks within two widths of its own, against the stars as far below; each read for 2MASS quality and contamination flags, a Gaia neighbour within 4 arcsec and 6 mag inside the 2MASS beam, and the height above the main sequence in M_G at the same colour, where an unresolved twin sits 0.4-0.75 mag above it; RP-J at fixed BP-RP also rises with metallicity, so a photometric excess alone does not separate a collector from a metal-rich star.
+
+    python -I seti.py infrared pvedge [record] [--widths 5] [--jk-widths 2] [--emax 0.03] [--beam-arcsec 4] [--twin-mag 0.4]"""
+
+
+def pvedge_main(record=False, widths=5.0, jk_widths=2.0, emax=0.03, beam_arcsec=4.0, twin_mag=0.4):
+    rows = catalogues.gcns("source_id, ra, dec, parallax, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, j_m_2mass, j_msig_2mass, k_m_2mass, k_msig_2mass, ruwe, ipd_frac_multi_peak, pmra, pmdec",
+                           "gcns_prob > 0.9 AND wd_prob < 0.1 AND ruwe < 1.4 AND ipd_frac_multi_peak <= 2 AND j_msig_2mass < %g AND k_msig_2mass < %g AND j_m_2mass > 5" % (emax, emax), ranges=12)
+    st = []
+    for r in rows:
+        bp, rp, g, j, k, plx = (num(r[c]) for c in ("phot_bp_mean_mag", "phot_rp_mean_mag", "phot_g_mean_mag", "j_m_2mass", "k_m_2mass", "parallax"))
+        if None in (bp, rp, g, j, k, plx) or not 0.5 <= bp - rp <= 3.0:
+            continue
+        st.append(dict(id=str(r["source_id"]), ra=float(r["ra"]), dec=float(r["dec"]), c=bp - rp, g=g, mg=g + 5 * math.log10(plx / 100), rpj=rp - j, jk=j - k,
+                       e=math.hypot(float(r["j_msig_2mass"]), 0.003), pm=math.hypot(num(r["pmra"]) or 0, num(r["pmdec"]) or 0)))
+    bins = np.floor(np.array([s["c"] for s in st]) / 0.05).astype(int)
+    for key in ("rpj", "jk", "mg"):
+        v = np.array([s[key] for s in st])
+        for b in set(bins.tolist()):
+            i = np.nonzero(bins == b)[0]
+            med = float(np.median(v[i]))
+            wid = 1.4826 * float(np.median(np.abs(v[i] - med)))
+            for t in i:
+                st[t]["r" + key] = (v[t] - med, wid) if len(i) >= 30 else None
+    ok = [s for s in st if s["rrpj"] and s["rjk"]]
+    up = [s for s in ok if s["rrpj"][0] > max(widths * s["rrpj"][1], widths * s["e"]) and abs(s["rjk"][0]) < jk_widths * s["rjk"][1]]
+    down = [s for s in ok if -s["rrpj"][0] > max(widths * s["rrpj"][1], widths * s["e"]) and abs(s["rjk"][0]) < jk_widths * s["rjk"][1]]
+    flags = {}
+    for k0 in range(0, len(up), 2000):
+        for m in core.xmatch([dict(source_id=s["id"], ra=s["ra"], dec=s["dec"]) for s in up[k0:k0 + 2000]], "II/246/out", 5.0):
+            if m["source_id"] not in flags or float(m["angDist"]) < flags[m["source_id"]][0]:
+                flags[m["source_id"]] = (float(m["angDist"]), str(m.get("Qfl") or m.get("Qflg") or "").strip(), str(m.get("Cfl") or m.get("Cflg") or "").strip())
+    near = {}
+    for k0 in range(0, len(up), 50):
+        chunk = up[k0:k0 + 50]
+        where = " OR ".join("1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %.6f))" % (s["ra"], s["dec"], beam_arcsec / 3600) for s in chunk)
+        for r in core.tap("gaia", "SELECT source_id, ra, dec, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE " + where):
+            for s in chunk:
+                if str(r["source_id"]) != s["id"] and sep_arcsec(float(r["ra"]), float(r["dec"]), s["ra"], s["dec"]) < beam_arcsec \
+                        and (num(r["phot_g_mean_mag"]) is None or num(r["phot_g_mean_mag"]) < s["g"] + 6):
+                    near.setdefault(s["id"], []).append(num(r["phot_g_mean_mag"]))
+    for s in up:
+        f = flags.get(s["id"])
+        s["tmass"] = f
+        s["near"] = near.get(s["id"], [])
+        s["mg_off"] = -s["rmg"][0] if s.get("rmg") else None
+        s["vet"] = ("blend" if s["near"] else "artefact" if f and (f[1][:1] != "A" or f[1][2:3] != "A" or f[2].strip("0")) else
+                    "binary" if s["mg_off"] is not None and s["mg_off"] > twin_mag else None)
+    left = [s for s in up if s["vet"] is None]
+    print("%d stars at BP-RP 0.5-3.0 with clean J and Ks; RP-J above by %g widths with J-Ks on its locus: %d; as far below: %d; "
+          "%d blends, %d with 2MASS flags, %d above the main sequence by %g mag; %d left" % (
+              len(ok), widths, len(up), len(down), sum(s["vet"] == "blend" for s in up), sum(s["vet"] == "artefact" for s in up),
+              sum(s["vet"] == "binary" for s in up), twin_mag, len(left)))
+    for s in sorted(left, key=lambda s: -s["rrpj"][0] / s["rrpj"][1])[:30]:
+        print("  Gaia DR3 %s BP-RP %.2f G %.2f RP-J +%.3f (%.1f widths) J-Ks %+.3f, M_G %+.2f from the sequence, pm %.0f mas/yr" % (
+            s["id"], s["c"], s["g"], s["rrpj"][0], s["rrpj"][0] / s["rrpj"][1], s["rjk"][0], s["mg_off"] or 0, s["pm"]))
+    if record:
+        core.record_run(
+            "pv_edge_rp_j", "A silicon photovoltaic edge", "Gaia Catalogue of Nearby Stars with its 2MASS photometry; 2MASS PSC (II/246) by CDS XMatch; Gaia DR3",
+            "%d single-looking stars at BP-RP 0.5-3.0 with J and Ks to %g mag" % (len(ok), emax), os.path.abspath(__file__), "pvedge", len(ok), "stars",
+            dict(widths=widths, jk_widths=jk_widths, emax=emax, beam_arcsec=beam_arcsec, twin_mag=twin_mag), dict(above=len(up), below=len(down)),
+            "RP-J %g locus widths and errors above the running median at the star's colour with J-Ks on its locus" % widths,
+            "%d above against %d below: %d blends, %d with 2MASS flags, %d twins above the main sequence; %d left, which the metallicity dependence of RP-J at fixed BP-RP "
+            "leaves undecided by photometry" % (len(up), len(down), sum(s["vet"] == "blend" for s in up), sum(s["vet"] == "artefact" for s in up),
+                                                sum(s["vet"] == "binary" for s in up), len(left)),
+            [dict(target="gaia_dr3:%s" % s["id"], stat=round(s["rrpj"][0] / s["rrpj"][1], 1), unit="RP-J locus widths above the median", vet=s["vet"],
+                  note="BP-RP %.2f, G %.2f, RP-J +%.3f, J-Ks %+.3f, M_G %s from the sequence, 2MASS %s, neighbours %s" % (
+                      s["c"], s["g"], s["rrpj"][0], s["rjk"][0], "%+.2f" % s["mg_off"] if s["mg_off"] is not None else "-", s["tmass"], s["near"] or "none"))
+             for s in up])
+        print("recorded")
+
+
 APPROACHES = {
+    "pvedge": (lambda: core.run_cli(pvedge_main), pvedge_DOC),
     "coldcomp": (lambda: core.run_cli(coldcomp_main), coldcomp_DOC),
     "diskvoids": (lambda: core.run_cli(diskvoids_main), diskvoids_DOC),
     "gcdust": (lambda: core.run_cli(gcdust_main), gcdust_DOC),
