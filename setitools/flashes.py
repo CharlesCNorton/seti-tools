@@ -2343,7 +2343,7 @@ def determinism_targets(lists, plx_min=10.0):
 def determinism_one_spoc(x):
     """One star-sector's SPOC two-minute light curve read in memory and its statistics on the CPU; None when unreadable."""
     try:
-        b = core.spoc_bytes(x["tic"], x["sector"])
+        b = core.spoc_bytes(x["tic"], x["sector"], strict=True)
         if not b:
             return dict(x, status="no light curve")
         t, f, _ = core.read(b, columns=("PDCSAP_FLUX",))

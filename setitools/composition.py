@@ -4455,7 +4455,7 @@ def binaries_template(name, inst="HARPS", out=None, spectra=None, objects=()):
     if spectra:
         files = sorted({f for obj in objects for f in companions_files(spectra, obj)})
         loaded = companions_spectra(files)
-        T = companions_template(loaded, companions_vsys(loaded), "optical")
+        T = companions_template(loaded, companions_vsys(loaded), giants_band(inst))
         os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
         np.save(out, T)
         print("%s: line depths from %d spectra, %d samples above 0.1: %s" % (" ".join(objects), len(loaded), int((T > 0.1).sum()), out))
@@ -4465,7 +4465,7 @@ def binaries_template(name, inst="HARPS", out=None, spectra=None, objects=()):
     P, tp, e, w, k1, gamma = binaries_orbit(target)
     v = gamma + k1 * binaries_radial(np.array([s[3]["mjd"] for s in spectra]), P, tp, e, w)
     with np.errstate(all="ignore"):
-        master = np.nanmedian(binaries_onto(spectra, v), axis=0)
+        master = np.nanmedian(binaries_onto(spectra, v, giants_band(inst)), axis=0)
     T = np.where(np.isfinite(master), np.clip(1.0 - master, 0.0, None), 0.0)
     out = out or os.path.join(binaries_ROOT, "templates", binaries_tag(target) + ".npy")
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -4485,7 +4485,7 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
     template = template or os.path.join(binaries_ROOT, "templates", "mdwarf.npy")
     Trv, T = np.load(rv_template), np.load(template)
     Ti = np.load(inject_template) if inject_template else T
-    g = giants_grid("optical")
+    g = giants_grid(giants_band(inst))
     Tc = np.where((g >= band[0]) & (g < band[1]), T, 0.0) if band else T
     folder = os.path.join(binaries_ROOT, "rows" + ("_" + variant if variant else ""))
     os.makedirs(folder, exist_ok=True)
@@ -4497,7 +4497,7 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
             print("%s: %d spectra loaded of %d listed; too few" % (target["name"], len(spectra), listed), flush=True)
             continue
         t = np.array([s[3]["mjd"] for s in spectra])
-        v = binaries_velocities(spectra, Trv)
+        v = binaries_velocities(spectra, Trv, band=giants_band(inst))
         P, tp, e, w, k1, gamma, rms = binaries_refit(t, v, *binaries_orbit(target)[:5])
         for s, x in zip(spectra, v):
             s[3]["rv"] = float(x)
@@ -4508,7 +4508,7 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
             spectra = [(wl, fl * (1.0 - inject * scale(wl) * np.interp(wl, g * (1.0 + x / 299792.458), Ti, left=0.0, right=0.0)), er, meta)
                        for (wl, fl, er, meta), x in zip(spectra, v2)]
         info = {}
-        R, sd, _ = companions_residuals(spectra, gamma, "optical", info=info)
+        R, sd, _ = companions_residuals(spectra, gamma, giants_band(inst), info=info)
         ccf = companions_unpattern(giants_ccf(R, Tc, sd))
         tag = binaries_tag(target)
         np.savez_compressed(os.path.join(folder, tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=np.array([s[3]["berv"] for s in spectra], float),

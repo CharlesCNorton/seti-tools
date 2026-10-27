@@ -586,9 +586,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** TESS sectors 42-46 2-minute light curves of Gaia DR3 stars within 100 pc and 0.27 deg of the ecliptic (766 star-sectors) and 1500 control star-sectors 1-5 deg off it
 
-**Runs.** `tess_etz_opposition`: 27 stars, 27 per-target rows; `tess_etz_opposition_70_72`: 12 stars, 12 per-target rows; `tess_etz_opposition_91_92`: 8 stars, 8 per-target rows
+**Runs.** `tess_etz_opposition`: 27 stars, 27 per-target rows; `tess_etz_opposition_70_72`: 12 stars, 12 per-target rows; `tess_etz_opposition_91_92`: 8 stars, 8 per-target rows, 1 vetted
 
-**Result.** 27 transit windows (6.5 hours either side of opposition) observed: no lone flash against 0.37 expected from the same stars outside the windows and no brightening against 1.12; the 111 control windows hold 7 lone flashes against 4.82 (`tess_etz_opposition`); sectors 70-72 add 12 windows on 12 stars with 1 lone flash against 0.53 expected and no brightening against 0.64, the 129 control windows holding 3 against 4.6 (`tess_etz_opposition_70_72`); sectors 91-92, the ecliptic pointings after 72, add 8 windows on 8 stars with 1 lone flash (5.1 sigma, TIC 135070915, sector 91) against 0.26 expected and no brightening against 0.03, the 74 control windows holding 2 against 1.37 (`tess_etz_opposition_91_92`)
+**Result.** 27 transit windows (6.5 hours either side of opposition) observed: no lone flash against 0.37 expected from the same stars outside the windows and no brightening against 1.12; the 111 control windows hold 7 lone flashes against 4.82 (`tess_etz_opposition`); sectors 70-72 add 12 windows on 12 stars with 1 lone flash against 0.53 expected and no brightening against 0.64, the 129 control windows holding 3 against 4.6 (`tess_etz_opposition_70_72`); sectors 91-92, the ecliptic pointings after 72, add 8 windows on 8 stars with 1 lone flash (5.1 sigma, TIC 135070915, sector 91) against 0.26 expected and no brightening against 0.03, the 74 control windows holding 2 against 1.37 (`tess_etz_opposition_91_92`); the star is HD 115153, a G5 V spectroscopic binary at 41 pc, and in its light curve of release 125 (spoc-5.0.121) that cadence, BTJD 3775.493, reaches 4.1 times the sector's robust scatter, below the 5-sigma cut, with no flash in the six 20 s cadences under it
 
 ## Top-hat flares
 
@@ -1338,9 +1338,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** GALAH DR4: 198 stars within 50 pc with a fitted 5780 A band
 
-**Runs.** `galah_dib_within_50pc`: 198 stars, 27 per-target rows, 19 vetted
+**Runs.** `galah_dib_within_50pc`: 198 stars, 27 per-target rows, 27 vetted
 
-**Result.** 27 above 5 sigma and 20 mA, 19 of them below 4500 K, where the star's own lines fill the band; 8 hotter ones at up to 2.1 A, more than any 50 pc sightline holds, are open; the band's median is 56 mA at 0.5-1 kpc against 20 within 50 pc (`galah_dib_within_50pc`)
+**Result.** 27 above 5 sigma and 20 mA, 19 of them below 4500 K, where the star's own lines fill the band; the 8 hotter ones, at 0.23-0.83 A, are failed fits, each stellar solution flagged (log g at the grid's 5.0 edge in seven) and each band placed at -73 to -1044 km/s, delta Pav's pinned at +200 km/s and 5.0 A; the band's median is 56 mA at 0.5-1 kpc against 20 within 50 pc (`galah_dib_within_50pc`)
 
 ## Stars spinning faster than they hold together
 
@@ -1818,9 +1818,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Gaia DR3 binary_masses: 208 astrometric binaries with an unseen companion above 1.4 solar masses, with Gaia BH1-3; AllWISE and eRASS1 by CDS XMatch; SIMBAD
 
-**Runs.** `gaia_dead_companions`: 208 stars, 19 per-target rows, 16 vetted
+**Runs.** `gaia_dead_companions`: 208 stars, 19 per-target rows, 19 vetted
 
-**Result.** 15 with W1-W3 above 0.3 against 0-3 (mean 0.8) moved 2 arcmin: 13 under AllWISE's halo, spike, persistence or extended-source flags in the Galactic plane, 1 eclipsing binary, and Gaia DR3 5331686334409329664 at b 0.5 deg with W1-W3 1.19 and no explanation in the catalogues; 4 eRASS1 sources within 15 arcsec against 0-1 moved: the Am binary HD 67518, the double star GALEX J145250.3-192225, and the A stars HD 23021 and HD 97080, whose X-rays want a late-type companion their dark 1.6 solar-mass companions cannot be; the three black holes match nothing (`gaia_dead_companions`)
+**Result.** 15 with W1-W3 above 0.3 against 0-3 (mean 0.8) moved 2 arcmin: 13 under AllWISE's halo, spike, persistence or extended-source flags in the Galactic plane, 1 eclipsing binary, and Gaia DR3 5331686334409329664 at b 0.5 deg, whose W1-W3 of 1.19 is the field's, every AllWISE source within 30 arcsec reading W3 9.9-11.7 whatever its W1 of 11.1-14.6; 4 eRASS1 sources within 15 arcsec against 0-1 moved: the Am binary HD 67518, the double star GALEX J145250.3-192225, and the A stars HD 23021 and HD 97080, whose 1.7 solar-mass companions are dark only in a solution that gives them no light: a close pair of 0.86 solar-mass K dwarfs holds 0.02-0.03 of the A star's G light and, saturated, gives the 1.3e30 and 2.2e30 erg/s that eRASS1 measures; the three black holes match nothing (`gaia_dead_companions`)
 
 ## Identical black holes merging
 
@@ -1866,9 +1866,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Li et al. (2023): 52 hypervelocity candidates with Gaia astrometry, traced straight back for 300 Myr
 
-**Runs.** `hvs_origins`: 52 stars, 52 per-target rows, 45 vetted
+**Runs.** `hvs_origins`: 52 stars, 52 per-target rows, 52 vetted
 
-**Result.** 17 in or from the disc, 14 more likely bound than not in the catalogue's own potential, 14 with velocity errors above 150 km/s, and 7 at 490-590 km/s and 2-4 kpc above the plane whose straight paths pass 4-9 kpc from the Centre and 50 kpc from the Cloud, left for orbits in a Galactic potential (`hvs_origins`)
+**Result.** 17 in or from the disc, 14 more likely bound than not in the catalogue's own potential, 14 with velocity errors above 150 km/s, and 7 at 490-590 km/s and 2-4 kpc above the plane whose straight paths pass 4-9 kpc from the Centre and 50 kpc from the Cloud, and whose speeds fall to 488-543 km/s on Gaia's parallax distances, 5-17 per cent nearer than the catalogue's, at or below the local escape speed: bound halo stars of the metal-poor population Li et al. place every candidate in (`hvs_origins`)
 
 ## Stars that passed within a parsec of the Sun
 
@@ -2058,9 +2058,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Gaia DR3 sources within 100 pc whose DR2 counterpart within 0.1 arcsec (gaiadr3.dr2_neighbourhood) carries a mean G differing by more than a magnitude, each read for its transit counts, variability flags, SIMBAD type, DR2 saturation above G 4 and the missing colour of a source in a bright neighbour's light
 
-**Runs.** `gaia_release_step`: 40 stars, 40 per-target rows, 39 vetted
+**Runs.** `gaia_release_step`: 40 stars, 40 per-target rows, 40 vetted
 
-**Result.** 40: 13 are the brightest stars, whose DR2 photometry is saturated, 23 are companions of bright stars whose DR2 window took in the primary's light, 2 are variables and 1 a blend; HD 207964 C, a companion with a colour and RUWE 1.39, remains unexplained
+**Result.** 40: 13 are the brightest stars, whose DR2 photometry is saturated, 23 are companions of bright stars whose DR2 window took in the primary's light, 2 are variables and 1 a blend; HD 207964 C sits 4.9 arcsec from HD 207964 A (G 5.8), whose light set its DR2 G on a three-parameter solution and gives its DR3 colour a BP/RP excess factor of 14.4; none unexplained
 
 ## Lurkers at Earth's Lagrange points
 
@@ -2106,9 +2106,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** JPL Small-Body Database: 32 comets and 3 asteroids whose radial non-gravitational term A1 is negative, those negative at three sigma, each read for its arc and condition code, its transverse term A2 and the asymmetric outgassing parameter DT
 
-**Runs.** `sbdb_sunward_a1`: 35 bodies, 27 per-target rows, 7 vetted
+**Runs.** `sbdb_sunward_a1`: 35 bodies, 27 per-target rows, 8 vetted
 
-**Result.** 27 at three sigma: 1 on a short arc, 6 with a larger transverse term or a shifted outgassing law; 20 comets and the asteroid 4179 Toutatis keep a radial term toward the Sun of 2e-10 to 6e-7 au per day squared on arcs of 3-75 years, which the symmetric outgassing law returns for a nucleus venting mostly after perihelion, and they await refits with an asymmetric law
+**Result.** 27 at three sigma: 1 on a short arc, 6 with a larger transverse term or a shifted outgassing law; 20 comets keep a radial term toward the Sun of 2e-10 to 6e-7 au per day squared on arcs of 3-75 years, which the symmetric outgassing law returns for a nucleus venting mostly after perihelion, and they await refits with an asymmetric law; the asteroid 4179 Toutatis's -3.1e-13 at 3.4 sigma is the lowest of the 22 asteroids SBDB fits a radial term for, whose median lies at +3.1 sigma, outward as sunlight pushes
 
 ## Galaxies warm without star formation
 
@@ -2146,9 +2146,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** NASA Exoplanet Archive composite table: 4328 transiting planets with a duration, period, semi-major axis and radii, those whose duration exceeds by a quarter the longest central transit a circular orbit allows at the catalogued geometry, each read for its duration error, the sources of its duration and stellar radius and its eccentricity
 
-**Runs.** `exoplanet_long_transits`: 4,328 planets, 188 per-target rows, 187 vetted
+**Runs.** `exoplanet_long_transits`: 4,328 planets, 188 per-target rows, 188 vetted
 
-**Result.** 188: 167 carry a stellar radius of the Kepler Input Catalogue era or a duration and a radius from different solutions, 8 have loose or missing duration errors, 7 are eccentric, 4 have eccentricities fixed without errors and WASP-132 b's duration stands off by itself; TOI-1295 b, at 1.38 times the maximum with e 0.02 in one solution, remains unexplained
+**Result.** 188: 167 carry a stellar radius of the Kepler Input Catalogue era or a duration and a radius from different solutions, 8 have loose or missing duration errors, 7 are eccentric, 4 have eccentricities fixed without errors and WASP-132 b's duration stands off by itself; TOI-1295 b's 6.20 h, 1.38 times the maximum in one solution, stands against the TOI table's measured 3.75 h, 0.84 of it; none unexplained
 
 ## Gamma rays peaked like a line
 
@@ -2162,9 +2162,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Gaia DR3 short-timescale variables within 100 pc: 909 stars, those whose characteristic frequency exceeds 48 cycles a day (the catalogue reaches 72), each read for its white-dwarf locus, its SIMBAD type, its image and RUWE flags and its colour, since a red dwarf the pipeline picks up flares and its variogram timescale is the flares' rise
 
-**Runs.** `gaia_short_timescale_nearby`: 909 stars, 220 per-target rows, 210 vetted
+**Runs.** `gaia_short_timescale_nearby`: 909 stars, 220 per-target rows, 220 vetted
 
-**Result.** 220: 35 white dwarfs and compact stars, 67 of other known types, 108 flaring red dwarfs; 10 remain, five G and K dwarfs and three A stars with 20-30 minute timescales and amplitudes of 0.01-0.09 mag
+**Result.** 220: 35 white dwarfs and compact stars, 67 of other known types, 108 flaring red dwarfs; the 10 left are Gaia's: the table's frequencies pile up at 38-41, 51-55 and 66-69 cycles a day, where six of the 10 sit, five are catalogued rotators, an eclipsing binary or delta Scuti stars, and TESS two-minute light curves of four hold 3-13 ppm at Gaia's frequencies against its 13,000-27,000; none unexplained
 
 ## Infrared dimming next door
 
@@ -2250,9 +2250,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Gaia DR3 vari_summary within 100 pc on the white-dwarf locus, matched to Gentile Fusillo et al. (2021): 132 catalogued white dwarfs flagged variable with a G range above 0.1 mag, those outside the pulsation strips with their margins (DA 10,000-13,500 K, DB 21,000-31,000 K, GW Vir above 70,000 K), each read in SIMBAD, including the magnetic types, for a companion's BP/RP flux excess and for RUWE
 
-**Runs.** `gaia_white_dwarfs_varying`: 132 white dwarfs, 132 per-target rows, 108 vetted
+**Runs.** `gaia_white_dwarfs_varying`: 132 white dwarfs, 132 per-target rows, 115 vetted
 
-**Result.** 103 sit in a strip or are cataclysmic, eclipsing, magnetic or otherwise known, 5 carry a companion's signature; 24 DA and DC white dwarfs of 3900-10000 K at G 16-19 with ranges of 0.1-0.4 mag over 20-60 transits remain unexplained, a residue for a period search in survey photometry
+**Result.** 103 sit in a strip or are cataclysmic, eclipsing, magnetic or otherwise known, 5 carry a companion's signature; of the 24 DA and DC white dwarfs of 3900-10000 K left at G 16-19, Gaia's own epochs put 5 at their errors or on one or two transits, Gaia DR3 5161807767825277184 is ZTF J0328-1219, a white dwarf with transiting planetary debris (Vanderbosch et al. 2021), and WD J062555.04-141442.31 a variable of Guidry et al. (2021); ZTF DR24's object statistics place 6 more above 90-100 per cent of the stars of their field and magnitude, variables without periods yet, and 11 remain, 4 of them south of ZTF
 
 ## Binaries on perfect circles
 
@@ -2282,17 +2282,17 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Hunt and Reffert (2023) open-cluster members with Gaia radial velocities: 1076 members of the 18 clusters within 200 pc whose twenty or more velocities cohere to a median of 3 km/s about the mean, each star's space velocity against its cluster's, those moving faster than 10 km/s, each read for RUWE and SIMBAD binarity, its membership probability and its colour, since Gaia's velocities of hot stars carry errors of tens of km/s
 
-**Runs.** `gaia_cluster_escapees`: 1,076 stars, 12 per-target rows, 10 vetted
+**Runs.** `gaia_cluster_escapees`: 1,076 stars, 12 per-target rows, 12 vetted
 
-**Result.** 12: 1 binary, 8 of membership probability below 0.8 and as likely field stars, 1 hot B star; a member of Alessi 84 at 42 km/s with probability 0.82 and HD 74117 in IC 2391 at 10 km/s with probability 0.80 remain unexplained
+**Result.** 12: 1 binary, 8 of membership probability below 0.8 and as likely field stars, 1 hot B star; a member of Alessi 84 at 42 km/s with probability 0.82 and HD 74117 in IC 2391 at 10 km/s with probability 0.80 are interlopers at their clusters' rate: among the members with clean Gaia velocities every star 10 km/s off lies below probability 0.85, where 1.0 and 8.7 interlopers are expected, and none of the 27 above it; none unexplained
 
 ## Transits deeper than the planet
 
 **Data.** NASA Exoplanet Archive composite table: 4455 transiting planets with a depth and a radius ratio, those whose depth exceeds 1.5 times the ratio squared, each read for the depth's error and the sources of depth and ratio
 
-**Runs.** `exoplanet_deep_transits`: 4,455 planets, 82 per-target rows, 80 vetted
+**Runs.** `exoplanet_deep_transits`: 4,455 planets, 82 per-target rows, 82 vetted
 
-**Result.** 82: 75 draw depth and ratio from different solutions, 5 carry loose or missing depth errors; TOI-5624 c, whose depth of 0.76 per cent stands ten times its ratio's in one solution, and TOI-4427 b at 1.6 times remain unexplained
+**Result.** 82: 75 draw depth and ratio from different solutions, 5 carry loose or missing depth errors; TOI-5624 c's 0.762 per cent is ten times both its ratio squared and ExoFOP's 0.080, a factor of ten in the units, and TOI-4427 b's ratio of 0.1073 disagrees with the same solution's radii, whose 0.135 squared gives its depth; none unexplained
 
 ## Gamma rays with fast radio bursts
 
@@ -2570,9 +2570,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** GALAH DR4 (Data Central): 396280 stars with a clean fit and both GALAH's and Gaia DR3's radial velocities to 2 km/s, those apart by more than 30 km/s; GALAH's second components, Gaia's orbits, amplitudes, variability flags, RUWE and image peaks, the two surveys' temperatures, Gaia's transit counts and a third epoch from RAVE DR6 or LAMOST DR5
 
-**Runs.** `galah_gaia_rv_jumps`: 396,280 stars, 48 per-target rows, 16 vetted
+**Runs.** `galah_gaia_rv_jumps`: 396,280 stars, 48 per-target rows, 48 vetted
 
-**Result.** 48: 14 binaries, one of them by a third velocity from RAVE apart from GALAH's, one GALAH spectrum of a different star by its temperature, one Gaia velocity on two transits; 32 remain, single-lined binaries by their rate, which Gaia's variability statistics do not reach at their brightness and which RAVE and LAMOST have not observed (`galah_gaia_rv_jumps`)
+**Result.** 48: 14 binaries, one of them by a third velocity from RAVE apart from GALAH's, one GALAH spectrum of a different star by its temperature, one Gaia velocity on two transits; the 32 left are the end of a tail of GALAH-Gaia differences that falls smoothly and evenly in sign over the 396,280 stars, 7,191 at 5-10 km/s, 1,726 at 10-20, 144 at 20-30 and 48 beyond, 29 of them with Gaia the faster: single-lined binaries at two epochs, which Gaia's variability statistics do not reach at their brightness; APOGEE DR17 gives two a third velocity, one of them a third value (1.9, 40.4 and 12.6 km/s), and GALAH, RAVE, LAMOST and DESI none (`galah_gaia_rv_jumps`)
 
 ## Europium far above iron in dwarfs
 
@@ -2698,9 +2698,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** JPL Small-Body Database: 113 comets and 10 asteroids with normal and radial non-gravitational terms, those whose normal term at 3 sigma exceeds half the radial; the ratio's distribution has a median of 0.19 and a 90th percentile of 0.86
 
-**Runs.** `sbdb_out_of_plane`: 123 bodies, 28 per-target rows, 26 vetted
+**Runs.** `sbdb_out_of_plane`: 123 bodies, 28 per-target rows, 28 vetted
 
-**Result.** 28: 21 comets, whose polar jets push across the plane, 5 on arcs under 1000 d; the two near-Earth asteroids 2016 GW221 and 2013 XY20, whose normal terms rest on 209 and 72 observations, remain unexplained (`sbdb_out_of_plane`)
+**Result.** 28: 21 comets, whose polar jets push across the plane, 5 on arcs under 1000 d; the two near-Earth asteroids 2016 GW221 and 2013 XY20, whose normal terms rest on 209 and 72 observations, are dark comets of Seligman et al. (2024); none unexplained (`sbdb_out_of_plane`)
 
 ## Gamma rays harder than any shock
 
@@ -2746,9 +2746,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Gaia Catalogue of Nearby Stars: 142514 stars brighter than G 15 with 2MASS Ks to 0.03 mag, the G-Ks of each against the run of G-Ks with BP-RP, those five widths and 0.3 mag off; Gaia's neighbours within the 2MASS beam, image peaks, variability flag and RUWE; SIMBAD
 
-**Runs.** `gcns_2mass_gaia_ir_change`: 142,514 stars, 4847 per-target rows, 4813 vetted
+**Runs.** `gcns_2mass_gaia_ir_change`: 142,514 stars, 4847 per-target rows, 4840 vetted
 
-**Result.** 4847 off the run: 4732 with a Gaia neighbour within 2 mag inside the 2MASS beam, 27 white dwarfs, 6 young stars, 3 subdwarfs, 19 variable, 26 binaries; 34 remain, mostly red dwarfs with Ks brighter than their Gaia colour gives by 0.3-0.7 mag and no resolved neighbour (`gcns_2mass_gaia_ir_change`)
+**Result.** 4847 off the run: 4732 with a Gaia neighbour within 2 mag inside the 2MASS beam, 27 white dwarfs, 6 young stars, 3 subdwarfs, 19 variable, 26 binaries; of the 34 left, 5 carry 2MASS Ks of quality E or confusion flags with AllWISE W1 on Gaia's prediction, 14 a Gaia neighbour of any brightness or a contamination flag in the 2MASS beam, 5 lie 1.2-5.0 mag under the main sequence, a white dwarf with a cool companion, and 3 are variables; 7 M dwarfs remain whose Ks-W1 is normal, five of them 0.2-0.6 mag above the main sequence (`gcns_2mass_gaia_ir_change`)
 
 ## Rotation periods on whole days in TESS
 
@@ -2828,7 +2828,7 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Runs.** `store_residue_clustering`: 180,822 stars, 0 per-target rows
 
-**Result.** 1.759 pairs per 10,000 within 1 deg against 1.752 +- 0.002, an excess of 0.4 per cent; 13.067 against 13.058 within 3 deg (p 0.16) and 111.606 against 111.671 within 10 deg (p 0.84); within each run the vetted pairs match the draws (55,957 against 55,843), so the small excess at 1 deg lies between runs and is not explained (`store_residue_clustering`)
+**Result.** 1.759 pairs per 10,000 within 1 deg against 1.752 +- 0.002, an excess of 0.4 per cent; 13.067 against 13.058 within 3 deg (p 0.16) and 111.606 against 111.671 within 10 deg (p 0.84); within each run the vetted pairs match the draws (55,957 against 55,843), and the small excess at 1 deg between runs is one pair's: chromatic_only_variables and roche_transits, both drawn from Gaia DR3's variability tables, place 93 vetted pairs within 10 arcmin in four fields of about a degree against 16.7 from the draws, and without chromatic_only_variables the 1 deg excess falls to 1.2 sd (p 0.12) (`store_residue_clustering`)
 
 ## Binary pulsars decaying at the wrong rate
 
@@ -3074,9 +3074,9 @@ A run is one row of the store's `searches` table. Its sample is the number of th
 
 **Data.** Kepler DR25 long-cadence PDCSAP light curves of 199,624 stars, every quarter, read in memory from the STScI mirror
 
-**Runs.** `kepler_levels`: 199,624 stars, 18465 per-target rows, 48 vetted
+**Runs.** `kepler_levels`: 199,624 stars, 18465 per-target rows, 54 vetted
 
-**Result.** 132,275 steps within one cadence between 7.4-hour medians at 7 sigma, of which 2,767 are shared by three or more stars of the CCD channel and 6,438 by twenty or more stars of the focal plane; 18,465 stars keep steps of their own (8,108 up, 19,044 down) and 54 hold three or more levels each revisited in a quarter: 34 eclipsing binaries of the Kepler catalogue, 10 giants, whose oscillations and granulation step the window medians, the dwarf novae V447 Lyr and V1504 Cyg, the delta Scuti star TYC 3142-717-1 and the transits of Kepler-678 b; 6 dwarfs remain unexplained, Kepler-1645, TYC 3132-601-1, the A star TYC 3125-2793-1, KIC 7679979, KIC 11824498 and KIC 12783196, with steps of 0.1-9 per cent at irregular intervals (`kepler_levels`)
+**Result.** 132,275 steps within one cadence between 7.4-hour medians at 7 sigma, of which 2,767 are shared by three or more stars of the CCD channel and 6,438 by twenty or more stars of the focal plane; 18,465 stars keep steps of their own (8,108 up, 19,044 down) and 54 hold three or more levels each revisited in a quarter: 34 eclipsing binaries of the Kepler catalogue, 10 giants, whose oscillations and granulation step the window medians, the dwarf novae V447 Lyr and V1504 Cyg, the delta Scuti star TYC 3142-717-1 and the transits of Kepler-678 b; the 6 dwarfs left, with steps of 0.1-9 per cent at irregular intervals, are the detector's: in their target pixel files one pixel carries 0.80-0.99 of the levels for Kepler-1645, TYC 3132-601-1, KIC 7679979 and KIC 11824498, where it holds 0.21-0.50 of the light, and the A star TYC 3125-2793-1 and KIC 12783196 move light between pixels, as an image's motion does; none unexplained (`kepler_levels`)
 
 ## PSF-shaped flashes in pixel data
 

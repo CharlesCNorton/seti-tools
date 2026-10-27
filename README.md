@@ -43,15 +43,13 @@ Paths and resource caps come from the environment variables `SETI_DATA`, `SETI_W
   "results": "/data/seti/results",
   "coverage": "coverage.db",
   "max_procs": 8,
-  "max_connections": 32,
-  "contact": "mailto:archive-contact@example.org"
+  "max_connections": 32
 }
 ```
 
 `data` holds bulk downloads, `work` scratch files, `cache` Breakthrough Listen indexes and chunks, `results` each
 search's output files and `coverage` the store; `max_procs` and `max_connections` cap everything one machine runs at
-once, and `contact` is added to the user agent every request carries, so that an archive's operators can reach whoever
-runs the searches.
+once. Requests carry a user agent naming the software alone.
 
 A new approach starts with a literature search on its data set and signature. One that repeats published work on the
 same data is dropped; otherwise the approach, data, prior work and decision go into `LEDGER.md` before any

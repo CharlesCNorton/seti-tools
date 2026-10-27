@@ -159,9 +159,8 @@ def running(x, y, at, half=100):
 # --------------------------------------------------------------------------------------------------------------------
 # net: HTTP and TAP access with retries, byte ranges and bounded parallelism
 
-# user agent naming the software and, when configured, a contact address
-UA = {"User-Agent": "seti-tools (+https://huggingface.co/phanerozoic/seti-tools%s) Python-urllib/%d.%d"
-                    % (("; " + LOCAL["contact"]) if LOCAL.get("contact") else "", *sys.version_info[:2])}
+# user agent naming the software alone
+UA = {"User-Agent": "seti-tools Python-urllib/%d.%d" % sys.version_info[:2]}
 # soft fetches that failed other than as missing files, as (url, error)
 SOFT_FAILURES = []
 
@@ -1199,26 +1198,30 @@ def sectors(ra, dec):
     return sorted({int(s) for s in tess_stars2px_function_entry(0, ra, dec)[3] if 0 < int(s) <= last})
 
 
-def s3_keys(prefix, pattern):
-    """Keys under an S3 prefix matching the pattern."""
+def s3_keys(prefix, pattern, strict=False):
+    """Keys under an S3 prefix matching the pattern; with STRICT a listing that fails raises IOError instead of reading as empty."""
     lst = get(S3 + "?list-type=2&prefix=" + prefix, timeout=120, retries=3, soft=True, pause=0)
+    if lst is None and strict:
+        raise IOError("S3 listing failed: " + prefix)
     if not lst:
         return []
     return [k for k in re.findall(r"<Key>([^<]*)</Key>", lst.decode()) if re.search(pattern, k)]
 
 
-def spoc_keys(tic, sector, fast=False):
-    """S3 keys of a star's SPOC light curves in one sector, two-minute or twenty-second."""
+def spoc_keys(tic, sector, fast=False, strict=False):
+    """S3 keys of a star's SPOC light curves in one sector, two-minute or twenty-second; STRICT as for s3_keys."""
     prefix = "tess/public/tid/s%04d/%s/" % (sector, tic_path(tic))
-    return s3_keys(prefix, r"fast-lc\.fits$" if fast else r"-s_lc\.fits$")
+    return s3_keys(prefix, r"fast-lc\.fits$" if fast else r"-s_lc\.fits$", strict)
 
 
-def spoc_bytes(tic, sector, fast=False):
-    """SPOC light curve of one sector as FITS bytes, or None."""
-    keys = spoc_keys(tic, sector, fast)
+def spoc_bytes(tic, sector, fast=False, strict=False):
+    """SPOC light curve of one sector as FITS bytes, or None where the archive holds none; with STRICT a listing or download that fails raises IOError instead."""
+    keys = spoc_keys(tic, sector, fast, strict)
     if not keys:
         return None
     b = get(S3 + keys[0], timeout=300, retries=3, soft=True, pause=2)
+    if b is None and strict:
+        raise IOError("S3 download failed: " + keys[0])
     return b if b and b.startswith(b"SIMPLE") else None
 
 
