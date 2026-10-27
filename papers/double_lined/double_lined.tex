@@ -61,6 +61,12 @@ J2101$-$45, whose 75 spectra give \Ktwo\ $= 65.41 \pm 0.32 \pm 0.32$\,\kms\ and 
 $1.415$ and $0.552$\,\Msun, stable under changes of template, band and principal components and
 recovered when a companion is injected into the same spectra. J0649$-$27, J0825$-$67 and J1141$-$37
 reach 3.3 to $3.9\sigma$ alone but 2.1 to $3.0\sigma$ across the survey, and remain candidates.
+Among 41 further EBLM binaries whose orbits are fitted to their own HARPS velocities, the
+companions of J2122$-$32, J0425$-$46, J2054$-$32 and J0535$-$08 stand at 5.3 to $5.7\sigma$ across
+the 41 and four more are candidates. NIRPS spectra recover J1540$-$09's published companion at
+\Ktwo\ $= 59.98 \pm 0.50 \pm 0.78$\,\kms\ and give a candidate in J1613$-$76, whose HARPS series
+shows none, and the TESS eclipses turn nine of these binaries' minimum masses into masses and
+radii, J0535$-$08's $0.970 \pm 0.011$ and $0.521 \pm 0.003$\,\Msun.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -104,8 +110,9 @@ Section~\ref{sec:method} describes the method, its statistic and its calibration
 Section~\ref{sec:validation} compares its results for three systems with published dynamical
 masses, which test its accuracy, its uncertainties and its false-alarm probabilities.
 Section~\ref{sec:survey} applies it to the southern EBLM binaries with HARPS series and separates
-the one new measurement from the candidates, and Section~\ref{sec:discussion} discusses what the
-comparison shows.
+the one new measurement from the candidates. Section~\ref{sec:wider} extends it to EBLM binaries
+whose orbits come from their own spectra, to NIRPS spectra and to the TESS eclipses, and
+Section~\ref{sec:discussion} discusses what the comparison shows.
 
 \section{Targets and spectra}\label{sec:data}
 
@@ -616,6 +623,138 @@ changes of the analysis. Right: the cleaned rows summed in the companion's frame
 units of the profile's scatter beyond 30\,\kms.}\label{fig:diagnostics}
 \end{figure}
 
+\section{Beyond the catalogue orbits}\label{sec:wider}
+
+\subsection{Eight more HARPS binaries}
+
+The selection of Section~\ref{sec:data} needs an orbit from Gaia DR3 or SB9. The ESO archive holds
+HARPS series of 41 further EBLM binaries with 15 or more spectra above a signal-to-noise ratio of
+10, and for these the orbit is fitted to the series' own velocities: each spectrum's velocity is
+measured against GJ\,367's line depths, a circular-orbit periodogram and a Keplerian fit give the
+orbit, the primary's own line depths are made from its spectra at that orbit's velocities and the
+velocities measured again against them, twice, and the fit that leaves the least scatter is kept.
+The 41 series were searched along their orbits, and the eight in which a companion appears were
+built, measured and calibrated as in Section~\ref{sec:method}, the offset held at $+1.0$\,\kms\
+for the calibration. Since the 41 were searched together, each binary's own $p_\mathrm{G}$ is
+compounded over them, $1-(1-p_\mathrm{G})^{41}$ (Table~\ref{tab:wider}).
+
+Four companions stand at $5\sigma$ or more across the 41: J2122$-$32, J0425$-$46, J2054$-$32 and
+J0535$-$08, at 5.3 to $5.7\sigma$, with \Ktwo\ measured to 0.2 to 0.6 per cent and offsets of
+$+0.90$ to $+1.15$\,\kms, as in the systems of Section~\ref{sec:validation}. None has a published
+double-lined solution, and Gaia DR3 holds single-lined orbits alone for J2054$-$32 and
+J0425$-$46~\cite{GaiaNSS2023}. J0345$-$10, the binary TOI-395, reaches $4.1\sigma$ on its own nulls
+and $3.2\sigma$ across the 41, and J1204$-$47, J1328$+$05 and J0610$-$56 reach 3.0 to $3.3\sigma$
+alone; these four remain candidates, J1204$-$47 with a semi-amplitude its NIRPS spectra repeat
+(Section~\ref{sec:nir}).
+
+\begin{table}[!htbp]
+\centering
+\caption{The eight companions among the 41 EBLM binaries whose orbits are fitted to their own HARPS
+velocities: the spectra (nights), the orbit, the semi-amplitude with its statistical and
+systematic uncertainties, the offset with the 16th to 84th percentiles of 300 draws of whole
+nights, the false-alarm probability with its Gaussian significance on the binary's own nulls at an
+offset of $+1.0$\,\kms\ and compounded over the 41, and the minimum masses. Companions at $5\sigma$
+or more across the 41 are in bold. J1328$+$05's 21 spectra are too few for a systematic
+term.}\label{tab:wider}
+\footnotesize\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+EBLM & Spectra & $P$ (d) & \Kone\ (\kms) & $e$ & \Ktwo\ (\kms) & \dvsys\ (\kms) & $p_\mathrm{G}$ ($\sigma$) & Across 41 ($\sigma$) & $m_1\sin^3 i$ (\Msun) & $m_2\sin^3 i$ (\Msun)\\
+\midrule
+\tabinput{data/tab_wider.tex}
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{The near infrared}\label{sec:nir}
+
+NIRPS~\cite{Bouchy2017} has observed most of these binaries alongside HARPS since 2023, and in the
+near infrared an M dwarf carries a larger share of the light. Twenty of the EBLM binaries with a
+HARPS orbit have NIRPS series long enough to search, from the archive's telluric-corrected
+products. Three steps change in this band. A solar-type primary has too few lines in it for each
+spectrum to be placed on its own, so each is put at the velocity of the HARPS orbit and left
+unaligned. Before each residual's cubic is removed, the telluric bands and the samples where the
+series' median spectrum falls to 0.2 or below are set aside, since the ratio to a median near zero
+would otherwise dominate the fit. The template is the line depths of GJ\,581~\cite{Bonfils2005} from
+its 40 best NIRPS spectra, depths above 0.8, which lie at the edges of the telluric bands, removed,
+and the template moved by $-2.01$\,\kms\ onto the laboratory wavelengths of the Kurucz line
+list~\cite{Kurucz2011}. With this template the three best-measured companions, J1540$-$09's,
+J1613$-$76's and J1204$-$47's, sit at offsets of $+3.70$, $+4.45$ and $+0.85$\,\kms, too far apart
+to hold one offset, so the probabilities are quoted with the offset free within 10\,\kms\ of zero
+and compounded over the 20 series (Table~\ref{tab:nirps}).
+
+J1540$-$09's companion, measured by EBLM~XX at \Ktwo\ $= 60.03 \pm 0.26$\,\kms~\cite{Stevenson2026},
+is recovered from 118 NIRPS spectra at $59.98 \pm 0.50 \pm 0.78$\,\kms\ and $4.0\sigma$. J1928$-$38's
+39 NIRPS spectra put its companion at $62.07 \pm 2.79 \pm 1.53$\,\kms\ against EBLM~XX's $64.35 \pm
+2.82$, at $1.4\sigma$, where its 74 HARPS spectra show nothing (Section~\ref{sec:validation}).
+J1613$-$76, whose HARPS series shows no companion, gives one at $70.11 \pm 1.76 \pm 3.02$\,\kms\ and
+$3.5\sigma$ from 22 spectra, a candidate, and J1204$-$47's NIRPS spectra repeat its HARPS
+semi-amplitude within 0.6\,\kms. J0353$-$16 and J0055$-$00 reach 2.0 and $1.2\sigma$.
+
+\begin{table}[!htbp]
+\centering
+\caption{The NIRPS series in which a companion appears: the spectra (nights), the semi-amplitude
+with its statistical and systematic uncertainties, the offset with the 16th to 84th percentiles of
+300 draws of whole nights, the false-alarm probability with the offset free within 10\,\kms\ on the
+binary's own nulls and compounded over the 20 series searched, the companion's minimum mass, and
+the semi-amplitude measured elsewhere.}\label{tab:nirps}
+\footnotesize\setlength{\tabcolsep}{2pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+EBLM & Spectra & \Ktwo\ (\kms) & \dvsys\ (\kms) & $p_\mathrm{G}$ ($\sigma$) & Across 20 ($\sigma$) & $m_2\sin^3 i$ (\Msun) & \Ktwo\ elsewhere (\kms)\\
+\midrule
+\tabinput{data/tab_nirps.tex}
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Masses and radii from the eclipses}\label{sec:eclipse}
+
+The binaries eclipse, and TESS~\cite{Ricker2015} light curves, SPOC's at the shortest cadence or
+else TESS-SPOC's or QLP's read through Lightkurve~\cite{Lightkurve2018}, give the inclination and
+the radii. Both eclipses are modelled where the spectroscopic orbit places them, $e$ and $\omega$
+held at the orbit's: the transit is a dark disk of radius ratio $R_2/R_1$ across a quadratically
+limb-darkened primary, parametrised by $q_1$ and $q_2$~\cite{Kipping2013}, diluted by the
+companion's share $L_2$ of the TESS-band light, and the occultation removes $L_2$ times the hidden
+fraction of the companion's disk, its limb darkening held at 0.4 and 0.3; each exposure is
+integrated over its length. The time of periastron, the period, $R_2/R_1$, $a/R_1$, $\cos i$,
+$q_1$, $q_2$ and $L_2$ are fitted from several starts, small and grazing, by least squares and
+sampled with emcee~\cite{ForemanMackey2013}, the primary's radius held to its TIC
+value~\cite{Stassun2019} within 7 per cent except for J0535$-$08 and J0345$-$10. The inclination
+turns the minimum masses into masses, and $a/R_1$ with $a\sin i = (K_1+K_2)P\sqrt{1-e^2}/2\pi$ gives
+both radii (Table~\ref{tab:eclipse}).
+
+J0535$-$08's eclipses, 18.3 and 2.7 per cent deep at an impact parameter of 0.19, give masses of
+$0.970 \pm 0.011$ and $0.521 \pm 0.003$\,\Msun\ and radii of 1.209 and 0.505\,R$_\odot$, both
+stars to within one per cent without the TIC radius. In J2122$-$32 the companion passes clear of
+the primary at conjunction, its impact parameter 1.76 against $1 + R_2/R_1 = 1.48$, and only its
+occultation, 1.3 per cent deep, is seen; J2054$-$32, J0345$-$10 and J1328$+$05 graze, so their
+companions' radii stay loose while their masses, with $\sin^3 i$ between 0.976 and 0.997, do not.
+J1613$-$76's points scatter 2.5 times their errors about the model, which understates its radius
+intervals by that factor. J0425$-$46's primary has left the main sequence, at 1.59\,\Msun\ and
+3.21\,R$_\odot$, beside a companion of 0.743\,\Msun\ and 0.704\,R$_\odot$.
+
+\begin{table}[!htbp]
+\centering
+\caption{Masses and radii of the binaries of Tables~\ref{tab:wider} and~\ref{tab:nirps} from their
+TESS eclipses: the transit and occultation windows observed, the inclination with its 16th to 84th
+percentiles, the companion's share of the TESS-band light, the masses with the semi-amplitude's
+total uncertainty carried through, and the radii with the eclipse fit's percentiles. J1613$-$76's
+\Ktwo\ is its NIRPS value and the others' their HARPS values; the masses of the candidates are
+those their companions would have.}\label{tab:eclipse}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+EBLM & Windows & $i$ (deg) & $L_2$ & $M_1$ (\Msun) & $M_2$ (\Msun) & $R_1$ (R$_\odot$) & $R_2$ (R$_\odot$)\\
+\midrule
+\tabinput{data/tab_eclipse.tex}
+\bottomrule
+\end{tabular}}
+\end{table}
+
 \section{Discussion}\label{sec:discussion}
 
 The semi-amplitudes measured here differ from the published ones by $-0.15$ to $+0.16$\,\kms,
@@ -651,9 +790,9 @@ The method has the limits of any optical analysis of these binaries. Toward 0.1\
 companion's optical flux falls to $10^{-4}$ of the primary's and below, and the HARPS series of
 J1928$-$38 and of the lowest-mass companions do not reach them; no injection at
 $3\times10^{-4}$ is detected, and only J1141$-$37's returns the injected \Ktwo, at 1.8 in the
-nulls' units. The near-infrared carries a larger share of the
-companion's light, and the archive holds NIRPS series of nine of the EBLM binaries considered here,
-taken alongside their HARPS spectra.
+nulls' units. The near infrared carries a larger share of the
+companion's light, and there the method recovers J1540$-$09's published companion and reaches
+J1928$-$38's and J1613$-$76's, which their HARPS series do not (Section~\ref{sec:nir}).
 
 \section{Conclusion}\label{sec:conclusion}
 
@@ -668,7 +807,11 @@ free is needed for accuracy at the tenth of a kilometre per second. Across the 3
 southern EBLM binaries with archived HARPS series, the companion of EBLM J2101$-$45 is measured for
 the first time, at a false-alarm probability of $1.5\times10^{-7}$ across the survey, with \Ktwo\
 $= 65.41 \pm 0.46$\,\kms\ and minimum masses of $1.415$ and $0.552$\,\Msun; the companions of
-J0649$-$27, J0825$-$67 and J1141$-$37 remain candidates.
+J0649$-$27, J0825$-$67 and J1141$-$37 remain candidates. Among 41 EBLM binaries outside the
+catalogue orbits, the companions of J2122$-$32, J0425$-$46, J2054$-$32 and J0535$-$08 are measured
+for the first time at 5.3 to $5.7\sigma$ across the 41, and with their TESS eclipses their masses
+and radii follow without stellar models; NIRPS spectra recover J1540$-$09's companion within
+0.05\,\kms\ of its published semi-amplitude.
 
 \section*{Acknowledgements}
 
@@ -691,7 +834,7 @@ seti-tools package that holds this paper (\texttt{seti.py composition binaries},
 the rows, search, calibrate and measure), and its coverage store records the run as
 \texttt{binaries\_eblm\_known\_orbits}. The paper's data folder holds the measurements and their
 maps, curves and profiles, the robustness and injection measurements, the calibrations, the
-survey's search results, and the tables written from them.
+survey's search results, the eclipse fits, and the tables written from them.
 
 \begin{thebibliography}{99}\small\raggedright
 
@@ -826,6 +969,37 @@ M.~Mayor et al., Setting new standards with HARPS, \emph{The Messenger} \textbf{
 \bibitem{Pepe2021}
 F.~Pepe et al., ESPRESSO at VLT: on-sky performance and first results, \emph{Astron. Astrophys.}
 \textbf{645}, A96 (2021).
+
+\bibitem{Bouchy2017}
+F.~Bouchy et al., Near-InfraRed Planet Searcher to join HARPS on the ESO 3.6-metre telescope,
+\emph{The Messenger} \textbf{169}, 21 (2017).
+
+\bibitem{Bonfils2005}
+X.~Bonfils et al., The HARPS search for southern extra-solar planets VI. A Neptune-mass planet
+around the nearby M dwarf Gl\,581, \emph{Astron. Astrophys.} \textbf{443}, L15 (2005).
+
+\bibitem{Kurucz2011}
+R.~L. Kurucz, Including all the lines, \emph{Can. J. Phys.} \textbf{89}, 417 (2011).
+
+\bibitem{Ricker2015}
+G.~R. Ricker et al., Transiting Exoplanet Survey Satellite, \emph{J. Astron. Telesc. Instrum.
+Syst.} \textbf{1}, 014003 (2015).
+
+\bibitem{Lightkurve2018}
+Lightkurve Collaboration, Lightkurve: Kepler and TESS time series analysis in Python,
+Astrophysics Source Code Library, ascl:1812.013 (2018).
+
+\bibitem{Kipping2013}
+D.~M. Kipping, Efficient, uninformative sampling of limb darkening coefficients for two-parameter
+laws, \emph{Mon. Not. R. Astron. Soc.} \textbf{435}, 2152 (2013).
+
+\bibitem{ForemanMackey2013}
+D.~Foreman-Mackey, D.~W. Hogg, D.~Lang and J.~Goodman, emcee: the MCMC hammer, \emph{Publ. Astron.
+Soc. Pac.} \textbf{125}, 306 (2013).
+
+\bibitem{Stassun2019}
+K.~G. Stassun et al., The revised TESS Input Catalog and Candidate Target List, \emph{Astron. J.}
+\textbf{158}, 138 (2019).
 
 \end{thebibliography}
 
