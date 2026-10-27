@@ -5207,7 +5207,91 @@ def hostlessnir_main(record=False, arcsec=2.0, hsc_pix=0.168):
         print("recorded")
 
 
+radarfence_DOC = r"""Under our own radar fence at 217 MHz: NAVSPASUR's continuous-wave fence has swept the sky at declinations 0 to +33 deg at 216.98 MHz since 1961, so a star within 10 pc there has had that carrier for decades and a reply at the same frequency would sit in GLEAM's 216-223 MHz sub-band; the Gaia Catalogue of Nearby Stars within 10 pc in that strip, carried to GLEAM's epoch 2013.8, against GLEAM EGC (VIII/100) within 2 arcmin, the count set against the catalogue's density in the surrounding degree; every GLEAM source of those fields read for its 216-223 MHz flux against the power law of the other nineteen sub-bands, the share standing 3 sigma above as the rate a reply would have to beat; with nothing at a star, three times the sub-band's local noise as the limit, an isotropic power over the 7.68 MHz sub-band at the star's distance.
+
+    python -I seti.py radio_sky radarfence [record] [--dist-pc 10] [--dec-min 0] [--dec-max 33] [--near-arcmin 2] [--field-deg 1] [--sigma 3] [--epoch 2013.8]"""
+
+RADARFENCE_BANDS = ("076", "084", "092", "099", "107", "115", "122", "130", "143", "151", "158", "166", "174", "181", "189", "197", "204", "212", "220", "227")
+
+
+def radarfence_excess(r):
+    """The 216-223 MHz sub-band's flux against the power law of the other nineteen in a GLEAM row: (excess Jy, its significance), or None."""
+    nu, s, e = [], [], []
+    for b in RADARFENCE_BANDS[:-2] + RADARFENCE_BANDS[-1:]:
+        f, ef = num(r.get("Fint" + b)), num(r.get("e_Fint" + b))
+        if f and f > 0 and ef and ef > 0:
+            nu.append(math.log(int(b)))
+            s.append(math.log(f))
+            e.append(ef / f)
+    f220, e220 = num(r.get("Fint220")), num(r.get("e_Fint220"))
+    if len(nu) < 8 or f220 is None or not e220:
+        return None
+    w = 1 / np.array(e) ** 2
+    A = np.vstack([np.ones(len(nu)), nu]).T
+    p = np.linalg.lstsq(A * np.sqrt(w)[:, None], np.array(s) * np.sqrt(w), rcond=None)[0]
+    model = math.exp(p[0] + p[1] * math.log(220))
+    scatter = float(np.std(np.array(s) - A @ p)) * model
+    return f220 - model, (f220 - model) / math.hypot(e220, scatter)
+
+
+def radarfence_main(record=False, dist_pc=10.0, dec_min=0.0, dec_max=33.0, near_arcmin=2.0, field_deg=1.0, sigma=3.0, epoch=2013.8):
+    stars = catalogues.gcns("source_id, ra, dec, pmra, pmdec, parallax", "gcns_prob > 0.9 AND parallax > %g AND dec BETWEEN %g AND %g" % (1000.0 / dist_pc, dec_min, dec_max))
+    st = []
+    for r in stars:
+        ra, dec = core.star_at(float(r["ra"]), float(r["dec"]), num(r["pmra"]), num(r["pmdec"]), 2016.0, epoch)
+        st.append(dict(id=str(r["source_id"]), ra=ra, dec=dec, d=1000.0 / float(r["parallax"]), near=[], field=[]))
+    rows = {}
+    for s in st:
+        for r in core.tap("vizier", "SELECT * FROM \"VIII/100/gleamegc\" WHERE 1=CONTAINS(POINT('ICRS', RAJ2000, DEJ2000), CIRCLE('ICRS', %.6f, %.6f, %g))" % (s["ra"], s["dec"], field_deg)):
+            sep = sep_arcsec(float(r["RAJ2000"]), float(r["DEJ2000"]), s["ra"], s["dec"])
+            rows[r["GLEAM"]] = r
+            (s["near"] if sep <= near_arcmin * 60 else s["field"]).append((r["GLEAM"], sep))
+    # the density in each field outside the near circle, scaled to the near circle's area
+    area = (near_arcmin / 60.0) ** 2 / (field_deg ** 2 - (near_arcmin / 60.0) ** 2)
+    expected = sum(len(s["field"]) * area for s in st)
+    near = [(s, g, sep) for s in st for g, sep in s["near"]]
+    ex = {g: radarfence_excess(r) for g, r in rows.items()}
+    tested = [v for v in ex.values() if v is not None]
+    rate = sum(v[1] > sigma for v in tested) / max(len(tested), 1)
+    for s in st:
+        hits = [(g, sep, ex.get(g)) for g, sep in s["near"]]
+        s["reply"] = [h for h in hits if h[2] and h[2][1] > sigma]
+        # VizieR serves the local noise in micro-jansky per beam, the fluxes in jansky
+        rms = [num(rows[g].get("lrms220")) * 1e-6 for g, _ in s["field"] if num(rows[g].get("lrms220"))]
+        s["limit"] = sigma * float(np.median(rms)) if rms else None
+        # isotropic power over the 7.68 MHz sub-band at the star's distance
+        s["power"] = 4 * math.pi * (s["d"] * 3.0857e16) ** 2 * s["limit"] * 1e-26 * 7.68e6 if s["limit"] else None
+    p_near = 1.0 - sum(math.exp(-expected) * expected ** i / math.factorial(i) for i in range(len(near)))
+    replies = [s for s in st if s["reply"]]
+    lim = [s["limit"] for s in st if s["limit"]]
+    print("%d stars within %g pc at Dec %g to %g; %d GLEAM sources within %g arcmin (%s) against %.1f from the fields' density (p %.2f); "
+          "of %d field sources %.2f per cent stand %g sigma above the power law at 216-223 MHz; %d stars with such a source near them; limits %.2f-%.2f Jy (median %.2f)" % (
+              len(st), dist_pc, dec_min, dec_max, len(near), near_arcmin, ", ".join("%.0f arcsec" % sep for _, _, sep in near) or "none", expected, p_near,
+              len(tested), 100 * rate, sigma, len(replies), min(lim) if lim else 0, max(lim) if lim else 0, float(np.median(lim)) if lim else 0))
+    for s, g, sep in near:
+        v = ex.get(g)
+        print("  Gaia DR3 %s at %.1f pc: GLEAM %s at %.0f arcsec, 216-223 MHz %s" % (s["id"], s["d"], g, sep, "%+.3f Jy, %.1f sigma" % v if v else "not fitted"))
+    if record:
+        core.record_run(
+            "gleam_radar_fence", "Under our own radar fence at 217 MHz", "Gaia Catalogue of Nearby Stars; GLEAM EGC (VizieR VIII/100) through the VizieR TAP service",
+            "%d stars within %g pc at declinations %g to %g deg, carried to %.1f" % (len(st), dist_pc, dec_min, dec_max, epoch), os.path.abspath(__file__), "radarfence",
+            len(st), "stars", dict(dist_pc=dist_pc, dec_min=dec_min, dec_max=dec_max, near_arcmin=near_arcmin, field_deg=field_deg, sigma=sigma, epoch=epoch),
+            dict(near=len(near), expected=expected, p_near=p_near, field_sources=len(tested), field_rate=rate),
+            "%g times the 216-223 MHz sub-band's local noise; %.1e W isotropic over 7.68 MHz at 5 pc for 0.1 Jy" % (sigma, 4 * math.pi * (5 * 3.0857e16) ** 2 * 0.1e-26 * 7.68e6),
+            "%d sources within %g arcmin of the %d stars against %.1f from GLEAM's density (p %.2f), none standing %g sigma above its power law at 216-223 MHz, where %.2f per cent of %d field sources do; "
+            "limits %.2f-%.2f Jy, median %.2f" % (len(near), near_arcmin, len(st), expected, p_near, sigma, 100 * rate, len(tested), min(lim) if lim else 0, max(lim) if lim else 0,
+                                                 float(np.median(lim)) if lim else 0) if not replies else
+            "%d sources within %g arcmin of the %d stars against %.1f; %d stand %g sigma above the power law at 216-223 MHz" % (len(near), near_arcmin, len(st), expected, len(replies), sigma),
+            [dict(target="gaia_dr3:%s" % s["id"], upper_limit=round(s["limit"], 3) if s["limit"] else None, unit="Jy at 216-223 MHz, %g sigma" % sigma,
+                  vet=None if s["reply"] else ("chance-rate" if s["near"] and p_near > 0.01 else None),
+                  note="%.1f pc; %s; %s W isotropic over 7.68 MHz" % (s["d"], "GLEAM within %g arcmin: %s" % (near_arcmin, ", ".join("%s at %.0f arcsec" % x for x in s["near"])) if s["near"] else "no GLEAM source within %g arcmin" % near_arcmin,
+                                                                     "%.1e" % s["power"] if s["power"] else "-"))
+             for s in st])
+        print("recorded")
+
+
 APPROACHES = {
+    "radarfence": (lambda: core.run_cli(radarfence_main), radarfence_DOC),
     "hostlessnir": (lambda: core.run_cli(hostlessnir_main), hostlessnir_DOC),
     "hostlesssed": (lambda: core.run_cli(hostlesssed_main), hostlesssed_DOC),
     "hostless": (lambda: core.run_cli(hostless_main), hostless_DOC),
