@@ -3807,7 +3807,8 @@ def sndeficit_main(record=False, d_max_mpc=20.0, sn_per_msun=0.01, year_min=1980
         tir, uv, ltir = core.num(g["logSFRTIR"]), core.num(g["logSFRGSW"]), core.num(g["logLTIR"])
         # a luminous infrared galaxy hides its supernovae in dust; an active nucleus lends its infrared to the rate
         dusty = (tir is not None and uv is not None and tir - uv > math.log10(dust_ratio)) or (ltir is not None and ltir > ltir_max)
-        agn = bool((g["AGNs17"] or "").strip() or (g["AGNh"] or "").strip() or (g["Nuclear"] or "").strip() not in ("", "0"))
+        # HECATE writes its two active-nucleus flags as Y, N or ?, and Nuclear as -1 where no emission-line class exists
+        agn = "Y" in (str(g["AGNs17"]).strip(), str(g["AGNh"]).strip())
         out.append(dict(pgc=g["PGC"], name=(g["NED"] or "").strip(), d=float(g["D"]), sfr=round(sfr, 2), expected=round(exp, 1), seen=n, p=p, dusty=dusty, agn=agn,
                         vet="dust" if dusty else "background-galaxy" if agn else None))
     short = sorted([o for o in out if o["p"] < p_max], key=lambda o: o["p"])
@@ -4907,6 +4908,74 @@ def chirps_main(record=False, rate_max=60.0, rate_min=1.0, p_max=1e-12, tmag_max
         print("recorded")
 
 
+quietspots_DOC = r"""Quiet but spotted: a fast-spinning, heavily spotted M dwarf runs a saturated dynamo, and its peers flare, so one that never flares while its spots show the dynamo at work is a star whose flaring something suppresses; McQuillan et al. (2014) Kepler rotation periods and spot amplitudes of the dwarfs below 4000 K spinning faster than 10 days with an amplitude above the median of their peers, against the Kepler stars Yang and Liu (2019) found flaring, matched to Gaia DR3 for brightness, colour, distance and RUWE; a quiet star is one in a brightness bin where most of its peers flare, the expected count of quiet stars is the sum of each bin's quiet share, and each quiet star is read for a Gaia neighbour within 4 arcsec and 3 mag (spots or light from another star), RUWE above 1.4 (a binary whose companion carries the spots), and a Gaia colour or absolute magnitude that is not an M dwarf's.
+
+    python -I seti.py flashes quietspots [record] [--teff-max 4000] [--prot-max 10] [--frac-min 0.7] [--g-step 1] [--beam-arcsec 4]"""
+
+
+def quietspots_main(record=False, teff_max=4000.0, prot_max=10.0, frac_min=0.7, g_step=1.0, beam_arcsec=4.0):
+    rot = core.tap("vizier", 'SELECT KIC, Teff, "log(g)", Prot, Rper, _RA, _DE FROM "J/ApJS/211/24/table1" WHERE Teff < %g AND Prot < %g' % (teff_max, prot_max), timeout=600)
+    flaring = {str(r["KIC"]).strip(): num(r["Nf"]) for r in core.tap("vizier", 'SELECT KIC, Nf FROM "J/ApJS/241/29/table1"', timeout=600)}
+    st = [dict(source_id=str(r["KIC"]).strip(), ra=float(r["_RA"]), dec=float(r["_DE"]), teff=num(r["Teff"]), logg=num(r["log(g)"]), prot=num(r["Prot"]), amp=num(r["Rper"]))
+          for r in rot if num(r["log(g)"]) and num(r["log(g)"]) > 4.0 and num(r["Rper"])]
+    med = float(np.median([s["amp"] for s in st]))
+    st = [s for s in st if s["amp"] >= med]
+    gaia = {}
+    for m in core.xmatch(st, "I/355/gaiadr3", 2.0):
+        if m["source_id"] not in gaia or float(m["angDist"]) < float(gaia[m["source_id"]]["angDist"]):
+            gaia[m["source_id"]] = m
+    st = [s for s in st if s["source_id"] in gaia and num(gaia[s["source_id"]].get("Gmag")) is not None]
+    for s in st:
+        g = gaia[s["source_id"]]
+        s["g"], s["bprp"], s["plx"], s["ruwe"] = num(g["Gmag"]), num(g.get("BP-RP")), num(g.get("Plx")), num(g.get("RUWE"))
+        s["nf"] = flaring.get(s["source_id"])
+        s["bin"] = int(math.floor(s["g"] / g_step))
+    bins = {}
+    for s in st:
+        bins.setdefault(s["bin"], []).append(s)
+    share = {b: sum(x["nf"] is not None for x in v) / len(v) for b, v in bins.items()}
+    quiet = [s for s in st if s["nf"] is None and share[s["bin"]] >= frac_min]
+    expected = sum(1 - share[b] for b, v in bins.items() if share[b] >= frac_min for _ in v)
+    near = {}
+    for k in range(0, len(quiet), 50):
+        chunk = quiet[k:k + 50]
+        where = " OR ".join("1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %.6f))" % (s["ra"], s["dec"], beam_arcsec / 3600) for s in chunk)
+        for r in core.tap("gaia", "SELECT source_id, ra, dec, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE " + where):
+            for s in chunk:
+                if core.sep_arcsec(float(r["ra"]), float(r["dec"]), s["ra"], s["dec"]) < beam_arcsec and num(r["phot_g_mean_mag"]) is not None \
+                        and abs(num(r["phot_g_mean_mag"]) - s["g"]) > 0.01 and num(r["phot_g_mean_mag"]) < s["g"] + 3:
+                    near.setdefault(s["source_id"], []).append(round(num(r["phot_g_mean_mag"]), 1))
+    for s in quiet:
+        mg = s["g"] + 5 * math.log10(s["plx"] / 100) if s["plx"] and s["plx"] > 0 else None
+        s["mg"] = mg
+        s["near"] = near.get(s["source_id"], [])
+        s["vet"] = ("blend" if s["near"] else "binary" if s["ruwe"] and s["ruwe"] > 1.4 else
+                    "misidentified" if (s["bprp"] is not None and s["bprp"] < 1.5) or mg is None or mg < 5.0 else None)
+    left = [s for s in quiet if s["vet"] is None]
+    print("%d Kepler dwarfs below %g K spinning faster than %g d with spot amplitudes above their median (%.0f), %d with Gaia; flaring in Yang and Liu (2019): %d; "
+          "quiet in brightness bins where %.0f per cent or more flare: %d against %.1f expected from those bins' quiet shares; %d blends, %d binaries, %d not M dwarfs; %d left" % (
+              len(rot), teff_max, prot_max, med, len(st), sum(s["nf"] is not None for s in st), 100 * frac_min, len(quiet), expected,
+              sum(s["vet"] == "blend" for s in quiet), sum(s["vet"] == "binary" for s in quiet), sum(s["vet"] == "misidentified" for s in quiet), len(left)))
+    for b in sorted(bins):
+        print("  G %.0f-%.0f: %d stars, %.0f per cent flaring" % (b * g_step, (b + 1) * g_step, len(bins[b]), 100 * share[b]))
+    for s in left:
+        print("  KIC %s: G %.2f, BP-RP %s, M_G %s, Teff %.0f, P %.2f d, amplitude %.0f, RUWE %s" % (
+            s["source_id"], s["g"], "%.2f" % s["bprp"] if s["bprp"] is not None else "-", "%.2f" % s["mg"] if s["mg"] is not None else "-", s["teff"], s["prot"], s["amp"], s["ruwe"]))
+    if record:
+        p_left = 1.0 - sum(math.exp(-expected) * expected ** i / math.factorial(i) for i in range(len(quiet)))
+        core.record_run(
+            "kepler_quiet_spotted", "Quiet but spotted", "McQuillan et al. (2014) Kepler rotation (J/ApJS/211/24); Yang and Liu (2019) Kepler flares (J/ApJS/241/29); Gaia DR3 by CDS XMatch",
+            "%d Kepler dwarfs below %g K faster than %g d with spot amplitudes above their median" % (len(st), teff_max, prot_max), os.path.abspath(__file__), "quietspots",
+            len(st), "stars", dict(teff_max=teff_max, prot_max=prot_max, frac_min=frac_min, g_step=g_step, beam_arcsec=beam_arcsec),
+            dict(flaring=sum(s["nf"] is not None for s in st), quiet=len(quiet), expected=expected, p=p_left),
+            "a spotted fast rotator absent from the flare list in a brightness bin where %.0f per cent of its peers flare" % (100 * frac_min),
+            "%d quiet against %.1f expected (p %.2f): %d blends, %d binaries, %d not M dwarfs; %d left" % (len(quiet), expected, p_left, sum(s["vet"] == "blend" for s in quiet),
+                                                                                                   sum(s["vet"] == "binary" for s in quiet), sum(s["vet"] == "misidentified" for s in quiet), len(left)),
+            [dict(target="kic:%s" % s["source_id"], stat=s["prot"], unit="rotation period, d, no flare", vet=s["vet"] or ("chance-rate" if p_left > 0.01 else None),
+                  note="G %.2f, BP-RP %s, Teff %.0f, amplitude %.0f, RUWE %s, neighbours %s" % (s["g"], s["bprp"], s["teff"], s["amp"], s["ruwe"], s["near"] or "none")) for s in quiet])
+        print("recorded")
+
+
 hipflash_DOC = r"""Single-transit brightenings in Hipparcos epoch photometry: stars within 100 pc with a Gaia DR3 best neighbour and a robust scatter below 0.02 mag, a clean transit brighter than the star's median by 0.3 mag and five robust deviations, against the transits as much fainter, the mirror; each read for a catalogue-wide event (two or more other stars within half an hour, the satellite's own), a recurrence on the same star, Hipparcos's variability type, SIMBAD's type and RUWE, and for the pass partner 20.6 minutes away, which sees the same star through the other field of view and shares a real flash.
 
     python -I seti.py flashes hipflash [record] [--mag 0.3] [--sig 5] [--quiet 0.02] [--pair-days 0.02] [--plx-min 10]"""
@@ -4985,6 +5054,7 @@ def hipflash_main(record=False, mag=0.3, sig=5.0, quiet=0.02, pair_days=0.02, pl
 
 APPROACHES = {
     "hipflash": (lambda: core.run_cli(hipflash_main), hipflash_DOC),
+    "quietspots": (lambda: core.run_cli(quietspots_main), quietspots_DOC),
     "chirps": (lambda: core.run_cli(chirps_main), chirps_DOC),
     "tones": (lambda: core.run_cli(tones_main), tones_DOC),
     "flareecho": (lambda: core.run_cli(flareecho_main), flareecho_DOC),

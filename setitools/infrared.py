@@ -3502,13 +3502,13 @@ def ksexcess_main(record=False, widths=5.0, errors=5.0, w1_widths=2.0, colour_mi
         print("recorded")
 
 
-warmgalaxies_DOC = r"""Galaxies warm without star formation: HECATE galaxies within 150 Mpc with a GSWLC stellar mass and ultraviolet-optical star-formation rate and with WISE 22 um and IRAS far-infrared luminosities, the quiescent ones (specific star-formation rate below 1e-11 per year) whose 22 um luminosity exceeds a tenth of a solar luminosity per solar mass and lies within a factor of three of their far-infrared luminosity; star-forming dust at 20-40 K peaks at 60-100 um and old stars warm little dust, so mid-infrared heat without young stars or cold dust is what structures at room temperature around a galaxy's stars would radiate. Each read for an active nucleus in HECATE's three flags and for an edge-on disc, whose dust lanes hide the young stars.
+warmgalaxies_DOC = r"""Galaxies warm without star formation: HECATE galaxies within 150 Mpc with a GSWLC stellar mass and ultraviolet-optical star-formation rate and with WISE 22 um and IRAS far-infrared luminosities, the quiescent ones (specific star-formation rate below 1e-11 per year) whose 22 um luminosity exceeds a tenth of a solar luminosity per solar mass and lies within a factor of three of their far-infrared luminosity; star-forming dust at 20-40 K peaks at 60-100 um and old stars warm little dust, so mid-infrared heat without young stars or cold dust is what structures at room temperature around a galaxy's stars would radiate. Each read for an active nucleus in HECATE's two flags, for an edge-on disc, whose dust lanes hide the young stars, and for HECATE's homogenised star-formation rate, which counts the infrared and puts a galaxy whose young stars dust hides from the ultraviolet and optical back among the star-forming.
 
     python -I seti.py infrared warmgalaxies [record] [--d-max-mpc 150] [--ssfr-max -11] [--heat-min -1.0] [--warm-min -0.5] [--edge-on-deg 70]"""
 
 
 def warmgalaxies_main(record=False, d_max_mpc=150.0, ssfr_max=-11.0, heat_min=-1.0, warm_min=-0.5, edge_on_deg=70.0):
-    rows = core.tap("vizier", 'SELECT PGC, NED, RAJ2000, DEJ2000, D, i, logLTIR, logLFIR, logL22um, logL12um, logMGSW, logSFRGSW, logSFRTIR, Nuclear, AGNs17, AGNh, W3mag, W4mag '
+    rows = core.tap("vizier", 'SELECT PGC, NED, RAJ2000, DEJ2000, D, i, logLTIR, logLFIR, logL22um, logL12um, logMGSW, logSFRGSW, logSFRTIR, logSFRh, Nuclear, AGNs17, AGNh, W3mag, W4mag '
                               'FROM "J/MNRAS/506/1896/hecate" WHERE D < %g AND logSFRGSW IS NOT NULL AND logMGSW IS NOT NULL AND logL22um IS NOT NULL AND logLFIR IS NOT NULL'
                     % d_max_mpc, timeout=900)
     gal = []
@@ -3518,8 +3518,8 @@ def warmgalaxies_main(record=False, d_max_mpc=150.0, ssfr_max=-11.0, heat_min=-1
             continue
         # HECATE's luminosities are in erg/s; a solar luminosity is 3.828e33 erg/s
         l22, lfir = l22 - 33.583, lfir - 33.583
-        gal.append(dict(pgc=r["PGC"], name=(r["NED"] or "").strip(), d=num(r["D"]), inc=num(r["i"]), m=m, ssfr=sfr - m, heat=l22 - m, warm=l22 - lfir, l22=l22, lfir=lfir,
-                        ltir=num(r["logLTIR"]), agn=bool((r["AGNs17"] or "").strip() or (r["AGNh"] or "").strip() or (r["Nuclear"] or "").strip() not in ("", "0")),
+        gal.append(dict(pgc=r["PGC"], name=(r["NED"] or "").strip(), d=num(r["D"]), inc=num(r["i"]), m=m, ssfr=sfr - m, ssfr_h=(num(r["logSFRh"]) - m) if num(r["logSFRh"]) is not None else None, heat=l22 - m, warm=l22 - lfir, l22=l22, lfir=lfir,
+                        ltir=num(r["logLTIR"]), agn="Y" in (str(r["AGNs17"]).strip(), str(r["AGNh"]).strip()),
                         w34=(num(r["W3mag"]) - num(r["W4mag"])) if num(r["W3mag"]) is not None and num(r["W4mag"]) is not None else None))
     quiet = [g for g in gal if g["ssfr"] < ssfr_max]
     forming = [g for g in gal if g["ssfr"] >= ssfr_max]
@@ -3527,14 +3527,15 @@ def warmgalaxies_main(record=False, d_max_mpc=150.0, ssfr_max=-11.0, heat_min=-1
     warm_q = np.array([g["warm"] for g in quiet])
     hits = [g for g in quiet if g["heat"] > heat_min and g["warm"] > warm_min]
     for g in hits:
-        g["vet"] = "background-galaxy" if g["agn"] else "dust-lane" if g["inc"] is not None and g["inc"] > edge_on_deg else None
+        g["vet"] = ("background-galaxy" if g["agn"] else "dust-lane" if g["inc"] is not None and g["inc"] > edge_on_deg else
+                    "dust" if g["ssfr_h"] is not None and g["ssfr_h"] > ssfr_max + 1 else None)
     left = [g for g in hits if g["vet"] is None]
     print("%d galaxies within %g Mpc with masses, ultraviolet-optical star-formation rates, 22 um and far-infrared luminosities; quiescent (specific rate below 1e%g): %d, "
           "whose 22 um heat per stellar mass runs median %.2f (99th percentile %.2f) and 22 um over far-infrared median %.2f (99th %.2f); above %g per solar mass and within "
-          "%g dex of the far-infrared: %d, %d with active nuclei, %d edge-on; unexplained %d" % (
+          "%g dex of the far-infrared: %d, %d with active nuclei, %d edge-on, %d star-forming by the infrared rate; unexplained %d" % (
               len(gal), d_max_mpc, ssfr_max, len(quiet), float(np.median(heat_q)) if len(heat_q) else 0, float(np.percentile(heat_q, 99)) if len(heat_q) else 0,
               float(np.median(warm_q)) if len(warm_q) else 0, float(np.percentile(warm_q, 99)) if len(warm_q) else 0, heat_min, warm_min, len(hits),
-              sum(g["vet"] == "background-galaxy" for g in hits), sum(g["vet"] == "dust-lane" for g in hits), len(left)))
+              sum(g["vet"] == "background-galaxy" for g in hits), sum(g["vet"] == "dust-lane" for g in hits), sum(g["vet"] == "dust" for g in hits), len(left)))
     for g in sorted(hits, key=lambda g: -g["heat"]):
         print("  %s (PGC %s, %s Mpc): log M %.2f, specific rate %.2f, 22 um per mass %.2f, 22 um over far-infrared %+.2f, W3-W4 %s, inclination %s; %s" % (
             g["name"], g["pgc"], g["d"], g["m"], g["ssfr"], g["heat"], g["warm"], "%.2f" % g["w34"] if g["w34"] is not None else "-", g["inc"], g["vet"] or "unexplained"))
@@ -3548,8 +3549,8 @@ def warmgalaxies_main(record=False, d_max_mpc=150.0, ssfr_max=-11.0, heat_min=-1
             "galaxies apart" % (float(np.median(heat_q)) if len(heat_q) else 0, float(np.percentile(heat_q, 99)) if len(heat_q) else 0,
                                 float(np.median(warm_q)) if len(warm_q) else 0, float(np.percentile(warm_q, 99)) if len(warm_q) else 0, len(forming)),
             "a quiescent galaxy radiating a tenth of a solar luminosity per solar mass at 22 um with little cold dust",
-            "%d: %d with active nuclei, %d edge-on; %d unexplained" % (len(hits), sum(g["vet"] == "background-galaxy" for g in hits), sum(g["vet"] == "dust-lane" for g in hits),
-                                                                     len(left)),
+            "%d: %d with active nuclei, %d edge-on, %d star-forming once the infrared is counted; %d unexplained" % (
+                len(hits), sum(g["vet"] == "background-galaxy" for g in hits), sum(g["vet"] == "dust-lane" for g in hits), sum(g["vet"] == "dust" for g in hits), len(left)),
             [dict(target="pgc:%s" % g["pgc"], stat=g["heat"], unit="log 22 um luminosity per stellar mass, solar units", vet=g["vet"],
                   note="%s, %s Mpc, log M %.2f, specific rate %.2f, 22 um over far-infrared %+.2f, inclination %s" % (g["name"], g["d"], g["m"], g["ssfr"], g["warm"], g["inc"]))
              for g in hits])
@@ -4644,7 +4645,105 @@ def pvedge_main(record=False, widths=5.0, jk_widths=2.0, emax=0.03, beam_arcsec=
         print("recorded")
 
 
+radioquiet_DOC = r"""Heat without cosmic rays: star formation heats dust and, through its supernovae, lights synchrotron, so the far-infrared to 1.4 GHz ratio q holds at 2.34 with 0.26 dex of scatter over four decades of luminosity (Yun, Reddy and Condon 2001), and waste heat from engines carries no synchrotron with it; HECATE galaxies within 200 Mpc north of -40 deg with IRAS 60 and 100 um fluxes, the far-infrared flux 1.26e-14 (2.58 S60 + S100) W/m^2, against every NVSS component within the galaxy's D25 semi-major axis, at least 45 arcsec and at most 3 arcmin, q above 3.3 (four times the scatter), or NVSS's 2.5 mJy giving a lower limit above it; each read for an IRAS source in the Galactic plane's cirrus (|b| below 10 deg), a disc wider than 6 arcmin, whose synchrotron the 3 arcmin sum misses, HECATE's active-nucleus flags or WISE AGN colours (W1-W2 above 0.8), NED's largest 1.4 GHz flux integrated over the galaxy's map, which holds a faint disc NVSS's component list breaks up, SIMBAD's active-nucleus types, NGC 1377's published nascent starburst, and a 60 um flux IRAS flags as an upper limit.
+
+    python -I seti.py infrared radioquiet [record] [--d-max-mpc 200] [--q-flag 3.3] [--nvss-limit-mjy 2.5] [--b-min 10] [--extent-arcmin 6]"""
+
+
+# galaxies the literature has already explained: PGC to reading
+RADIOQUIET_KNOWN = {"13324": "a nascent starburst too young for its supernovae to have lit synchrotron (Roussel et al. 2003)"}
+
+
+def radioquiet_ned_1p4(name):
+    """The largest integrated 1.4 GHz flux density (mJy) NED holds for a galaxy, or None."""
+    t = core.get("https://ned.ipac.caltech.edu/cgi-bin/datasearch?" + urllib.parse.urlencode(dict(search_type="Photometry", objname=name, of="ascii_bar", meas_type="bot")),
+                 timeout=120, soft=True)
+    best = None
+    for line in (t or b"").decode(errors="replace").splitlines():
+        c = [x.strip() for x in line.split("|")]
+        # columns: number, band, value, uncertainty, units, frequency (Hz), flux in Jy
+        # the continuum alone: the 21 cm line sits at 1.42 GHz in Jy Hz
+        if len(c) > 6 and c[4] in ("mJy", "Jy") and "HI" not in c[1] and "21 cm" not in c[1] and num(c[5]) and abs(num(c[5]) - 1.4e9) < 0.03e9 and num(c[6])                 and "<" not in c[3]:
+            best = max(best or 0.0, 1000.0 * num(c[6]))
+    return best
+
+
+def radioquiet_main(record=False, d_max_mpc=200.0, q_flag=3.3, nvss_limit_mjy=2.5, b_min=10.0, extent_arcmin=6.0):
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+    rows = core.tap("vizier", 'SELECT PGC, NED, RAJ2000, DEJ2000, D, MajAxis, F60um, F100um, q_F60um, q_F100um, W1mag, W2mag, logSFRh, Nuclear, AGNs17, AGNh '
+                              'FROM "J/MNRAS/506/1896/hecate" WHERE D < %g AND DEJ2000 > -40 AND F60um > 0 AND F100um > 0' % d_max_mpc, timeout=900)
+    gal = []
+    for r in rows:
+        s60, s100 = num(r["F60um"]), num(r["F100um"])
+        fir = 1.26e-14 * (2.58 * s60 + s100)
+        # testable only where NVSS's limit would put q above the flag
+        if math.log10(fir / 3.75e12 / (nvss_limit_mjy * 1e-29)) <= q_flag:
+            continue
+        maj = num(r["MajAxis"]) or 0.0
+        gal.append(dict(source_id=str(r["PGC"]), name=(r["NED"] or "").strip(), ra=float(r["RAJ2000"]), dec=float(r["DEJ2000"]), d=num(r["D"]), maj=maj, fir=fir,
+                        upper=str(r["q_F60um"]).strip() == "1", agn="Y" in (str(r["AGNs17"]).strip(), str(r["AGNh"]).strip()),
+                        w12=(num(r["W1mag"]) - num(r["W2mag"])) if num(r["W1mag"]) is not None and num(r["W2mag"]) is not None else None, s1=0.0))
+    # HECATE's MajAxis is the D25 semi-major axis in arcmin
+    radius = {g["source_id"]: max(45.0, min(60.0 * g["maj"], 180.0)) for g in gal}
+    byid = {g["source_id"]: g for g in gal}
+    for k in range(0, len(gal), 20000):
+        for m in core.xmatch(gal[k:k + 20000], "VIII/65/nvss", 180.0):
+            if float(m["angDist"]) <= radius[m["source_id"]]:
+                byid[m["source_id"]]["s1"] += num(m.get("S1.4")) or 0.0
+    b = SkyCoord([g["ra"] for g in gal] * u.deg, [g["dec"] for g in gal] * u.deg).galactic.b.deg
+    for g, bb in zip(gal, b):
+        g["b"] = float(bb)
+        g["limit"] = g["s1"] <= 0
+        g["q"] = math.log10(g["fir"] / 3.75e12 / (max(g["s1"], nvss_limit_mjy) * 1e-29))
+    # NVSS's component list breaks a faint extended disc into nothing; NED holds the flux integrated over the map (Condon, Cotton and Broderick 2002)
+    for g in [g for g in gal if g["q"] > q_flag]:
+        g["ned"] = radioquiet_ned_1p4(g["name"]) if g["name"] else None
+        if g["ned"] and g["ned"] > g["s1"]:
+            g["q_ned"] = math.log10(g["fir"] / 3.75e12 / (g["ned"] * 1e-29))
+    qs = np.array([g["q"] for g in gal if not g["limit"]])
+    high = [g for g in gal if g["q"] > q_flag]
+    simbad = {m["source_id"]: (m.get("main_type") or "").strip() for m in core.xmatch(high, "simbad", 30.0)} if high else {}
+    for g in high:
+        # NVSS's components are summed within 3 arcmin of the centre, so a disc wider than twice that loses its extended synchrotron
+        g["vet"] = ("catalogue-dropped" if g.get("q_ned") is not None and g["q_ned"] <= q_flag else
+                    "diffuse-emission" if abs(g["b"]) < b_min else
+                    "out-of-reach" if 2 * g["maj"] > extent_arcmin else
+                    "published-classification" if g["agn"] or (g["w12"] is not None and g["w12"] > 0.8) else
+                    "natural-type" if any(k in simbad.get(g["source_id"], "") for k in ("AGN", "Seyfert", "LINER", "QSO", "Sy")) else
+                    "young-star" if g["source_id"] in RADIOQUIET_KNOWN else
+                    "single-record" if g["upper"] else None)
+    left = [g for g in high if g["vet"] is None]
+    print("%d HECATE galaxies within %g Mpc north of -40 deg bright enough in the far infrared that NVSS reaches q %g; %d detected, q median %.2f, robust scatter %.2f; "
+          "above %g: %d (%d upper limits), %d active nuclei, %d in the plane, %d larger than %g arcmin, %d with a 60 um limit; unexplained %d" % (
+              len(gal), d_max_mpc, q_flag, len(qs), float(np.median(qs)), 1.4826 * float(np.median(np.abs(qs - np.median(qs)))), q_flag, len(high), sum(g["limit"] for g in high),
+              sum(g["vet"] == "published-classification" for g in high), sum(g["vet"] == "diffuse-emission" for g in high), sum(g["vet"] == "out-of-reach" for g in high), extent_arcmin,
+              sum(g["vet"] == "single-record" for g in high), len(left)))
+    for g in sorted(high, key=lambda g: -g["q"])[:40]:
+        print("  %s (PGC %s, %.0f Mpc): q %s%.2f, NVSS %.1f mJy within %.0f arcsec, NED %s mJy%s, major axis %.1f arcmin, b %+.1f; %s" % (
+            g["name"], g["source_id"], g["d"] or 0, ">" if g["limit"] else "", g["q"], g["s1"], radius[g["source_id"]], "%.1f" % g["ned"] if g.get("ned") else "-",
+            " (q %.2f)" % g["q_ned"] if g.get("q_ned") is not None else "", g["maj"], g["b"], g["vet"] or "unexplained"))
+    if record:
+        core.record_run(
+            "fir_radio_quiet", "Heat without cosmic rays", "HECATE (J/MNRAS/506/1896) with its IRAS fluxes; NVSS (VIII/65) by CDS XMatch",
+            "%d HECATE galaxies within %g Mpc north of -40 deg with IRAS 60 and 100 um fluxes bright enough for NVSS to reach q %g" % (len(gal), d_max_mpc, q_flag),
+            os.path.abspath(__file__), "radioquiet", len(gal), "galaxies", dict(d_max_mpc=d_max_mpc, q_flag=q_flag, nvss_limit_mjy=nvss_limit_mjy, b_min=b_min, extent_arcmin=extent_arcmin),
+            dict(detected=len(qs), q_median=float(np.median(qs)), q_scatter=1.4826 * float(np.median(np.abs(qs - np.median(qs))))),
+            "q above %g, four times the natural relation's 0.26 dex above its 2.34" % q_flag,
+            "%d above q %g of %d (%d of them NVSS limits): %d back under it with NED's flux integrated over the map%s, %d larger than NVSS recovers, %d in the plane's cirrus, %d active nuclei, %d nascent starburst (NGC 1377), %d on IRAS limits; "
+            "%d unexplained%s" % (
+                len(high), q_flag, len(gal), sum(g["limit"] for g in high), sum(g["vet"] == "catalogue-dropped" for g in high),
+                " (%s)" % ", ".join("%s, %.0f mJy, q %.2f" % (g["name"], g["ned"], g["q_ned"]) for g in high if g["vet"] == "catalogue-dropped") if any(g["vet"] == "catalogue-dropped" for g in high) else "",
+                sum(g["vet"] == "out-of-reach" for g in high), sum(g["vet"] == "diffuse-emission" for g in high),
+                sum(g["vet"] in ("published-classification", "natural-type") for g in high), sum(g["vet"] == "young-star" for g in high), sum(g["vet"] == "single-record" for g in high),
+                len(left), " (%s)" % ", ".join("%s, q above %.2f" % (g["name"], g["q"]) for g in left) if left else ""),
+            [dict(target="pgc:%s" % g["source_id"], stat=round(g["q"], 2), unit="q, far-infrared over 1.4 GHz" + (" (lower limit)" if g["limit"] else ""), vet=g["vet"],
+                  note="%s, %s Mpc; NVSS %.1f mJy; major axis %.1f arcmin; b %+.1f" % (g["name"], g["d"], g["s1"], g["maj"], g["b"])) for g in high])
+        print("recorded")
+
+
 APPROACHES = {
+    "radioquiet": (lambda: core.run_cli(radioquiet_main), radioquiet_DOC),
     "pvedge": (lambda: core.run_cli(pvedge_main), pvedge_DOC),
     "coldcomp": (lambda: core.run_cli(coldcomp_main), coldcomp_DOC),
     "diskvoids": (lambda: core.run_cli(diskvoids_main), diskvoids_DOC),

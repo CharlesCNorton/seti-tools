@@ -3387,6 +3387,12 @@ def giants_residuals(spectra, vsys, whiten=True, band="optical"):
     master = np.nanmedian(F[~ins], axis=0)
     with np.errstate(all="ignore"):
         R, ER = F / master, E / master
+    if band == "nir":
+        # in the near infrared the median spectrum falls toward zero in the water bands, where the ratio would swamp each row's cubic, so the
+        # telluric bands and the samples where the median lies at 0.2 or below are set aside before the fit
+        R[:, ~(master > 0.2)] = np.nan
+        for lo, hi in giants_BANDS[band]["telluric"]:
+            R[:, (g > lo) & (g < hi)] = np.nan
     x = (np.arange(len(g)) - len(g) / 2.0) / len(g)
     for i in range(len(R)):
         good = np.isfinite(R[i])
@@ -3427,7 +3433,8 @@ def giants_ccf(R, T, sd=None, vmax=300):
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     n = R.shape[1]
     w = 1.0 / (sd if sd is not None else np.ones(n))
-    Rt = torch.as_tensor(np.nan_to_num(R * w[None, :], nan=0.0), dtype=torch.float32, device=dev)
+    # a non-finite sample, infinite as well as missing, counts as zero, since an infinite one would meet its zero weight as a NaN
+    Rt = torch.as_tensor(np.where(np.isfinite(R), R * w[None, :], 0.0), dtype=torch.float32, device=dev)
     Wt = torch.as_tensor(np.where(np.isfinite(R).all(0), w, 0.0), dtype=torch.float32, device=dev)
     Tt = torch.as_tensor(T, dtype=torch.float32, device=dev)
     out = torch.zeros((R.shape[0], 2 * vmax + 1), device=dev)
@@ -3446,7 +3453,7 @@ def giants_ccf_fft(R, T, sd=None, vmax=300):
     n = R.shape[1]
     w = 1.0 / (sd if sd is not None else np.ones(n))
     Wt = np.where(np.isfinite(R).all(0), w, 0.0)
-    X = np.nan_to_num(R * w[None, :], nan=0.0) * Wt[None, :]
+    X = np.where(np.isfinite(R), R * w[None, :], 0.0) * Wt[None, :]
     Tt = np.asarray(T, float)
     m = 1 << int(np.ceil(np.log2(2 * n)))
     ft = np.conj(np.fft.rfft(Tt, m))
@@ -3813,6 +3820,12 @@ def companions_residuals(spectra, vsys, band, align=True, info=None):
             info["vstar"] = np.array([(meta["rv"] if meta.get("rv") is not None else vsys) + (dv if mv else 0.0) for (_, _, _, meta), dv, mv in zip(spectra, shifts, moved)])
     with np.errstate(all="ignore"):
         R = F / master
+    if band == "nir":
+        # in the near infrared the median spectrum falls toward zero in the water bands, where the ratio would swamp each row's cubic, so the
+        # telluric bands and the samples where the median lies at 0.2 or below are set aside before the fit
+        R[:, ~(master > 0.2)] = np.nan
+        for lo, hi in giants_BANDS[band]["telluric"]:
+            R[:, (g > lo) & (g < hi)] = np.nan
     x = (np.arange(len(g)) - len(g) / 2.0) / len(g)
     for i in range(len(R)):
         good = np.isfinite(R[i])
@@ -4253,7 +4266,7 @@ binaries_DOC = r"""Companions of single-lined binaries along their known orbits:
     python -I seti.py composition binaries template NAME [--inst HARPS] [--out FILE.npy]       a primary's line depths from its own spectra at its catalogue orbit's velocities
     python -I seti.py composition binaries template --spectra DIR --object NAME [NAME ...] --out FILE.npy   a star's line depths from its spectra in DIR in its own frame
     python -I seti.py composition binaries build NAME [NAME ...] [--inst HARPS] [--min-snr 10] [--per-star 300] [--keep] [--template FILE.npy] [--variant V] [--band LO HI]
-                                                 [--inject RATIO --inject-k2 KMS [--inject-shift 0.25] [--inject-template FILE.npy]]   each binary's rows: ROOT/rows or ROOT/rows_V
+                                                 [--inject RATIO --inject-k2 KMS [--inject-shift 0.25] [--inject-template FILE.npy]] [--orbit-frames]   each binary's rows: ROOT/rows or ROOT/rows_V
     python -I seti.py composition binaries search [NAME ...] [--inst HARPS] [--dv 1.0]          the summit over K2 at a fixed systemic offset: ROOT/results
     python -I seti.py composition binaries calibrate [NAME ...] [--inst HARPS] [--draws 10000] [--window 5]   the summits' false-alarm probabilities: ROOT/calibrate
     python -I seti.py composition binaries calibrate --aggregate [--inst HARPS]                the survey's binaries taken together: ROOT/calibrate/survey_<inst>.json
@@ -4479,8 +4492,8 @@ def binaries_planck(w, t2, t1):
 
 
 def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, rv_template=None, template=None, keep=False, variant=None, band=None,
-                   inject=0.0, inject_k2=None, inject_shift=0.25, inject_dv=1.0, inject_template=None, teff1=6000.0, teff2=3400.0):
-    """Each named binary's rows: its spectra's velocities measured against RV_TEMPLATE and the orbit fitted to them, each spectrum put in the primary's frame at its own velocity, the residuals cross-correlated with the M-dwarf TEMPLATE (zero outside BAND where given) and the star's pattern taken out, kept as ROOT/rows/<tag>.npz, or ROOT/rows_<VARIANT>, with a note; INJECT lays the lines of INJECT_TEMPLATE (the M-dwarf template unless given) into every spectrum at that V-band flux ratio, scaled as a TEFF2 black body against a TEFF1 one, along the orbit moved by INJECT_SHIFT of a period at INJECT_K2 and offset INJECT_DV."""
+                   inject=0.0, inject_k2=None, inject_shift=0.25, inject_dv=1.0, inject_template=None, teff1=6000.0, teff2=3400.0, orbit_frames=False):
+    """Each named binary's rows: its spectra's velocities measured against RV_TEMPLATE and the orbit fitted to them, each spectrum put in the primary's frame at its own velocity, the residuals cross-correlated with the M-dwarf TEMPLATE (zero outside BAND where given) and the star's pattern taken out, kept as ROOT/rows/<tag>.npz, or ROOT/rows_<VARIANT>, with a note; with ORBIT_FRAMES each spectrum is put at the plan orbit's velocity instead and left unaligned, as in the near infrared, where a solar-type primary's own lines are too few to place it; INJECT lays the lines of INJECT_TEMPLATE (the M-dwarf template unless given) into every spectrum at that V-band flux ratio, scaled as a TEFF2 black body against a TEFF1 one, along the orbit moved by INJECT_SHIFT of a period at INJECT_K2 and offset INJECT_DV."""
     rv_template = rv_template or os.path.join(binaries_ROOT, "templates", "rv.npy")
     template = template or os.path.join(binaries_ROOT, "templates", "mdwarf.npy")
     Trv, T = np.load(rv_template), np.load(template)
@@ -4497,8 +4510,12 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
             print("%s: %d spectra loaded of %d listed; too few" % (target["name"], len(spectra), listed), flush=True)
             continue
         t = np.array([s[3]["mjd"] for s in spectra])
-        v = binaries_velocities(spectra, Trv, band=giants_band(inst))
-        P, tp, e, w, k1, gamma, rms = binaries_refit(t, v, *binaries_orbit(target)[:5])
+        if orbit_frames:
+            P, tp, e, w, k1, gamma = binaries_orbit(target)
+            v, rms = gamma + k1 * binaries_radial(t, P, tp, e, w), 0.0
+        else:
+            v = binaries_velocities(spectra, Trv, band=giants_band(inst))
+            P, tp, e, w, k1, gamma, rms = binaries_refit(t, v, *binaries_orbit(target)[:5])
         for s, x in zip(spectra, v):
             s[3]["rv"] = float(x)
         if inject:
@@ -4508,7 +4525,9 @@ def binaries_build(names, inst="HARPS", min_snr=10.0, per_star=300, streams=4, r
             spectra = [(wl, fl * (1.0 - inject * scale(wl) * np.interp(wl, g * (1.0 + x / 299792.458), Ti, left=0.0, right=0.0)), er, meta)
                        for (wl, fl, er, meta), x in zip(spectra, v2)]
         info = {}
-        R, sd, _ = companions_residuals(spectra, gamma, giants_band(inst), info=info)
+        R, sd, _ = companions_residuals(spectra, gamma, giants_band(inst), align=not orbit_frames, info=info)
+        if "vstar" not in info:
+            info["vstar"] = np.asarray(v, float)
         ccf = companions_unpattern(giants_ccf(R, Tc, sd))
         tag = binaries_tag(target)
         np.savez_compressed(os.path.join(folder, tag + ".npz"), ccf=ccf.astype(np.float32), mjd=t, berv=np.array([s[3]["berv"] for s in spectra], float),
@@ -4920,6 +4939,7 @@ def binaries_cli():
     p.add_argument("--dv-fixed", type=float, default=1.0)
     p.add_argument("--components", type=int, default=None)
     p.add_argument("--shift", type=float, default=0.0, help="measure: the track moved by this fraction of a period")
+    p.add_argument("--orbit-frames", action="store_true", help="build: each spectrum at the plan orbit's velocity, unaligned, as for the near infrared")
     a = p.parse_args()
     if a.mode == "plan":
         binaries_plan(a.min)
@@ -4927,7 +4947,7 @@ def binaries_cli():
         binaries_template(a.names[0] if a.names else None, a.inst, a.out, a.spectra, a.object)
     elif a.mode == "build":
         binaries_build(a.names, a.inst, a.min_snr, a.per_star, a.streams, a.rv_template, a.template, a.keep, a.variant, a.band, a.inject, a.inject_k2, a.inject_shift,
-                       a.inject_dv, a.inject_template)
+                       a.inject_dv, a.inject_template, orbit_frames=a.orbit_frames)
     elif a.mode == "search":
         binaries_search(a.names, a.inst, a.dv, a.draws or 300, a.detect)
     elif a.mode == "calibrate":

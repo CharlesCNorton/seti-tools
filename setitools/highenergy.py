@@ -3363,7 +3363,109 @@ def gasunder_main(record=False, l_deg=312.07, b_deg=0.0, radius_deg=2.0):
         print("recorded")
 
 
+rosatgone_DOC = r"""X-ray sources that went out: the 2RXS catalogue of the ROSAT All-Sky Survey (1990-1991) in the half of the sky eROSITA-DE's first survey covers (Galactic longitude 180-360 deg), point sources at existence likelihood 10 or more and 0.05 ct/s or brighter, ten times eRASS1's limit, a degree clear of the half's edges, against the eRASS1 main catalogue (2019-2020) within 120 arcsec, the reach of a faint 2RXS position; eRASS1 covers its half whole, so a source with no counterpart faded by an order of magnitude in thirty years; each read for SIMBAD's type within 90 arcsec (flare stars caught in a flare, galaxy clusters whose gas eRASS1 catalogues as one extended source, variable AGN, X-ray binaries and cataclysmic variables in quiescence, transients), a Gaia DR3 star brighter than G 13 or within 500 pc within 20 arcsec, WISE AGN colours (W1-W2 above 0.8), a source of 10 ct/s within half a degree, three or more missing detections within half a degree (one extended source cut up), extent, and the ROSAT light curve's own variability; what is left is the catalogue's spurious tail when every such source lies below likelihood 20, against the share of the sample there.
+
+    python -I seti.py highenergy rosatgone [record] [--exi-min 10] [--crate-min 0.05] [--match-arcsec 120] [--edge-deg 1] [--simbad-arcsec 90] [--gaia-arcsec 20] [--bright-ct 10] [--bright-deg 0.5] [--clump-deg 0.5] [--spur-exi 20]"""
+
+# SIMBAD's types as CDS XMatch writes them, long names and short codes alike
+ROSATGONE_CLUSTER = ("ClG", "GtowardsCl", "BrightestCG", "GroupG", "GrG", "CGG", "SCG", "C?G", "SuperClG", "SNRemnant", "SNR")
+ROSATGONE_VARIABLE = ("AGN", "QSO", "Seyfert", "Sy1", "Sy2", "SyG", "BLLac", "Blazar", "BLL", "Bla", "LINER", "LIN", "XrayB", "XB", "LXB", "HXB", "CataclyV", "CV", "Nova", "No*",
+                      "SN", "GRB", "TDE", "Pulsar", "Psr")
+
+
+def rosatgone_kind(t):
+    """A SIMBAD type read as a galaxy cluster or remnant, a star, a variable extragalactic or accreting source, or none of these."""
+    if any(t.startswith(k) for k in ROSATGONE_CLUSTER):
+        return "cluster"
+    if any(k in t for k in ROSATGONE_VARIABLE):
+        return "variable"
+    if t.endswith("*") or t.startswith("Star") or t in ("**", "*", "Star?"):
+        return "star"
+    return "other" if t else None
+
+
+def rosatgone_main(record=False, exi_min=10.0, crate_min=0.05, match_arcsec=120.0, edge_deg=1.0, simbad_arcsec=90.0, gaia_arcsec=20.0, bright_ct=10.0, bright_deg=0.5, clump_deg=0.5, spur_exi=20.0):
+    path = core.data("rosatgone", "cat2rxs.tsv")
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        cols = "2RXS,ExiML,CRate,e_CRate,RAJ2000,DEJ2000,GLON,GLAT,Ext,FAll,Fluxp,sigExc"
+        open(path, "wb").write(core.get("https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source=J/A%2BA/588/A103/cat2rxs&-out.max=unlimited&-out=" + cols, timeout=900))
+    lines = [l for l in open(path, encoding="utf-8", errors="replace").read().splitlines() if l and not l.startswith("#")]
+    head = lines[0].split("\t")
+    rows = [dict(zip(head, l.split("\t"))) for l in lines[3:]]
+    src = []
+    for r in rows:
+        ra, dec, l, exi, cr = (num(r.get(k)) for k in ("RAJ2000", "DEJ2000", "GLON", "ExiML", "CRate"))
+        if None in (ra, dec, l, exi, cr) or not 180.0 + edge_deg <= l < 360.0 - edge_deg or exi < exi_min or cr < crate_min:
+            continue
+        src.append(dict(source_id=r["2RXS"].strip(), ra=ra, dec=dec, cr=cr, ecr=num(r.get("e_CRate")), exi=exi, ext=num(r.get("Ext")) or 0.0,
+                        flux=num(r.get("Fluxp")), sigexc=num(r.get("sigExc"))))
+    near = {}
+    for k in range(0, len(src), 20000):
+        for m in core.xmatch(src[k:k + 20000], "J/A+A/682/A34/erass1-m", match_arcsec):
+            d = float(m["angDist"])
+            near[m["source_id"]] = min(near.get(m["source_id"], 1e9), d)
+    gone = [s for s in src if near.get(s["source_id"], 1e9) > match_arcsec]
+    covered = gone
+    print("%d 2RXS point sources in the eRASS1 half at likelihood %g and %g ct/s or brighter; %d without an eRASS1 source within %g arcsec" % (
+        len(src), exi_min, crate_min, len(gone), match_arcsec), flush=True)
+    sim, gaia = {}, {}
+    for m in core.xmatch(covered, "simbad", simbad_arcsec):
+        if m["source_id"] not in sim or float(m["angDist"]) < sim[m["source_id"]][0]:
+            sim[m["source_id"]] = (float(m["angDist"]), (m.get("main_id") or "").strip(), (m.get("main_type") or m.get("otype") or "").strip())
+    for m in core.xmatch(covered, "I/355/gaiadr3", gaia_arcsec):
+        g, plx = num(m.get("Gmag")), num(m.get("Plx"))
+        # a bright star, or any star within 500 pc, of which M dwarfs flare by an order of magnitude
+        if g is not None and (g < 13 or (plx or 0) > 2.0) and (m["source_id"] not in gaia or g < gaia[m["source_id"]]):
+            gaia[m["source_id"]] = g
+    agn = {m["source_id"] for m in core.xmatch(covered, "II/328/allwise", gaia_arcsec)
+           if num(m.get("W1mag")) is not None and num(m.get("W2mag")) is not None and num(m["W1mag"]) - num(m["W2mag"]) > 0.8}
+    # a source ROSAT saw at bright_ct or more spoils its surroundings; three or more missing detections within clump_deg are one extended source cut up
+    bright = [x for x in src if x["cr"] >= bright_ct]
+    for s in covered:
+        s["bright"] = next((b["source_id"] for b in bright if b is not s and sep_arcsec(b["ra"], b["dec"], s["ra"], s["dec"]) < bright_deg * 3600), None)
+        s["clump"] = sum(1 for x in covered if sep_arcsec(x["ra"], x["dec"], s["ra"], s["dec"]) < clump_deg * 3600)
+    for s in covered:
+        s["simbad"] = sim.get(s["source_id"])
+        t = s["simbad"][2] if s["simbad"] else ""
+        s["gaia_g"] = gaia.get(s["source_id"])
+        s["vet"] = ("bright-neighbour" if s["bright"] else
+                    "diffuse-emission" if s["ext"] > 0 or s["clump"] >= 3 or rosatgone_kind(t) == "cluster" else
+                    "flare" if rosatgone_kind(t) == "star" or s["gaia_g"] is not None else
+                    "natural-type" if rosatgone_kind(t) == "variable" or s["source_id"] in agn else
+                    "variable-star" if s["sigexc"] and s["sigexc"] > 3 else
+                    "natural-type" if t else None)
+    # the rest are spurious detections when they all sit at the catalogue's lowest likelihoods, which few of the sample do
+    low = sum(x["exi"] < spur_exi for x in src) / max(len(src), 1)
+    rest = [s for s in covered if s["vet"] is None]
+    p_low = low ** sum(s["exi"] < spur_exi for s in rest) if rest else 1.0
+    if rest and all(s["exi"] < spur_exi for s in rest) and p_low < 1e-3:
+        for s in rest:
+            s["vet"] = "artefact"
+    print("%d left by the other vets, %d of them below likelihood %g, where %.0f per cent of the sample lies (p %.1e)" % (
+        len(rest), sum(s["exi"] < spur_exi for s in rest), spur_exi, 100 * low, p_low))
+    left = [s for s in covered if s["vet"] is None]
+    counts = {}
+    for s in covered:
+        counts[s["vet"]] = counts.get(s["vet"], 0) + 1
+    print("vets %s; %d unexplained" % (counts, len(left)))
+    for s in sorted(left, key=lambda s: -s["cr"])[:30]:
+        print("  2RXS %s: %.3f +- %.3f ct/s at RA %.4f Dec %+.4f, likelihood %.0f" % (s["source_id"], s["cr"], s["ecr"] or 0, s["ra"], s["dec"], s["exi"]))
+    if record:
+        core.record_run(
+            "rosat_erass1_gone", "X-ray sources that went out", "2RXS (VizieR J/A+A/588/A103) and eRASS1 main (J/A+A/682/A34/erass1-m) by CDS XMatch; SIMBAD; Gaia DR3",
+            "%d 2RXS point sources at likelihood %g and %g ct/s or brighter at Galactic longitude 180-360 deg" % (len(src), exi_min, crate_min), os.path.abspath(__file__), "rosatgone",
+            len(src), "sources", dict(exi_min=exi_min, crate_min=crate_min, match_arcsec=match_arcsec, edge_deg=edge_deg, simbad_arcsec=simbad_arcsec, gaia_arcsec=gaia_arcsec, bright_ct=bright_ct, bright_deg=bright_deg, clump_deg=clump_deg, spur_exi=spur_exi),
+            dict(gone=len(gone), vets=counts), "a 2RXS source ten times eRASS1's limit with no eRASS1 source within %g arcsec" % match_arcsec,
+            "%d of %d without an eRASS1 counterpart: %s; %d unexplained" % (len(covered), len(src), ", ".join("%d %s" % (v, k) for k, v in sorted(counts.items(), key=lambda x: -x[1]) if k), len(left)),
+            [dict(target="2rxs:%s" % s["source_id"], stat=round(s["cr"], 3), unit="ROSAT ct/s, absent from eRASS1", vet=s["vet"],
+                  note="likelihood %.0f; SIMBAD %s; Gaia G %s" % (s["exi"], s["simbad"], "%.1f" % s["gaia_g"] if s["gaia_g"] is not None else "-"))
+             for s in covered])
+        print("recorded")
+
+
 APPROACHES = {
+    "rosatgone": (lambda: core.run_cli(rosatgone_main), rosatgone_DOC),
     "gasunder": (lambda: core.run_cli(gasunder_main), gasunder_DOC),
     "hgpsoverlap": (lambda: core.run_cli(hgpsoverlap_main), hgpsoverlap_DOC),
     "unasclass": (lambda: core.run_cli(unasclass_main), unasclass_DOC),
