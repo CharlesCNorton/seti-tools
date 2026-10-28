@@ -395,8 +395,26 @@ def gaia_by_range(query, n=24, maxrec=None):
     return rows
 
 
-def tap_async(service, query, fmt="csv", maxrec=None, poll=15, limit=14400):
-    """ADQL as an asynchronous TAP job (create, start, poll, read): rows as dicts (csv) or text."""
+def tap_upload_body(params, tables):
+    """A multipart TAP request body carrying PARAMS and each table of TABLES (name to a dict of equal-length columns) as a VOTable named in UPLOAD."""
+    import uuid
+    from astropy.table import Table
+    params = dict(params, UPLOAD=";".join("%s,param:%s" % (n, n) for n in tables))
+    b = uuid.uuid4().hex
+    out = io.BytesIO()
+    for k, v in params.items():
+        out.write(("--%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n" % (b, k, v)).encode())
+    for name, cols in tables.items():
+        vot = io.BytesIO()
+        Table(cols).write(vot, format="votable")
+        out.write(("--%s\r\nContent-Disposition: form-data; name=\"%s\"; filename=\"%s.xml\"\r\nContent-Type: application/x-votable+xml\r\n\r\n" % (b, name, name)).encode())
+        out.write(vot.getvalue() + b"\r\n")
+    out.write(("--%s--\r\n" % b).encode())
+    return out.getvalue(), "multipart/form-data; boundary=%s" % b
+
+
+def tap_async(service, query, fmt="csv", maxrec=None, poll=15, limit=14400, upload=None):
+    """ADQL as an asynchronous TAP job (create, start, poll, read), with UPLOAD's tables (name to a dict of columns) as tap_upload.name: rows as dicts (csv) or text."""
     import re
     url = TAP.get(service, service).rsplit("/sync", 1)[0] + "/async"
     params = dict(REQUEST="doQuery", LANG="ADQL", FORMAT=fmt, QUERY=query, PHASE="RUN")
@@ -404,7 +422,11 @@ def tap_async(service, query, fmt="csv", maxrec=None, poll=15, limit=14400):
         maxrec = MAXREC
     if maxrec:
         params["MAXREC"] = maxrec
-    req = urllib.request.Request(url, data=urllib.parse.urlencode(params).encode(), headers=UA)
+    if upload:
+        body, ctype = tap_upload_body(params, upload)
+        req = urllib.request.Request(url, data=body, headers=dict(UA, **{"Content-Type": ctype}))
+    else:
+        req = urllib.request.Request(url, data=urllib.parse.urlencode(params).encode(), headers=UA)
 
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *a, **k):
@@ -1431,6 +1453,15 @@ VET = {
     "tidal-synchronisation": "an orbit inside the range where tides synchronise",
     # population-level tests
     "chance-rate": "a target of a set that the null produces as often as observed",
+    "model-normalisation": "a population model's density for a whole class of stars, which the census sets higher or lower across the class rather than in one place",
+    "stellar-structure": "a gap or pile-up of stellar structure on the main sequence, as the Jao gap where M dwarfs become fully convective",
+    "compact-remnant": "a neutron-star or black-hole companion, the dark remnant of a massive star, as Gaia BH1 and BH2 are",
+    "same-event": "one outburst that two catalogues hold",
+    "coherent-emission": "coherent radio bursts of an M or ultracool dwarf's magnetosphere, by the electron-cyclotron maser or plasma emission, which the Gudel-Benz relation does not cover",
+    "covered-null": "a target the searches measured without leaving an unexplained result",
+    "metal-rich": "a metal-rich star, whose lines blanket the ultraviolet more than a solar photosphere's do",
+    "secular-change": "a Mira whose period the literature follows changing over a century of observations, by a helium-shell flash or a slow change of its envelope (Templeton et al. 2005)",
+    "recurrent-nova": "a star that erupts again, as a recurrent nova does every few decades or an old nova's accretion disc does in a dwarf-nova outburst",
     "control": "a control target of the test, not a candidate",
     "not-measured": "a target the test could not measure",
 }

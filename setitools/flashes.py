@@ -19,6 +19,109 @@ from setitools.core import num, quiet_warnings
 
 # --------------------------------------------------------------------------------------------------------------
 
+renova_DOC = r"""Optical flashes recurring across a century: the GCVS's novae (types N, NA, NB, NC and NR) set against the transients of the Gaia Science Alerts (2014 on) and of the ZTF Bright Transient Survey (2018 on), and against the GCVS's other variables, within RADIUS arcsec of each nova's position; a transient more than a year from the nova's outburst at its position is a second eruption of the star, and is read for a recurrent nova the GCVS already knows (type NR), for an outburst of the old nova's cataclysmic variable that the alert's class or comment names, and for a fade of the old nova's system rather than a flash, a transient within a year of the outburst, or within three that the alert team classed as a nova (the eruption year then taken from the designation its comment names, Nova Per 2020 or ASASSN-17mt), being the nova itself caught again; a transient of any other class at a nova's place is left for a chance coincidence; the chance of an unrelated transient that close is each nova's own count of transients within 1 deg, scaled to the circle.
+
+    python -I seti.py flashes renova [record] [--radius 3]"""
+
+RENOVA_GSA = "http://gsaweb.ast.cam.ac.uk/alerts/alerts.csv"
+RENOVA_BTS = ("https://sites.astro.caltech.edu/ztf/bts/explorer.php?format=csv&f=s&subsample=all&classstring=&classexclude=&quality=y&purity=y")
+RENOVA_CV = re.compile(r"\bCV\b|cataclysmic|dwarf nova|\bUG|SU UMa|WZ Sge|outburst of|nova-like|polar", re.I)
+RENOVA_YEAR = re.compile(r"\bN(?:ova)?\s+[A-Z][a-z]+\s+((?:18|19|20)\d\d)\b|ASASSN-(\d\d)[a-z]")
+
+
+def renova_named_year(comment):
+    """The year of the eruption an alert's comment names, by a nova's designation (Nova Per 2020, N Sco 2021) or an ASAS-SN name, or None."""
+    m = RENOVA_YEAR.search(comment or "")
+    return None if not m else float(m.group(1)) if m.group(1) else 2000.0 + float(m.group(2))
+
+
+def renova_transients():
+    """The Gaia Science Alerts and the ZTF Bright Transient Survey as one list: name, survey, position (deg), decimal year, class and comment."""
+    out = []
+    raw = core.get(RENOVA_GSA, timeout=300).decode("utf-8", "replace")
+    for r in csv.reader(io.StringIO(raw)):
+        if not r or r[0].startswith("#") or len(r) < 10 or num(r[2]) is None:
+            continue
+        y, m, d = (int(v) for v in r[1][:10].split("-"))
+        out.append(dict(name=r[0], survey="Gaia alerts", ra=float(r[2]), dec=float(r[3]), year=y + (m - 1) / 12.0 + (d - 1) / 365.25, cls=r[7].strip(), comment=r[9].strip()))
+    raw = core.get(RENOVA_BTS, timeout=300).decode("utf-8", "replace")
+    for r in csv.DictReader(io.StringIO(raw.strip())):
+        try:
+            h, mi, s = (float(v) for v in r["RA"].split(":"))
+            dd, dm, ds = (abs(float(v)) for v in r["Dec"].split(":"))
+        except (ValueError, AttributeError):
+            continue
+        sign = -1 if r["Dec"].strip().startswith("-") else 1
+        t = num(r["peakt"])
+        out.append(dict(name=r["IAUID"] if r["IAUID"] not in ("", "-") else r["ZTFID"], survey="ZTF BTS", ra=15 * (h + mi / 60 + s / 3600), dec=sign * (dd + dm / 60 + ds / 3600),
+                        year=2000 + (2458000.0 + t - 2451545.0) / 365.25 if t is not None else None, cls=r["type"].strip(), comment=""))
+    return out
+
+
+def renova_main(record=False, radius=3.0):
+    gcvs = catalogues.gcvs()
+    novae = [x for x in gcvs if re.match(r"^N(A|B|C|R)?([:+]|$)", x["type"])]
+    for x in novae:
+        x["oyear"] = x["year"] or (2000 + (x["epoch"] + 2400000 - 2451545.0) / 365.25 if x["epoch"] else None)
+    tr = renova_transients()
+    tra, trd = np.radians([t["ra"] for t in tr]), np.radians([t["dec"] for t in tr])
+    others = [y for y in gcvs if not re.match(r"^N(A|B|C|R)?([:+]|$)", y["type"])]
+    ora, odec = np.radians([y["ra"] for y in others]), np.radians([y["dec"] for y in others])
+
+    def within(ra, dec, ras, decs, r_deg):
+        """Indices of the positions RAS, DECS (radians) within R_DEG of RA, DEC (deg)."""
+        a, d = math.radians(ra), math.radians(dec)
+        c = np.sin(d) * np.sin(decs) + np.cos(d) * np.cos(decs) * np.cos(ras - a)
+        return np.where(c >= math.cos(math.radians(r_deg)))[0]
+    hits, expected = [], 0.0
+    for x in novae:
+        wide = within(x["ra"], x["dec"], tra, trd, 1.0)
+        expected += len(wide) * (radius / 3600.0) ** 2 / 1.0 ** 2
+        for k in within(x["ra"], x["dec"], tra[wide], trd[wide], radius / 3600.0):
+            t = tr[wide[k]]
+            # an alert the alert team classed as a nova names the eruption it saw, which corrects a GCVS year
+            named = renova_named_year(t["comment"]) if t["cls"] == "Nova" else None
+            oyear = named if named is not None else x["oyear"]
+            gap = t["year"] - oyear if t["year"] is not None and oyear is not None else None
+            cv = bool(RENOVA_CV.search(t["cls"] + " " + t["comment"]))
+            vet = ("not-measured" if gap is None else
+                   "same-event" if abs(gap) <= 1.0 or (t["cls"] == "Nova" and abs(gap) <= 3.0) else
+                   "variable-star" if re.search(r"\bfad|\bdim", t["comment"], re.I) else
+                   "recurrent-nova" if x["type"].startswith("NR") or cv or t["cls"] in ("Nova", "CV", "unknown", "") else None)
+            hits.append(dict(nova=x["name"], type=x["type"], oyear=oyear, kind="transient", other=t["name"], survey=t["survey"], year=t["year"], gap=gap,
+                             cls=t["cls"], comment=t["comment"], sep=core.sep_arcsec(x["ra"], x["dec"], t["ra"], t["dec"]), vet=vet))
+        for k in within(x["ra"], x["dec"], ora, odec, radius / 3600.0):
+            y = others[k]
+            erupt = bool(re.match(r"^(UG|NL|ZAND|N|SN|WR|CV|XN|SDOR|FU|UV)", y["type"]))
+            hits.append(dict(nova=x["name"], type=x["type"], oyear=x["oyear"], kind="GCVS", other=y["name"], survey="GCVS", year=y["year"], gap=None, cls=y["type"],
+                             comment="", sep=core.sep_arcsec(x["ra"], x["dec"], y["ra"], y["dec"]), vet="recurrent-nova" if erupt else "variable-star"))
+    left = [h for h in hits if h["vet"] is None]
+    count = lambda k: sum(h["vet"] == k for h in hits)
+    print("GCVS novae: %d (%d with an outburst year or epoch); transients: Gaia alerts %d, ZTF BTS %d; within %g arcsec of a nova: %d transients and %d other GCVS "
+          "variables; chance transients expected from each nova's own 1 deg: %.2f; the nova itself caught again %d, a recurrent nova or an old nova's CV in outburst %d, "
+          "another GCVS variable at the nova's place that does not erupt %d, no outburst year %d; unexplained %d" % (
+              len(novae), sum(x["oyear"] is not None for x in novae), sum(t["survey"] == "Gaia alerts" for t in tr), sum(t["survey"] == "ZTF BTS" for t in tr), radius,
+              sum(h["kind"] == "transient" for h in hits), sum(h["kind"] == "GCVS" for h in hits), expected, count("same-event"), count("recurrent-nova"),
+              count("variable-star"), count("not-measured"), len(left)))
+    for h in sorted(hits, key=lambda h: (h["vet"] is not None, h["vet"] or "", h["nova"])):
+        print("  %s (%s, %s): %s %s at %.1f arcsec, %s, %s%s; %s" % (
+            h["nova"], h["type"], "%.1f" % h["oyear"] if h["oyear"] is not None else "-", h["survey"], h["other"], h["sep"], "%.1f" % h["year"] if h["year"] else "-",
+            h["cls"] or "-", "; '%s'" % h["comment"][:90] if h["comment"] else "", h["vet"] or "unexplained"))
+    json.dump(hits, open(core.results("recurring_novae.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcvs_novae_recurring", "Optical flashes recurring across a century", "GCVS (its own site); Gaia Science Alerts; ZTF Bright Transient Survey",
+            "GCVS novae: %d, against %d transients" % (len(novae), len(tr)), os.path.abspath(__file__), "renova", len(novae), "novae", dict(radius=radius),
+            "chance transients within %g arcsec from each nova's own 1 deg: %.2f" % (radius, expected), "a transient more than a year from a nova's outburst at its position",
+            "%d transients and %d GCVS variables at novae: %d the nova itself, %d recurrent novae or CV outbursts, %d variables that do not erupt, %d without a year; "
+            "%d unexplained" % (sum(h["kind"] == "transient" for h in hits), sum(h["kind"] == "GCVS" for h in hits), count("same-event"), count("recurrent-nova"),
+                                count("variable-star"), count("not-measured"), len(left)),
+            [dict(target="gcvs:%s#%s" % (h["nova"].replace(" ", "_"), h["other"].replace(" ", "_")), stat=round(h["gap"], 2) if h["gap"] is not None else None, unit="years from the outburst",
+                  vet=h["vet"], note="%s %s at %.1f arcsec, %s%s" % (h["survey"], h["other"], h["sep"], h["cls"] or "-",
+                                                                     "; " + h["comment"][:120] if h["comment"] else "")) for h in hits])
+        print("recorded")
+
+
 tess20_DOC = r"""Glints in TESS 20 s light curves within 30 pc: 5-sigma flashes of at most three cadences tested for periodicity against draws from good cadences.
 
     python -I seti.py flashes tess20 targets
@@ -5053,6 +5156,7 @@ def hipflash_main(record=False, mag=0.3, sig=5.0, quiet=0.02, pair_days=0.02, pl
 
 
 APPROACHES = {
+    "renova": (lambda: core.run_cli(renova_main), renova_DOC),
     "hipflash": (lambda: core.run_cli(hipflash_main), hipflash_DOC),
     "quietspots": (lambda: core.run_cli(quietspots_main), quietspots_DOC),
     "chirps": (lambda: core.run_cli(chirps_main), chirps_DOC),

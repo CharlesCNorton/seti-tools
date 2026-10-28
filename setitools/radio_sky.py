@@ -2,6 +2,7 @@
 import argparse
 import glob
 import gzip
+import importlib
 import io
 import json
 import math
@@ -21,6 +22,530 @@ from setitools.core import num, quiet_warnings, sep_arcsec
 
 
 # --------------------------------------------------------------------------------------------------------------
+
+masers_DOC = r"""Masers at ordinary main-sequence stars: every maser the maser database (maserdb.net, Ladeyschikov et al. 2019) holds as detected, in any of its lines (water, methanol of both classes, OH, SiO, ammonia, formaldehyde), matched to Gaia DR3 within RADIUS arcsec, the matches that are main-sequence dwarfs within 1 kpc (parallax above 1 mas at 5 sigma, absolute G within 1 mag of Pecaut and Mamajek's dwarf sequence at the star's BP-RP), where no maser pump works, against the same match at positions moved 1 arcmin in eight directions as the chance rate; each match read for the host the maser's own SIMBAD neighbourhood names (young stars and star-forming regions, evolved and long-period stars), Gaia's classifier calling the star a young stellar object, and the chance rate.
+
+    python -I seti.py radio_sky masers [record] [--radius 2]"""
+
+MASERS_URL = "https://maserdb.net/objects.pl?step=all_objects&download=1"
+MASERS_YOUNG = re.compile(r"YSO|Y\*O|TTau|Herbig|HerbigAe|Orion_?V|Ae\*|Be\*|Or\*|denseCore|MolCld|HIIReg|smmRad|outflow|HH|IR>30um|protoPN", re.I)
+MASERS_OLD = re.compile(r"AGB|Mira|OH/IR|LongPeriod|LP\*|post-AGB|RGB|S\*|C\*|semi-regular|SRG|PN", re.I)
+
+
+def masers_main(record=False, radius=2.0):
+    path = core.data("maserdb_objects.csv")
+    if not os.path.exists(path):
+        open(path, "wb").write(core.get(MASERS_URL, timeout=300))
+    import csv
+    rows = []
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for r in csv.reader(f):
+            if len(r) < 30 or r[0] == "group_name":
+                continue
+            ra, dec = num(r[5]), num(r[6])
+            if ra is None or dec is None or (ra == 0 and dec == 0) or "_Y" not in r[8]:
+                continue
+            rows.append(dict(name=r[2].strip() or r[0], group=r[0], ra=ra, dec=dec, lines=r[8], type=r[27].strip(), simbad=r[29].strip(), pmra=None, pmdec=None,
+                             pos_epoch=2000.0))
+    seq = sorted((s["bprp"], s["mv"] - (0.02704 - 0.01424 * s["bprp"] + 0.2156 * s["bprp"] ** 2 - 0.01426 * s["bprp"] ** 3)) for s in catalogues.dwarf_sequence()
+                 if s["bprp"] is not None and s["mv"] is not None)
+    sx, sg = np.array([s[0] for s in seq]), np.array([s[1] for s in seq])
+    cols = "g.source_id, g.parallax, g.parallax_over_error, g.phot_g_mean_mag, g.bp_rp, g.ruwe"
+
+    def dwarfs(rs):
+        """The main-sequence dwarfs within 1 kpc among each row's Gaia matches."""
+        out = {}
+        for i, ms in catalogues.gaia_match(rs, cols=cols, radius_arcsec=radius).items():
+            for g in ms:
+                plx, poe, G, c = num(g["parallax"]), num(g["parallax_over_error"]), num(g["phot_g_mean_mag"]), num(g["bp_rp"])
+                if None in (plx, poe, G, c) or plx <= 1.0 or poe < 5 or not sx[0] <= c <= sx[-1]:
+                    continue
+                if abs(G + 5 * math.log10(plx / 100.0) - float(np.interp(c, sx, sg))) <= 1.0:
+                    out.setdefault(i, []).append(dict(source_id=str(g["source_id"]), sep=float(g["sep"]), plx=plx, G=G, bprp=c, ruwe=num(g["ruwe"])))
+        return out
+    hits = dwarfs(rows)
+    shifted = []
+    for x in rows:
+        for k in range(8):
+            a = math.radians(45 * k)
+            shifted.append(dict(x, ra=x["ra"] + math.sin(a) / 60.0 / max(math.cos(math.radians(x["dec"])), 1e-6), dec=x["dec"] + math.cos(a) / 60.0))
+    control = sum(len(v) for v in dwarfs(shifted).values()) / 8.0
+    found = []
+    yso = {}
+    ids = [d["source_id"] for v in hits.values() for d in v]
+    if ids:
+        yso = {k: str(v["best_class_name"]).strip() for k, v in core.tap_by_ids(
+            "gaia", ids, "SELECT source_id, best_class_name FROM gaiadr3.vari_classifier_result WHERE source_id IN (%s)").items()}
+    for i, ds in hits.items():
+        x = rows[i]
+        for d in ds:
+            cls = yso.get(d["source_id"], "")
+            vet = ("young-star" if MASERS_YOUNG.search(x["simbad"] + " " + x["type"]) or re.match(r"^HH\s", x["name"]) or cls == "YSO" else
+                   "evolved" if MASERS_OLD.search(x["simbad"]) else None)
+            found.append(dict(maser=x["name"], group=x["group"], lines=x["lines"], type=x["type"], simbad=x["simbad"][:200], cls=cls, vet=vet, **d))
+    n_obs = len(found)
+    rest = [f for f in found if f["vet"] is None]
+    if rest and n_obs <= control + 2 * math.sqrt(max(control, 1.0)):
+        for f in rest:
+            f["vet"] = "chance-rate"
+    left = [f for f in found if f["vet"] is None]
+    count = lambda k: sum(f["vet"] == k for f in found)
+    print("masers detected in the database with a position: %d; Gaia main-sequence dwarfs within 1 kpc within %g arcsec: %d, against %.1f at positions 1 arcmin off; "
+          "young stars or star-forming regions %d, evolved hosts %d, at the chance rate %d; unexplained %d" % (
+              len(rows), radius, n_obs, control, count("young-star"), count("evolved"), count("chance-rate"), len(left)))
+    for f in sorted(found, key=lambda f: (f["vet"] is not None, f["sep"])):
+        print("  %s (%s; %s, %s): Gaia DR3 %s at %.2f arcsec, parallax %.2f, G %.2f, BP-RP %.2f, RUWE %s, class %s; SIMBAD round it: %s; %s" % (
+            f["maser"], f["group"], f["lines"], f["type"] or "-", f["source_id"], f["sep"], f["plx"], f["G"], f["bprp"], f["ruwe"], f["cls"] or "-", f["simbad"][:90] or "-",
+            f["vet"] or "unexplained"))
+    json.dump(dict(control=control, found=found), open(core.results("masers_on_dwarfs.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "maserdb_masers_on_dwarfs", "Masers at ordinary main-sequence stars", "maser database (maserdb.net); Gaia DR3 by table upload",
+            "detected masers with a position: %d" % len(rows), os.path.abspath(__file__), "masers", len(rows), "masers", dict(radius=radius),
+            "the same match 1 arcmin off in eight directions: %.1f dwarfs" % control, "a detected maser within %g arcsec of a main-sequence dwarf within 1 kpc" % radius,
+            "%d matches against %.1f by chance: %d young stars or star-forming regions, %d evolved hosts, %d at the chance rate; %d unexplained" % (
+                n_obs, control, count("young-star"), count("evolved"), count("chance-rate"), len(left)),
+            [dict(target="gaia_dr3:%s" % f["source_id"], stat=round(f["sep"], 2), unit="arcsec from the maser", vet=f["vet"],
+                  note="%s (%s), %s; parallax %.2f mas, G %.2f, BP-RP %.2f" % (f["maser"], f["group"], f["lines"], f["plx"], f["G"], f["bprp"])) for f in found])
+        print("recorded")
+
+
+switchon_DOC = r"""Radio sources that switched on at nearby stars: the stars of the Gaia Catalogue of Nearby Stars within DIST_PC north of -40 deg, each carried by its proper motion to the date of every VLASS quick-look image the CADC holds of it (3 GHz, 2017-2025), the brightest pixel within 3 arcsec of the star in each image against the noise 10-30 arcsec around it, and the same measured at eight places 2 arcmin from the star in the same images; a star whose largest value in one VLASS epoch reaches SIGMA and in another epoch stays below ABSENT holds a source that switched on or off between epochs, and the share of the eight places that do the same sets how often an unrelated background variable or an artefact of the image does it; each such star is read for a flare on an M dwarf (BP-RP above 1.8), whose bursts of coherent radio emission come and go, for a companion (RUWE above 1.4 or a non-single-star solution), the close binaries whose coronae flare in radio, for a peak more than 2 arcsec from the star's place, and for places beside it that switch in the same images; the rest are set against the places' rate summed over the stars that are neither M dwarfs nor binaries.
+
+    python -I seti.py radio_sky switchon [record] [--dist-pc 10] [--sigma 6] [--absent 3] [--workers 4]"""
+
+
+def switchon_vlass(ra, dec, pmra, pmdec, radius_arcsec=3.0, offset_arcsec=120.0):
+    """Every VLASS quick-look image the CADC holds at a star, the star carried to each image's date, cached by position: (epoch, year, the brightest pixel within RADIUS_ARCSEC in units of the noise 10-30 arcsec around it, that pixel and the noise in mJy/beam, the pixel's distance from the star in arcsec, and the same signal-to-noise at eight places OFFSET_ARCSEC away, None off the image)."""
+    import io
+    from astropy.io import fits
+    from astropy.io.votable import parse_single_table
+    from astropy.wcs import WCS
+    key = core.data(os.path.join("vlass_peaks", "%.5f_%+.5f_%g_%g.json" % (ra, dec, radius_arcsec, offset_arcsec)))
+    if os.path.exists(key):
+        return [tuple(x) for x in json.load(open(key))]
+    base = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/sia/v2query?"
+    out, failed = [], False
+    t = parse_single_table(io.BytesIO(core.get(base + urllib.parse.urlencode({"POS": "CIRCLE %.5f %.5f 0.02" % (ra, dec), "COLLECTION": "VLASS"}), timeout=120))).to_table()
+    for r in t:
+        try:
+            if np.ma.is_masked(r["t_min"]) or not np.isfinite(float(r["t_min"])):
+                continue
+            year = 2000.0 + (float(r["t_min"]) - 51544.5) / 365.25
+            sra, sdec = catalogues.carried(ra, dec, pmra, pmdec, year - 2016.0)
+            acc = str(r["access_url"])
+            # the SIA service names each image by its publisher identifier, which CADC's DataLink service resolves
+            if acc.startswith("ivo://"):
+                acc = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/datalink?" + urllib.parse.urlencode({"ID": acc})
+            links = parse_single_table(io.BytesIO(core.get(acc, timeout=120))).to_table()
+            url = next((str(x["access_url"]) for x in links if str(x["semantics"]) == "#this" and all(k in str(x["access_url"]) for k in ("pbcor", "tt0", "subim"))), None)
+            if not url:
+                continue
+            h = fits.open(io.BytesIO(core.get(url + "?" + urllib.parse.urlencode({"CIRCLE": "%.6f %.6f %.4f" % (sra, sdec, (offset_arcsec + 35.0) / 3600.0)}), timeout=300)))
+            d = np.squeeze(h[0].data).astype(float)
+            w = WCS(h[0].header).celestial
+            pix = abs(h[0].header.get("CDELT1") or h[0].header.get("CD1_1")) * 3600
+            yy, xx = np.mgrid[:d.shape[0], :d.shape[1]]
+            ok = np.isfinite(d)
+
+            def peak(pra, pdec):
+                """The brightest pixel within RADIUS_ARCSEC of a place, the noise around it and the pixel's distance from it, or None."""
+                x, y = w.world_to_pixel_values(pra, pdec)
+                rr = np.hypot(xx - x, yy - y) * pix
+                inner, ring = (rr <= radius_arcsec) & ok, d[(rr > 10.0) & (rr <= 30.0) & ok]
+                if not inner.any() or len(ring) < 200:
+                    return None
+                noise = 1.4826 * float(np.median(np.abs(ring - np.median(ring))))
+                j = int(np.argmax(np.where(inner, d, -np.inf)))
+                return float(d.flat[j]), noise, float(rr.flat[j])
+            star = peak(sra, sdec)
+            if star is None or star[1] <= 0:
+                continue
+            offs = []
+            for k in range(8):
+                a = math.radians(45.0 * k)
+                o = peak(sra + offset_arcsec / 3600.0 * math.sin(a) / math.cos(math.radians(sdec)), sdec + offset_arcsec / 3600.0 * math.cos(a))
+                offs.append(round(o[0] / o[1], 2) if o and o[1] > 0 else None)
+            out.append((str(r["obs_id"]).split(".")[0], round(year, 2), star[0] / star[1], star[0] * 1e3, star[1] * 1e3, round(star[2], 2), offs))
+        except Exception:
+            failed = True
+    if not failed:
+        os.makedirs(os.path.dirname(key), exist_ok=True)
+        json.dump(out, open(key, "w"))
+    return out
+
+
+def switchon_epochs(v, place=None):
+    """The largest signal-to-noise in each VLASS epoch at a star, or at its offset PLACE (0-7), from switchon_vlass's images: {epoch: value}."""
+    by = {}
+    for e in v:
+        s = e[2] if place is None else e[6][place]
+        if s is not None:
+            by[e[0]] = max(by.get(e[0], -1e9), s)
+    return by
+
+
+def switchon_main(record=False, dist_pc=10.0, sigma=6.0, absent=3.0, workers=4):
+    stars = catalogues.gcns("source_id, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, dist_50",
+                            where="gcns_prob > 0.38 AND dist_50 < %g AND dec > -40" % (dist_pc / 1000.0))
+    extra = core.tap_by_ids("gaia", [r["source_id"] for r in stars], "SELECT source_id, ruwe, non_single_star FROM gaiadr3.gaia_source WHERE source_id IN (%s)")
+    # the modules the threads use, imported before the threads start
+    for m in ("astropy.io.fits", "astropy.io.votable", "astropy.wcs"):
+        importlib.import_module(m)
+
+    def one(r):
+        return r, switchon_vlass(float(r["ra"]), float(r["dec"]), num(r["pmra"]) or 0.0, num(r["pmdec"]) or 0.0)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(workers) as ex:
+        got = list(ex.map(one, stars))
+    switches = lambda by: len(by) >= 2 and max(by.values()) >= sigma and min(by.values()) < absent
+    seen, places, flagged, expected = 0, 0, [], 0.0
+    for r, v in got:
+        by = switchon_epochs(v)
+        if len(by) < 2:
+            continue
+        seen += 1
+        offs = [b for b in (switchon_epochs(v, k) for k in range(8)) if len(b) >= 2]
+        places += len(offs)
+        k = sum(switches(b) for b in offs)
+        x = extra.get(str(r["source_id"]), {})
+        bprp = num(r["phot_bp_mean_mag"]) - num(r["phot_rp_mean_mag"]) if num(r["phot_bp_mean_mag"]) and num(r["phot_rp_mean_mag"]) else None
+        ruwe, nss = num(x.get("ruwe")), int(num(x.get("non_single_star")) or 0)
+        known = (bprp or 0) > 1.8 or (ruwe or 0) > 1.4 or nss
+        if offs and not known:
+            expected += k / len(offs)
+        if switches(by):
+            peak = max(v, key=lambda e: e[2])
+            o = dict(source_id=str(r["source_id"]), dist=1000 * float(r["dist_50"]), G=num(r["phot_g_mean_mag"]), bprp=bprp, ruwe=ruwe, nss=nss, by=by, peak=peak,
+                     beside=k, places=len(offs))
+            o["vet"] = ("flare" if (bprp or 0) > 1.8 else "binary" if (ruwe or 0) > 1.4 or nss else "blend" if peak[5] > 2.0 else "chance-rate" if k else None)
+            flagged.append(o)
+    left = [o for o in flagged if o["vet"] is None]
+    # the rest against the rate the places beside the stars give
+    if left and len(left) <= expected + 3 * math.sqrt(max(expected, 1.0)):
+        for o in left:
+            o["vet"] = "chance-rate"
+        left = []
+    count = lambda k: sum(o["vet"] == k for o in flagged)
+    print("GCNS stars within %g pc north of -40 deg: %d; with VLASS images in two epochs or more: %d; a source at %g sigma in one epoch and below %g in another: %d, "
+          "against %.2f the places 2 arcmin away give for the stars neither M dwarfs nor binaries (%d places); M-dwarf flares %d, companions %d, a peak off the star %d, "
+          "the chance rate %d; unexplained %d" % (dist_pc, len(stars), seen, sigma, absent, len(flagged), expected, places, count("flare"), count("binary"), count("blend"),
+                                                  count("chance-rate"), len(left)))
+    for o in flagged:
+        print("  Gaia DR3 %s: %.2f pc, G %.2f, BP-RP %s; VLASS %s; peak %.2f mJy at %.1f arcsec from the star in %s; places beside it switching %d of %d; RUWE %s, NSS %d; %s" % (
+            o["source_id"], o["dist"], o["G"] or 0, "%.2f" % o["bprp"] if o["bprp"] is not None else "-", ", ".join("%s %.1f" % kv for kv in sorted(o["by"].items())),
+            o["peak"][3], o["peak"][5], o["peak"][0], o["beside"], o["places"], o["ruwe"], o["nss"], o["vet"] or "unexplained"))
+    json.dump(flagged, open(core.results("radio_switchons.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "vlass_nearby_switchons", "Radio sources that switched on at nearby stars", "GCNS (Gaia archive); VLASS quick-look images (CADC)",
+            "GCNS stars within %g pc north of -40 deg with VLASS images in two epochs or more: %d" % (dist_pc, seen), os.path.abspath(__file__), "switchon", seen, "stars",
+            dict(dist_pc=dist_pc, sigma=sigma, absent=absent), "the same images at eight places 2 arcmin from each star, %d places" % places,
+            "a source at %g sigma in one VLASS epoch and below %g in another" % (sigma, absent),
+            "%d switching: %d M-dwarf flares, %d companions, %d peaks off the star, %d at the chance rate (%.2f expected from the places beside the stars); %d unexplained" % (
+                len(flagged), count("flare"), count("binary"), count("blend"), count("chance-rate"), expected, len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["peak"][2], 1), unit="peak signal-to-noise at 3 GHz", vet=o["vet"],
+                  note="%.2f pc, BP-RP %s; VLASS %s; peak %.2f mJy at %.1f arcsec; places beside it switching %d of %d" % (
+                      o["dist"], "%.2f" % o["bprp"] if o["bprp"] is not None else "-", ", ".join("%s %.1f" % kv for kv in sorted(o["by"].items())), o["peak"][3], o["peak"][5],
+                      o["beside"], o["places"])) for o in flagged])
+        print("recorded")
+
+
+frbinfo_DOC = r"""Information in repeater burst sequences: the repeating FRBs of CHIME/FRB Catalog 1 (2018-2019) with MIN_BURSTS bursts or more, each one's bursts placed on the sidereal days of CHIME's daily transits (the 400 MHz arrival times), and the sequence of days with and without a burst over the source's span compressed (zlib at its highest level), against the same sequence with its burst days drawn at random over the span TRIALS times; a sequence that compresses beyond the random draws holds structure, read for the periodic activity window a period search over 1.5-100 days finds (the Rayleigh power of the burst days, against the same draws) and for the published periodicity of FRB 20180916B (16.35 days, CHIME/FRB Collaboration 2020); a sequence structured without a period would carry information no natural window gives.
+
+    python -I seti.py radio_sky frbinfo [record] [--min-bursts 10] [--trials 2000]"""
+
+FRBINFO_CAT = "https://assets.chime-frb.ca/catalogs/catalog1/releases/210806.vFINAL/data/catalog1.210806.vFINAL.csv"
+FRBINFO_PUBLISHED = {"FRB20180916B": 16.35}
+
+
+def frbinfo_bits(days, span):
+    """A burst-day sequence as bytes of 0 and 1 over SPAN days from the first."""
+    b = np.zeros(span, np.uint8)
+    b[np.asarray(days) - days[0]] = 1
+    return b.tobytes()
+
+
+def frbinfo_rayleigh(days, periods):
+    """The largest Rayleigh power of burst days over trial PERIODS (days), and the period that gives it."""
+    t = np.asarray(days, float)
+    pw = [abs(np.exp(2j * np.pi * t / p).sum()) ** 2 / len(t) for p in periods]
+    k = int(np.argmax(pw))
+    return float(pw[k]), float(periods[k])
+
+
+def frbinfo_main(record=False, min_bursts=10, trials=2000):
+    import csv
+    import zlib
+    raw = core.get(FRBINFO_CAT, timeout=120).decode("utf-8", "replace")
+    rows = list(csv.DictReader(io.StringIO(raw)))
+    by = {}
+    for r in rows:
+        name, mjd = (r.get("repeater_name") or "").strip(), num(r.get("mjd_400"))
+        if name and name != "-9999" and mjd:
+            by.setdefault(name, set()).add(int(math.floor((mjd - 51544.5) * 1.0027379)))
+    rng = np.random.default_rng(7)
+    periods = np.exp(np.linspace(math.log(1.5), math.log(100.0), 1000))
+    out = []
+    for name, ds in sorted(by.items()):
+        days = sorted(ds)
+        if len(days) < min_bursts:
+            continue
+        span = days[-1] - days[0] + 1
+        size = len(zlib.compress(frbinfo_bits(days, span), 9))
+        pw, per = frbinfo_rayleigh(days, periods)
+        sizes, pws = [], []
+        for _ in range(trials):
+            d = sorted(rng.choice(np.arange(days[0], days[-1] + 1), size=len(days), replace=False))
+            sizes.append(len(zlib.compress(frbinfo_bits(d, span), 9)))
+            pws.append(frbinfo_rayleigh(d, periods)[0])
+        p_info = (1 + sum(s <= size for s in sizes)) / (trials + 1.0)
+        p_per = (1 + sum(x >= pw for x in pws)) / (trials + 1.0)
+        pub = FRBINFO_PUBLISHED.get(name)
+        vet = "chance-rate" if p_info >= 0.01 else "natural-source" if (pub and abs(per - pub) / pub < 0.05) or p_per < 0.01 else None
+        o = dict(name=name, bursts=len(days), span=span, size=size, size_null=float(np.median(sizes)), p_info=p_info, power=pw, period=per, p_period=p_per,
+                 published=pub, vet=vet)
+        out.append(o)
+    left = [o for o in out if o["vet"] is None]
+    print("CHIME/FRB Catalog 1 repeaters: %d; with %d burst days or more: %d; sequences compressing beyond %d random draws at p < 0.01: %d, of them in a periodic window %d; "
+          "unexplained %d" % (len(by), min_bursts, len(out), trials, sum(o["p_info"] < 0.01 for o in out), sum(o["vet"] == "natural-source" for o in out), len(left)))
+    for o in out:
+        print("  %s: %d burst days over %d days; compressed %d bytes against %.0f (p %.4f); Rayleigh power %.1f at %.2f days (p %.4f)%s; %s" % (
+            o["name"], o["bursts"], o["span"], o["size"], o["size_null"], o["p_info"], o["power"], o["period"], o["p_period"],
+            ", published %.2f days" % o["published"] if o["published"] else "", o["vet"] or "unexplained"))
+    json.dump(out, open(core.results("frb_repeater_information.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "chime_repeater_information", "Information in repeater burst sequences", "CHIME/FRB Catalog 1 (its own site)",
+            "repeaters with %d burst days or more: %d" % (min_bursts, len(out)), os.path.abspath(__file__), "frbinfo", len(out), "repeaters",
+            dict(min_bursts=min_bursts, trials=trials), "burst days drawn at random over each source's span, %d times" % trials,
+            "a burst-day sequence that compresses beyond the random draws without a periodic window",
+            "; ".join("%s %d days, p %.3f, period %.2f d (p %.3f)" % (o["name"], o["bursts"], o["p_info"], o["period"], o["p_period"]) for o in out) + "; %d unexplained" % len(left),
+            [dict(target="frb:%s" % o["name"], stat=round(o["size"] / o["size_null"], 3), p=o["p_info"], unit="compressed size over the random draws' median", vet=o["vet"],
+                  note="%d burst days over %d; best period %.2f d, p %.3f" % (o["bursts"], o["span"], o["period"], o["p_period"])) for o in out])
+        print("recorded")
+
+
+gbratio_DOC = r"""Radio stars louder than their X-rays allow: the stars of the Gaia Catalogue of Nearby Stars within DIST_PC north of -40 deg in eRASS1's half of the sky (Galactic longitude 180-360 deg), each measured in every VLASS quick-look image the CADC holds of it at its place on each image's date (the brightest pixel within 3 arcsec against the image's noise) and in eRASS1's main catalogue (the eROSITA DR1 cone search within 10 arcsec of its 2020 place, 0.2-2.3 keV); a star VLASS sees at SIGMA times the noise has a radio luminosity at 3 GHz, and its X-ray luminosity, or eRASS1's limit of about 5e-14 erg/cm^2/s where the catalogue holds nothing, is set against the Gudel and Benz (1993) relation of active stars, L_X / L_nu near 10^15.5 Hz; a star whose L_X / L_nu falls below 10^13.5 Hz, a hundredfold louder in radio than the relation allows, holds radio emission its corona does not make, and is read for a peak more than 2 arcsec from the star's place and for an M or ultracool dwarf (BP-RP above 1.8), whose magnetosphere makes coherent bursts, by the electron-cyclotron maser or plasma emission, that the relation does not cover.
+
+    python -I seti.py radio_sky gbratio [record] [--dist-pc 10] [--sigma 6] [--workers 4]"""
+
+
+def gbratio_xray(ra, dec, radius_arcsec=10.0):
+    """eRASS1 main-catalogue sources within RADIUS_ARCSEC of a position from the eROSITA DR1 cone search, cached by position: (separation arcsec, 0.2-2.3 keV flux erg/cm^2/s), nearest first."""
+    import io
+    import urllib.parse
+    from astropy.io.votable import parse_single_table
+    key = core.data(os.path.join("erass1_cones", "%.5f_%+.5f_%g.json" % (ra, dec, radius_arcsec)))
+    if os.path.exists(key):
+        return [tuple(x) for x in json.load(open(key))]
+    raw = core.get("https://erosita.mpe.mpg.de/dr1/erodat/catalogue/SCS?" + urllib.parse.urlencode(
+        dict(CAT="DR1_Main", RA="%.6f" % ra, DEC="%.6f" % dec, SR="%.6f" % (radius_arcsec / 3600.0), VERB=2)), timeout=60)
+    t = parse_single_table(io.BytesIO(raw)).to_table()
+    out = sorted((core.sep_arcsec(ra, dec, float(r["ra"]), float(r["dec"])), float(r["ml_flux_1"])) for r in t)
+    os.makedirs(os.path.dirname(key), exist_ok=True)
+    json.dump(out, open(key, "w"))
+    return out
+
+
+def gbratio_main(record=False, dist_pc=10.0, sigma=6.0, workers=4):
+    import astropy.units as u
+    from astropy.coordinates import SkyCoord
+    from concurrent.futures import ThreadPoolExecutor
+    stars = catalogues.gcns("source_id, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, phot_rp_mean_mag, dist_50",
+                            where="gcns_prob > 0.38 AND dist_50 < %g AND dec > -40" % (dist_pc / 1000.0))
+    gl = SkyCoord(np.array([float(r["ra"]) for r in stars]) * u.deg, np.array([float(r["dec"]) for r in stars]) * u.deg).galactic.l.deg
+    half = [r for r, l in zip(stars, gl) if 180 <= l < 360]
+    for m in ("astropy.io.fits", "astropy.io.votable", "astropy.wcs"):
+        importlib.import_module(m)
+
+    def one(r):
+        ra, dec, pmra, pmdec = float(r["ra"]), float(r["dec"]), num(r["pmra"]) or 0.0, num(r["pmdec"]) or 0.0
+        xra, xdec = catalogues.carried(ra, dec, pmra, pmdec, 2020.0 - 2016.0)
+        return r, switchon_vlass(ra, dec, pmra, pmdec), gbratio_xray(xra, xdec)
+    with ThreadPoolExecutor(workers) as ex:
+        got = list(ex.map(one, half))
+    seen, radio, loud = 0, [], []
+    for r, v, x in got:
+        if not v:
+            continue
+        seen += 1
+        det = [e for e in v if e[2] >= sigma]
+        if not det:
+            continue
+        peak = max(det, key=lambda e: e[3])
+        d = 1000.0 * float(r["dist_50"]) * 3.0857e18
+        lr = 4 * math.pi * d * d * peak[3] * 1e-26
+        fx = x[0][1] if x else None
+        lx = 4 * math.pi * d * d * (fx if fx else 5e-14)
+        b, rr = num(r["phot_bp_mean_mag"]), num(r["phot_rp_mean_mag"])
+        o = dict(source_id=str(r["source_id"]), dist=1000.0 * float(r["dist_50"]), G=num(r["phot_g_mean_mag"]), bprp=b - rr if b is not None and rr is not None else None,
+                 vlass=peak, fx=fx, limit=fx is None, ratio=math.log10(lx / lr))
+        radio.append(o)
+        if o["ratio"] < 13.5:
+            o["vet"] = "blend" if peak[5] > 2.0 else "coherent-emission" if (o["bprp"] or 0) > 1.8 else None
+            loud.append(o)
+    left = [o for o in loud if o["vet"] is None]
+    print("GCNS stars within %g pc north of -40 deg in eRASS1's half: %d; with VLASS images: %d; seen at %g sigma: %d; log L_X / L_nu of those: %s; below 13.5: %d: "
+          "peaks off the star %d, M and ultracool dwarfs %d; unexplained %d" % (
+              dist_pc, len(half), seen, sigma, len(radio), " ".join("%.1f%s" % (o["ratio"], "<" if o["limit"] else "") for o in sorted(radio, key=lambda o: o["ratio"])),
+              len(loud), sum(o["vet"] == "blend" for o in loud), sum(o["vet"] == "coherent-emission" for o in loud), len(left)))
+    for o in sorted(radio, key=lambda o: o["ratio"]):
+        print("  Gaia DR3 %s: %.2f pc, G %.2f, BP-RP %s; VLASS %s %.1f: %.2f mJy (%.1f sigma); eRASS1 %s; log L_X / L_nu %.2f%s; %s" % (
+            o["source_id"], o["dist"], o["G"] or 0, "%.2f" % o["bprp"] if o["bprp"] is not None else "-", o["vlass"][0], o["vlass"][1], o["vlass"][3], o["vlass"][2],
+            "%.2e" % o["fx"] if o["fx"] else "none, limit 5e-14", o["ratio"], " (upper limit)" if o["limit"] else "",
+            (o.get("vet") or "unexplained") if o["ratio"] < 13.5 else "within the relation's reach"))
+    json.dump(radio, open(core.results("gudel_benz_ratio.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "vlass_erass1_gudel_benz", "Radio stars louder than their X-rays allow", "GCNS (Gaia archive); VLASS quick-look images (CADC); eRASS1 main catalogue (eROSITA DR1 cone search)",
+            "GCNS stars within %g pc in eRASS1's half north of -40 deg with VLASS images: %d" % (dist_pc, seen), os.path.abspath(__file__), "gbratio", seen, "stars",
+            dict(dist_pc=dist_pc, sigma=sigma), "the Gudel-Benz relation of active stars, L_X / L_nu near 10^15.5 Hz",
+            "a star VLASS sees with L_X / L_nu below 10^13.5 Hz", "%d radio stars; %d below 10^13.5 Hz: %d with a peak off the star, %d M or ultracool dwarfs; %d unexplained" % (
+                len(radio), len(loud), sum(o["vet"] == "blend" for o in loud), sum(o["vet"] == "coherent-emission" for o in loud), len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["ratio"], 2), upper_limit=round(o["ratio"], 2) if o["limit"] else None, unit="log L_X / L_nu (Hz)",
+                  vet=o.get("vet") if o["ratio"] < 13.5 else "active-star",
+                  note="%.2f pc, BP-RP %s; VLASS %.2f mJy; eRASS1 %s" % (o["dist"], "%.2f" % o["bprp"] if o["bprp"] is not None else "-", o["vlass"][3],
+                                                                    "%.2e" % o["fx"] if o["fx"] else "none")) for o in radio])
+        print("recorded")
+
+
+psrbirth_DOC = r"""Pulsars born at Sun-like stars: the ATNF pulsar catalogue (Manchester et al. 2005, the psrcat database from CSIRO) for pulsars outside globular clusters with a proper motion, a distance from a parallax or an independent estimate, and a characteristic age below AGE_MYR, each traced back in a straight line to its birth DRAWS times, its parallax (kept positive) or independent distance, its proper motion and its age drawn within their errors (the age between half and the whole of the characteristic age), and its radial velocity, which no pulsar has measured, drawn isotropically with the speed of its transverse motion; the Gaia DR3 Sun-like dwarfs within 200 pc with radial velocities (BP-RP 0.6-1.0, absolute G 3.5-6.0) traced back with it, a birth within 1 pc of one of them counted against the same draws with the pulsar's velocity turned to a random direction, the chance an unrelated star stands at the birth place; a pulsar's birth at a Sun-like star is what a made explosion near a star would leave, and the excess over the turned draws is the signal, one pulsar counted when the population exceeds them and its births share one star; the Galaxy's own pull, a few tens of parsecs over 10 Myr, is left out.
+
+    python -I seti.py radio_sky psrbirth [record] [--age-myr 10] [--draws 500] [--pc 1]"""
+
+PSRBIRTH_URL = "https://www.atnf.csiro.au/research/pulsar/psrcat/downloads/psrcat_pkg.tar.gz"
+
+
+def psrbirth_catalogue():
+    """The psrcat database from CSIRO's package into the data cache, one dict a pulsar of each parameter's value and error as strings."""
+    import tarfile
+    path = core.data("psrcat_pkg.tar.gz")
+    if not os.path.exists(path):
+        open(path, "wb").write(core.get(PSRBIRTH_URL, timeout=300))
+    with tarfile.open(path) as t:
+        name = next(m for m in t.getnames() if m.endswith("psrcat.db"))
+        text = t.extractfile(name).read().decode("latin-1")
+    out, cur = [], {}
+    for line in text.splitlines():
+        if line.startswith("@"):
+            if cur:
+                out.append(cur)
+            cur = {}
+            continue
+        f = line.split()
+        if len(f) >= 2 and not line.startswith("#"):
+            cur[f[0]] = (f[1], f[2] if len(f) > 2 and re.match(r"^[\d.eE+-]+$", f[2]) and len(f) > 3 else None)
+    if cur:
+        out.append(cur)
+    return out
+
+
+def psrbirth_error(value, err):
+    """An absolute error from psrcat's uncertainty, which the database gives in units of the value's last quoted digit."""
+    if "." in err:
+        return abs(float(err))
+    m = re.match(r"^[+-]?\d*(?:\.(\d*))?(?:[eE]([+-]?\d+))?$", value.strip())
+    return float(err) * 10.0 ** -(len(m.group(1) or "") - int(m.group(2) or 0)) if m else None
+
+
+def psrbirth_sexa(s, hours):
+    """A sexagesimal angle in degrees, from hours when HOURS."""
+    sign = -1 if s.strip().startswith("-") else 1
+    parts = [abs(float(x)) for x in s.strip().lstrip("+-").split(":")]
+    v = parts[0] + (parts[1] if len(parts) > 1 else 0) / 60 + (parts[2] if len(parts) > 2 else 0) / 3600
+    return sign * v * (15 if hours else 1)
+
+
+def psrbirth_vectors(ra, dec, d_pc, pmra, pmdec, vr):
+    """Heliocentric ICRS positions (pc) and velocities (pc/Myr) from positions (deg), distances (pc), proper motions (mas/yr) and radial velocities (km/s), each of equal-length arrays."""
+    a, b = np.radians(ra), np.radians(dec)
+    u = np.stack([np.cos(b) * np.cos(a), np.cos(b) * np.sin(a), np.sin(b)], axis=-1)
+    ea = np.stack([-np.sin(a), np.cos(a), np.zeros_like(a)], axis=-1)
+    ed = np.stack([-np.sin(b) * np.cos(a), -np.sin(b) * np.sin(a), np.cos(b)], axis=-1)
+    k = 1.0227
+    vt = 4.74047 * d_pc / 1000.0
+    vel = (vt * pmra)[..., None] * ea + (vt * pmdec)[..., None] * ed + vr[..., None] * u
+    return d_pc[..., None] * u, vel * k
+
+
+def psrbirth_main(record=False, age_myr=10.0, draws=500, pc=1.0):
+    from scipy import stats
+    num_ = lambda p, k: num(p[k][0]) if k in p else None
+    err_ = lambda p, k: psrbirth_error(p[k][0], p[k][1]) if k in p and p[k][1] else None
+    psrs = []
+    for p in psrbirth_catalogue():
+        if "PSRJ" not in p or "RAJ" not in p or "DECJ" not in p or "PMRA" not in p or "PMDEC" not in p or "F0" not in p or "F1" not in p:
+            continue
+        if "GC" in p.get("ASSOC", ("",))[0]:
+            continue
+        f0, f1 = num_(p, "F0"), num_(p, "F1")
+        if not f0 or not f1 or f1 >= 0:
+            continue
+        age = -f0 / (2 * f1) / 3.15576e13
+        px, da = num_(p, "PX"), num_(p, "DIST_A")
+        if age >= age_myr or not ((px and px > 0) or da):
+            continue
+        d, de, px = (1000.0 / px, err_(p, "PX") or 0.2 * px, px) if px and px > 0 else (da * 1000.0, 0.2 * da * 1000.0, None)
+        psrs.append(dict(name=p["PSRJ"][0], ra=psrbirth_sexa(p["RAJ"][0], True), dec=psrbirth_sexa(p["DECJ"][0], False), d=d, de=de, pmra=num_(p, "PMRA"),
+                         epmra=err_(p, "PMRA") or 1.0, pmdec=num_(p, "PMDEC"), epmdec=err_(p, "PMDEC") or 1.0, age=age, px=px))
+    stars = core.tap_async("gaia", "SELECT source_id, ra, dec, parallax, pmra, pmdec, radial_velocity FROM gaiadr3.gaia_source WHERE parallax > 5 AND radial_velocity IS NOT NULL "
+                                   "AND bp_rp BETWEEN 0.6 AND 1.0 AND phot_g_mean_mag + 5 * LOG10(parallax / 100) BETWEEN 3.5 AND 6.0", maxrec=200000)
+    sp, sv = psrbirth_vectors(np.array([float(s["ra"]) for s in stars]), np.array([float(s["dec"]) for s in stars]), np.array([1000.0 / float(s["parallax"]) for s in stars]),
+                              np.array([float(s["pmra"]) for s in stars]), np.array([float(s["pmdec"]) for s in stars]),
+                              np.array([float(s["radial_velocity"]) for s in stars]))
+    rng = np.random.default_rng(11)
+    out = []
+    for q in psrs:
+        if q["px"]:
+            # the parallax drawn within its error and kept positive, so a poor parallax spreads the pulsar outward
+            d = np.minimum(1000.0 / stats.truncnorm.rvs(-q["px"] / q["de"], np.inf, loc=q["px"], scale=q["de"], size=draws, random_state=rng), 3e4)
+        else:
+            d = np.clip(rng.normal(q["d"], q["de"], draws), 0.2 * q["d"], None)
+        pmra, pmdec = rng.normal(q["pmra"], q["epmra"], draws), rng.normal(q["pmdec"], q["epmdec"], draws)
+        vt = 4.74047 * d / 1000.0 * np.hypot(pmra, pmdec)
+        vr = rng.normal(0, vt / math.sqrt(2.0))
+        age = rng.uniform(0.5, 1.0, draws) * q["age"]
+        pos, vel = psrbirth_vectors(np.full(draws, q["ra"]), np.full(draws, q["dec"]), d, pmra, pmdec, vr)
+        birth = pos - vel * age[:, None]
+        turned = rng.normal(size=(draws, 3))
+        turned *= (np.linalg.norm(vel, axis=1) / np.linalg.norm(turned, axis=1))[:, None]
+        rbirth = pos - turned * age[:, None]
+        hits, chance, near = 0, 0, []
+        for k in range(draws):
+            at = sp - sv * age[k]
+            dd = np.linalg.norm(at - birth[k], axis=1)
+            j = int(np.argmin(dd))
+            if dd[j] < pc:
+                hits += 1
+                near.append(str(stars[j]["source_id"]))
+            chance += int(np.min(np.linalg.norm(at - rbirth[k], axis=1)) < pc)
+        out.append(dict(q, hits=hits, chance=chance, stars=sorted(set(near)), birth_pc=float(np.median(np.linalg.norm(birth, axis=1)))))
+    total, null = sum(o["hits"] for o in out), sum(o["chance"] for o in out)
+    # one pulsar's excess counts only where the population's births exceed the turned draws
+    excess = total > null + 3 * math.sqrt(max(null, 1))
+    for o in out:
+        o["vet"] = None if excess and o["hits"] > max(3 * o["chance"], 5) and len(set(o["stars"])) == 1 else "chance-rate" if o["hits"] else None
+    flagged = [o for o in out if o["hits"]]
+    left = [o for o in flagged if o["vet"] is None]
+    print("ATNF pulsars outside globular clusters with a proper motion, a distance and a characteristic age below %g Myr: %d; Sun-like Gaia dwarfs within 200 pc with radial "
+          "velocities: %d; births within %g pc of one of them in %d draws a pulsar: %d draws, against %d with the velocity turned; pulsars with any: %d; unexplained %d" % (
+              age_myr, len(psrs), len(stars), pc, draws, total, null, len(flagged), len(left)))
+    for o in sorted(out, key=lambda o: -o["hits"])[:25]:
+        print("  %s: %.0f pc, %.2f Myr, median birth %.0f pc from the Sun; %d draws within %g pc against %d turned; stars %s; %s" % (
+            o["name"], o["d"], o["age"], o["birth_pc"], o["hits"], pc, o["chance"], ", ".join(o["stars"][:3]) or "-", o["vet"] or ("unexplained" if o["hits"] else "none")))
+    json.dump(out, open(core.results("pulsar_births.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "atnf_pulsar_births", "Pulsars born at Sun-like stars", "ATNF pulsar catalogue (CSIRO's psrcat package); Gaia DR3 (Gaia archive)",
+            "young pulsars with proper motions and distances: %d; Sun-like dwarfs within 200 pc with radial velocities: %d" % (len(psrs), len(stars)), os.path.abspath(__file__),
+            "psrbirth", len(psrs), "pulsars", dict(age_myr=age_myr, draws=draws, pc=pc), "the same draws with each pulsar's velocity turned to a random direction",
+            "a pulsar born within %g pc of a Sun-like star beyond the turned draws" % pc,
+            "%d draws within %g pc against %d turned; %d pulsars with any; %d unexplained" % (total, pc, null, len(flagged), len(left)),
+            [dict(target="psr:%s" % o["name"], stat=o["hits"], unit="draws born within %g pc of a Sun-like star" % pc, vet=o["vet"],
+                  note="%.0f pc, %.2f Myr; turned draws %d; stars %s" % (o["d"], o["age"], o["chance"], ", ".join(o["stars"][:3]) or "-")) for o in flagged])
+        print("recorded")
+
 
 hi4pi_DOC = r"""Single-channel 21 cm spikes at nearby stars' rest velocities in HI4PI, ring-differenced against spectral and sky controls; repeated in the CMB and GSR frames.
 
@@ -4668,7 +5193,11 @@ def switchoff_vlass_images(ra, dec, radius_arcsec=30.0):
     t = parse_single_table(io.BytesIO(core.get(base + urllib.parse.urlencode({"POS": "CIRCLE %.5f %.5f 0.01" % (ra, dec), "COLLECTION": "VLASS"}), timeout=120))).to_table()
     for r in t:
         try:
-            links = parse_single_table(io.BytesIO(core.get(str(r["access_url"]), timeout=120))).to_table()
+            acc = str(r["access_url"])
+            # the SIA service names each image by its publisher identifier, which CADC's DataLink service resolves
+            if acc.startswith("ivo://"):
+                acc = "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/caom2ops/datalink?" + urllib.parse.urlencode({"ID": acc})
+            links = parse_single_table(io.BytesIO(core.get(acc, timeout=120))).to_table()
             url = next((str(x["access_url"]) for x in links if str(x["semantics"]) == "#this" and all(k in str(x["access_url"]) for k in ("pbcor", "tt0", "subim"))), None)
             if not url:
                 continue
@@ -5339,6 +5868,11 @@ def hydrogenbin_main(record=False, tol_rel=0.00001):
 
 
 APPROACHES = {
+    "psrbirth": (lambda: core.run_cli(psrbirth_main), psrbirth_DOC),
+    "gbratio": (lambda: core.run_cli(gbratio_main), gbratio_DOC),
+    "frbinfo": (lambda: core.run_cli(frbinfo_main), frbinfo_DOC),
+    "switchon": (lambda: core.run_cli(switchon_main), switchon_DOC),
+    "masers": (lambda: core.run_cli(masers_main), masers_DOC),
     "hydrogenbin": (lambda: core.run_cli(hydrogenbin_main), hydrogenbin_DOC),
     "radarfence": (lambda: core.run_cli(radarfence_main), radarfence_DOC),
     "hostlessnir": (lambda: core.run_cli(hostlessnir_main), hostlessnir_DOC),

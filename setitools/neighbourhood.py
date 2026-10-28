@@ -4332,12 +4332,896 @@ def timecluster_main(record=False, window_d=1.0, shifts=500):
         print("recorded")
 
 
+negspace_DOC = r"""Negative space in the nearby census: the Gaia Catalogue of Nearby Stars (Gaia Collaboration, Smart et al. 2021; probability above 0.38) within DIST_PC against the Gaia Universe Model Snapshot drawn for the same volume (GUMS, Robin et al. 2012, as Gaia DR3 holds it) to G 20.7, the census's reach, counted in 0.5 mag of absolute G; a bin where the census falls HOLE times or more below the model at a Poisson chance below 0.001 over the bins is a hole when it falls that far below the model scaled to the census over the bins 1-2 mag either side, and otherwise the model's own density for the class of star; and the census's fine structure out to 100 pc, its stars that are not white dwarfs counted in 0.05 mag of absolute G from 2 to 15 against the mean of the bins 0.15-0.5 mag either side, a dip of DIP sigmas or more read against the published gaps of stellar structure, the Jao gap at absolute G 9.9-10.4 where M dwarfs become fully convective (Jao et al. 2018).
+
+    python -I seti.py neighbourhood negspace [record] [--dist-pc 25] [--prob 0.38] [--hole 2] [--dip 4]"""
+
+NEGSPACE_JAO = (9.9, 10.4)
+
+
+def negspace_dips(M, lo, hi, dip):
+    """Dips of DIP sigmas or more in counts of absolute G between LO and HI in 0.05 mag bins against the mean of the bins 0.15-0.5 mag either side, adjacent bins joined."""
+    fe = np.arange(lo, hi + 1e-9, 0.05)
+    h = np.histogram(M, fe)[0].astype(float)
+    dips = []
+    for k in range(10, len(h) - 10):
+        s = float(np.mean(np.r_[h[k - 10:k - 2], h[k + 3:k + 11]]))
+        z = (h[k] - s) / math.sqrt(s) if s > 0 else 0.0
+        if z > -dip:
+            continue
+        a = float(fe[k])
+        if dips and abs(dips[-1]["M"][1] - a) < 1e-6:
+            dips[-1]["M"][1] = a + 0.05
+            dips[-1].update(z=min(dips[-1]["z"], z), n=dips[-1]["n"] + int(h[k]), expect=dips[-1]["expect"] + s)
+        else:
+            dips.append(dict(M=[a, a + 0.05], z=z, n=int(h[k]), expect=s))
+    return dips
+
+
+def negspace_main(record=False, dist_pc=25.0, prob=0.38, hole=2.0, dip=4.0):
+    from scipy.stats import poisson
+    gu = core.tap_async("gaia", "SELECT mag_g, barycentric_distance FROM gaiadr3.gaia_universe_model WHERE barycentric_distance < %g AND mag_g < 20.7" % dist_pc)
+    near = catalogues.gcns("phot_g_mean_mag, dist_50", where="gcns_prob > %g AND dist_50 < %g" % (prob, dist_pc / 1000.0))
+    mu = np.array([num(r["mag_g"]) - 5 * math.log10(num(r["barycentric_distance"]) / 10.0) for r in gu if num(r["mag_g"]) is not None and num(r["barycentric_distance"])])
+    mo = np.array([num(r["phot_g_mean_mag"]) - 5 * math.log10(num(r["dist_50"]) * 100.0) for r in near if num(r["phot_g_mean_mag"]) is not None and num(r["dist_50"])])
+    ge = np.arange(-1.0, 22.51, 0.5)
+    U, O = np.histogram(mu, ge)[0], np.histogram(mo, ge)[0]
+    bins = []
+    for i in range(len(U)):
+        if U[i] < 5:
+            continue
+        side = [j for j in range(len(U)) if 2 <= abs(j - i) <= 4]
+        su, so = float(sum(U[j] for j in side)), float(sum(O[j] for j in side))
+        k = so / su if su > 0 else None
+        bins.append(dict(M=[float(ge[i]), float(ge[i + 1])], model=int(U[i]), census=int(O[i]), local=k, p_model=float(poisson.cdf(O[i], U[i])),
+                         p_local=float(poisson.cdf(O[i], k * U[i])) if k else 1.0))
+    n = len(bins)
+    short = [b for b in bins if b["p_model"] < 0.001 / n and b["census"] * hole < b["model"]]
+    for b in short:
+        b["vet"] = None if b["local"] and b["p_local"] < 0.001 / n and b["census"] * hole < b["local"] * b["model"] else "model-normalisation"
+    # the census's own fine structure to 100 pc
+    allc = catalogues.gcns("phot_g_mean_mag, dist_50, wd_prob", where="gcns_prob > %g" % prob, ranges=8)
+    stars = np.array([num(r["phot_g_mean_mag"]) - 5 * math.log10(num(r["dist_50"]) * 100.0) for r in allc
+                      if num(r["phot_g_mean_mag"]) is not None and num(r["dist_50"]) and (num(r["wd_prob"]) or 0) < 0.5])
+    dips = negspace_dips(stars, 2.0, 15.0, dip)
+    per = np.histogram(stars, np.arange(2.0, 15.0001, 0.05))[0]
+    depth = dip / math.sqrt(float(np.median(per)))
+    for d in dips:
+        d["vet"] = "stellar-structure" if d["M"][0] < NEGSPACE_JAO[1] and d["M"][1] > NEGSPACE_JAO[0] else None
+    holes = [b for b in short if b["vet"] is None]
+    left = holes + [d for d in dips if d["vet"] is None]
+    print("GUMS within %g pc to G 20.7: %d; the census (GCNS, probability above %g): %d; census against model by 0.5 mag of absolute G from %g: %s" % (
+        dist_pc, len(mu), prob, len(mo), ge[0], " ".join("%d/%d" % (o, u) for u, o in zip(U, O))))
+    print("bins with 5 or more predicted: %d; the census %g times or more below the model at Poisson %.1e: %d, %d of them the model's density for the class across the "
+          "bins either side; holes %d" % (n, hole, 0.001 / n, len(short), len(short) - len(holes), len(holes)))
+    for b in short:
+        print("  M_G %g-%g: census %d, model %d, the census over the model 1-2 mag either side %s, chance in that scaling %.2g; %s" % (
+            b["M"][0], b["M"][1], b["census"], b["model"], "%.2f" % b["local"] if b["local"] is not None else "-", b["p_local"], b["vet"] or "unexplained"))
+    print("the census to 100 pc, not white dwarfs: %d stars at absolute G 2-15, a median %d in each 0.05 mag bin, where %g sigma is a dip of %.1f per cent; dips of %g sigma "
+          "or more against the bins 0.15-0.5 mag either side: %d" % (int(per.sum()), int(np.median(per)), dip, 100 * depth, dip, len(dips)))
+    for d in dips:
+        print("  M_G %.2f-%.2f: %d against %.0f, %.1f sigma at its deepest; %s" % (d["M"][0], d["M"][1], d["n"], d["expect"], d["z"], d["vet"] or "unexplained"))
+    json.dump(dict(bins=bins, dips=dips), open(core.results("negative_space.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcns_gums_negative_space", "Negative space in the nearby census", "Gaia Catalogue of Nearby Stars and the Gaia Universe Model Snapshot (Gaia archive)",
+            "GCNS stars within %g pc: %d, against GUMS's %d; the GCNS to 100 pc at absolute G 2-15 for the fine structure: %d" % (dist_pc, len(mo), len(mu), int(per.sum())),
+            os.path.abspath(__file__), "negspace", len(mo), "stars", dict(dist_pc=dist_pc, prob=prob, hole=hole, dip=dip),
+            "GUMS drawn for the volume, scaled to the census over the bins 1-2 mag either side; for the fine structure, the bins 0.15-0.5 mag either side, where %g sigma "
+            "is a dip of %.1f per cent in a 0.05 mag bin" % (dip, 100 * depth),
+            "a bin %g times or more below the model at Poisson %.1e, or a dip of %g sigma in the census's main sequence" % (hole, 0.001 / n, dip),
+            "%d bins below the model, %d of them the model's density for the class, %d holes; %d dips, %d of them in the Jao gap; %d unexplained" % (
+                len(short), len(short) - len(holes), len(holes), len(dips), sum(d["vet"] == "stellar-structure" for d in dips), len(left)),
+            [dict(target="bin:MG%g_%g" % (b["M"][0], b["M"][1]), stat=b["census"], unit="stars in the bin", vet=b["vet"],
+                  note="model %d; census over model 1-2 mag either side %s" % (b["model"], "%.2f" % b["local"] if b["local"] is not None else "-")) for b in short] +
+            [dict(target="dip:MG%.2f_%.2f" % (d["M"][0], d["M"][1]), stat=round(d["z"], 2), unit="sigma below the bins either side",
+                  vet=d["vet"], note="%d stars against %.0f" % (d["n"], d["expect"])) for d in dips])
+        print("recorded")
+
+
+darkmass_DOC = r"""Mass without light in Gaia's orbits: Gaia DR3's astrometric orbits (Orbital, AstroSpectroSB1 and the validated alternative and targeted solutions) at significance and parallax over error above SIG, and its single-lined spectroscopic orbits (SB1, SB1C) with the semi-amplitude above SIG errors; each companion's mass as though it gave no light (from the photocentre's semi-major axis, a0 from the Thiele-Innes constants over the parallax, through Kepler's law, and from the mass function at an edge-on orbit for the SB1 orbits) against the star's own mass (FLAME, or the dwarf sequence at the star's BP-RP for a star within 1.5 mag of it in absolute G); a companion of more than RATIO times the star's mass is darker than a main-sequence companion or a twin pair of them could be beside the star (a pair of M/2 each shines 2 (M/2)^4 for luminosity as mass to the fourth, more than the star above 1.68 times its mass), and is read for a solution the catalogue leaves unvalidated (OrbitalAlternative and OrbitalTargetedSearch), an astrometric orbit that Gaia's own radial velocities deny (a peak-to-peak below half the semi-amplitude the orbit predicts, a0 sin i over the parallax, on 5 transits or more at a period below 1000 days), an SB1 orbit that Gaia's astrometry denies (the star's own orbit, a1 sin i at the parallax, 0.3 mas or more at a period below 1500 days with a RUWE below 1.4, no wobble where a dark companion would make one), an SB1 orbit of a star Gaia's classifier calls a pulsator, whose own velocities vary, a white dwarf at 1.35 solar masses or less, and a neutron star or black hole above, with the black holes above 3 solar masses set against the published Gaia BH1 and BH2; the long-period circular orbits among them, periods above 100 days at eccentricities below 0.05, which mass transfer onto a white dwarf leaves, are counted apart.
+
+    python -I seti.py neighbourhood darkmass [record] [--sig 10] [--ratio 1.7]"""
+
+DARKMASS_BH = {"4373465352415301632": "Gaia BH1 (El-Badry et al. 2023)", "5870569352746779008": "Gaia BH2 (El-Badry et al. 2023)"}
+
+
+def darkmass_m2(f, m1):
+    """The companion mass (solar masses) whose mass function M2^3 / (M1 + M2)^2 is F beside a star of mass M1, or None where none lies between 1e-5 and 1e4."""
+    from scipy.optimize import brentq
+    g = lambda m: m ** 3 - f * (m1 + m) ** 2
+    return brentq(g, 1e-5, 1e4) if f > 0 and g(1e-5) < 0 < g(1e4) else None
+
+
+def darkmass_a0(A, B, F, G):
+    """The semi-major axis and the cosine of the inclination of an orbit from its Thiele-Innes constants (Halbwachs et al. 2023)."""
+    u, v = (A * A + B * B + F * F + G * G) / 2.0, A * G - B * F
+    a0 = math.sqrt(u + math.sqrt(max((u + v) * (u - v), 0.0)))
+    return a0, max(-1.0, min(1.0, v / a0 ** 2))
+
+
+def darkmass_main(record=False, sig=10.0, ratio=1.7):
+    seq = sorted((s["bprp"], s["mass"], s["mv"]) for s in catalogues.dwarf_sequence() if None not in (s["bprp"], s["mass"], s["mv"]))
+    sx, sm = np.array([s[0] for s in seq]), np.array([s[1] for s in seq])
+    # the dwarf sequence's absolute G, from its absolute V and V - G at its colour (Riello et al. 2021)
+    smg = np.array([s[2] - (0.02704 - 0.01424 * s[0] + 0.2156 * s[0] ** 2 - 0.01426 * s[0] ** 3) for s in seq])
+    cols = ("o.source_id, o.nss_solution_type, o.period, o.eccentricity, g.parallax, g.parallax_over_error, g.phot_g_mean_mag, g.bp_rp, g.ruwe, g.rv_amplitude_robust, "
+            "g.rv_nb_transits, a.mass_flame")
+    ast = core.gaia_by_range("SELECT %s, o.a_thiele_innes, o.b_thiele_innes, o.f_thiele_innes, o.g_thiele_innes, o.significance, o.parallax AS oplx FROM "
+                             "gaiadr3.nss_two_body_orbit AS o JOIN gaiadr3.gaia_source AS g ON g.source_id = o.source_id LEFT JOIN gaiadr3.astrophysical_parameters AS a "
+                             "ON a.source_id = o.source_id WHERE o.source_id BETWEEN {lo} AND {hi} AND o.a_thiele_innes IS NOT NULL AND o.significance > %g "
+                             "AND o.parallax > %g * o.parallax_error" % (cols, sig, sig), n=8, maxrec=400000)
+    sb1 = core.gaia_by_range("SELECT %s, o.semi_amplitude_primary, o.semi_amplitude_primary_error FROM gaiadr3.nss_two_body_orbit AS o JOIN gaiadr3.gaia_source AS g "
+                             "ON g.source_id = o.source_id LEFT JOIN gaiadr3.astrophysical_parameters AS a ON a.source_id = o.source_id WHERE o.source_id BETWEEN {lo} "
+                             "AND {hi} AND o.nss_solution_type IN ('SB1', 'SB1C') AND o.semi_amplitude_primary > %g * o.semi_amplitude_primary_error AND g.parallax > 0"
+                             % (cols, sig), n=8, maxrec=400000)
+    weighed, unweighed, unphysical, dark = 0, 0, 0, []
+    for kind, rows in (("astrometric", ast), ("SB1", sb1)):
+        for r in rows:
+            P, e, plx, G, c = num(r["period"]), num(r["eccentricity"]) or 0.0, num(r["parallax"]), num(r["phot_g_mean_mag"]), num(r["bp_rp"])
+            if not P or not plx or plx <= 0 or G is None:
+                continue
+            m1 = num(r["mass_flame"])
+            src = "FLAME"
+            if not m1 and c is not None and sx[0] <= c <= sx[-1] and abs(G + 5 * math.log10(plx / 100.0) - float(np.interp(c, sx, smg))) <= 1.5:
+                m1, src = float(np.interp(c, sx, sm)), "dwarf sequence"
+            if not m1:
+                unweighed += 1
+                continue
+            weighed += 1
+            if kind == "astrometric":
+                a0, ci = darkmass_a0(*(num(r[k + "_thiele_innes"]) for k in "abfg"))
+                alpha = a0 / num(r["oplx"])
+                f = alpha ** 3 / (P / 365.25) ** 2
+                k_pred = 2 * math.pi * alpha * math.sqrt(1 - ci * ci) / (P / 365.25) / math.sqrt(max(1 - e * e, 1e-6)) * 4.7405
+            else:
+                K = num(r["semi_amplitude_primary"])
+                f = 1.0361e-7 * (1 - e * e) ** 1.5 * K ** 3 * P
+                # the star's own orbit on the sky: a1 sin i = K P sqrt(1 - e^2) / 2 pi, in au, at the parallax
+                k_pred, alpha = None, K * P * 86400.0 * math.sqrt(max(1 - e * e, 0.0)) / (2 * math.pi) / 1.495978707e8 * plx
+            m2 = darkmass_m2(f, m1)
+            if m2 is None:
+                unphysical += 1
+                continue
+            if m2 <= ratio * m1:
+                continue
+            ptp, nrv = num(r["rv_amplitude_robust"]), int(num(r["rv_nb_transits"]) or 0)
+            o = dict(source_id=str(r["source_id"]), kind=kind, type=str(r["nss_solution_type"]), P=P, e=e, m1=m1, m1_from=src, m2=m2, f=f, G=G, bprp=c, plx=plx,
+                     ruwe=num(r["ruwe"]), k_pred=k_pred, ptp=ptp, nrv=nrv, alpha=alpha, sig=num(r.get("significance")))
+            o["vet"] = ("published-solution" if r["nss_solution_type"] in ("OrbitalAlternative", "OrbitalTargetedSearch") else
+                        "published-solution" if kind == "astrometric" and r["nss_solution_type"] != "AstroSpectroSB1" and ptp is not None and nrv >= 5 and P < 1000
+                        and ptp < 0.5 * k_pred else
+                        "published-solution" if kind == "SB1" and P < 1500 and alpha >= 0.3 and (num(r["ruwe"]) or 0) < 1.4 else
+                        "white-dwarf" if m2 <= 1.35 else
+                        "compact-remnant" if m2 <= 3.0 or o["source_id"] in DARKMASS_BH else None)
+            o["known"] = DARKMASS_BH.get(o["source_id"], "")
+            o["circular"] = P > 100 and e < 0.05
+            dark.append(o)
+    # a pulsator's own surface velocities, sampled sparsely, give an SB1 fit
+    cls = {k: str(v["best_class_name"]).strip() for k, v in core.tap_by_ids(
+        "gaia", [o["source_id"] for o in dark if o["vet"] is None and o["kind"] == "SB1"],
+        "SELECT source_id, best_class_name FROM gaiadr3.vari_classifier_result WHERE source_id IN (%s)").items()} if dark else {}
+    for o in dark:
+        o["cls"] = cls.get(o["source_id"], "")
+        if o["vet"] is None and re.match(r"^(DSCT|CEP|T2CEP|RR|LPV|BCEP|SPB|ACEP|RS)", o["cls"]):
+            o["vet"] = "variable-star"
+    left = [o for o in dark if o["vet"] is None]
+    count = lambda rows, k: sum(o["vet"] == k for o in rows)
+    circ = [o for o in dark if o["circular"]]
+    print("orbits at significance above %g: astrometric %d, SB1 %d; with the star's mass %d (FLAME or the dwarf sequence), without %d, with no companion mass between 1e-5 and "
+          "1e4 solar masses %d; companions over %g times the star's "
+          "mass as though dark: %d (astrometric %d, SB1 %d): unvalidated solutions and orbits Gaia's radial velocities or astrometry deny %d, white-dwarf masses %d, neutron-star and black-hole masses %d "
+          "(the published black holes among them %d), pulsators %d; unexplained %d; long-period circular among them %d (%s)" % (
+              sig, len(ast), len(sb1), weighed, unweighed, unphysical, ratio, len(dark), sum(o["kind"] == "astrometric" for o in dark), sum(o["kind"] == "SB1" for o in dark),
+              count(dark, "published-solution"), count(dark, "white-dwarf"), count(dark, "compact-remnant"), sum(bool(o["known"]) for o in dark), count(dark, "variable-star"), len(left), len(circ),
+              ", ".join("%s %d" % (k, count(circ, k)) for k in ("published-solution", "white-dwarf", "compact-remnant", "variable-star")) + ", unexplained %d" % count(circ, None)))
+    for o in sorted(dark, key=lambda o: (o["vet"] is not None, o["vet"] or "", -o["m2"]))[:60]:
+        print("  Gaia DR3 %s (%s): P %.1f d, e %.2f, M1 %.2f (%s), M2 if dark %.2f, f %.3g; G %.2f, BP-RP %s, RUWE %s; RV peak-to-peak %s on %d against K %s; "
+              "the star's orbit %s mas; class %s; %s%s" % (
+            o["source_id"], o["type"], o["P"], o["e"], o["m1"], o["m1_from"], o["m2"], o["f"], o["G"], "%.2f" % o["bprp"] if o["bprp"] is not None else "-", o["ruwe"],
+            "%.1f" % o["ptp"] if o["ptp"] is not None else "-", o["nrv"], "%.1f" % o["k_pred"] if o["k_pred"] else "-",
+            "%.2f" % (o["alpha"] * o["plx"] if o["kind"] == "astrometric" else o["alpha"]) if o["alpha"] is not None else "-", o["cls"] or "-", o["vet"] or "unexplained",
+            "; " + o["known"] if o["known"] else ""))
+    json.dump(dark, open(core.results("dark_companions.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gaia_nss_dark_companions", "Mass without light in Gaia's orbits", "Gaia DR3 two-body orbits, FLAME masses and radial-velocity amplitudes (Gaia archive)",
+            "astrometric and SB1 orbits at significance above %g with the star's mass: %d" % (sig, weighed), os.path.abspath(__file__), "darkmass", weighed, "orbits",
+            dict(sig=sig, ratio=ratio), "a main-sequence companion or twin pair of them, which the star's light would show above %g times its mass" % ratio,
+            "a companion over %g times the star's mass as though it gave no light" % ratio,
+            "%d: %d unvalidated solutions and orbits Gaia's radial velocities or astrometry deny, %d white-dwarf masses, %d neutron-star and black-hole masses (Gaia BH1 and BH2 among them), %d pulsators; %d unexplained; "
+            "%d long-period circular" % (len(dark), count(dark, "published-solution"), count(dark, "white-dwarf"), count(dark, "compact-remnant"), count(dark, "variable-star"), len(left), len(circ)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["m2"], 3), unit="solar masses of companion if dark", vet=o["vet"],
+                  note="%s, P %.1f d, e %.2f, M1 %.2f (%s); RV peak-to-peak %s on %d transits against K %s%s%s" % (
+                      o["type"], o["P"], o["e"], o["m1"], o["m1_from"], "%.1f" % o["ptp"] if o["ptp"] is not None else "-", o["nrv"],
+                      "%.1f" % o["k_pred"] if o["k_pred"] else "-", "; long-period circular" if o["circular"] else "", "; " + o["known"] if o["known"] else ""))
+             for o in dark])
+        print("recorded")
+
+
+quietfloor_DOC = r"""Chromospheres quieter than the floor: Gaia DR3's Ca II infrared-triplet activity index (ESP-CS, Lanzafame et al. 2023), the excess equivalent width of the line cores over a photosphere with no chromosphere, for dwarfs within 1000 / PLX_MIN pc at 4500-6500 K and log g above 4.0 (on the parameters the index was computed with, GSP-Spec's or GSP-Phot's), each set against the inactive floor of its own bin of 250 K and 0.5 dex of [M/H], the bin's median and the robust scatter of the index below the median, since the index's own errors are smaller than the scatter its parameters give; a star more than DEPTH of these scatters below its bin's median holds deeper line cores than a photosphere without a chromosphere of its temperature and metallicity, which no star should, and is read for a metal-poor star ([M/H] below -1, where the template misses), an RVS spectrum of signal-to-noise below 20, a companion whose cooler lines deepen the cores (RUWE above 1.4 or a non-single-star solution), and temperatures from GSP-Spec and GSP-Phot more than 250 K apart, a template at the wrong temperature.
+
+    python -I seti.py neighbourhood quietfloor [record] [--plx-min 5] [--depth 6]"""
+
+
+def quietfloor_main(record=False, plx_min=5.0, depth=6.0):
+    rows = core.gaia_by_range(
+        "SELECT a.source_id, a.activityindex_espcs, a.activityindex_espcs_uncertainty, a.activityindex_espcs_input, a.teff_gspspec, a.logg_gspspec, a.mh_gspspec, "
+        "a.teff_gspphot, a.logg_gspphot, a.mh_gspphot, g.rvs_spec_sig_to_noise, g.ruwe, g.non_single_star, g.phot_g_mean_mag, g.bp_rp, g.parallax "
+        "FROM gaiadr3.astrophysical_parameters AS a JOIN gaiadr3.gaia_source AS g ON g.source_id = a.source_id WHERE a.source_id BETWEEN {lo} AND {hi} "
+        "AND a.activityindex_espcs IS NOT NULL AND g.parallax > %g" % plx_min, n=8, maxrec=1000000)
+    stars = []
+    for r in rows:
+        spec = "spec" in str(r["activityindex_espcs_input"]).lower()
+        t, lg, mh = (num(r["%s_gsp%s" % (k, "spec" if spec else "phot")]) for k in ("teff", "logg", "mh"))
+        if None in (t, lg, mh) or lg <= 4.0 or not 4500 <= t < 6500:
+            continue
+        ts, tp = num(r["teff_gspspec"]), num(r["teff_gspphot"])
+        stars.append(dict(source_id=str(r["source_id"]), ai=float(r["activityindex_espcs"]), aie=num(r["activityindex_espcs_uncertainty"]), teff=t, logg=lg, mh=mh,
+                          inp="GSP-Spec" if spec else "GSP-Phot", dteff=abs(ts - tp) if ts and tp else None, sn=num(r["rvs_spec_sig_to_noise"]), ruwe=num(r["ruwe"]),
+                          nss=int(num(r["non_single_star"]) or 0), G=num(r["phot_g_mean_mag"]), bprp=num(r["bp_rp"]), plx=num(r["parallax"])))
+    bins, quiet = {}, []
+    for s in stars:
+        bins.setdefault((int(s["teff"] // 250 * 250), math.floor(s["mh"] / 0.5) * 0.5), []).append(s)
+    floors = {}
+    for key, b in sorted(bins.items()):
+        if len(b) < 50:
+            continue
+        a = np.array([s["ai"] for s in b])
+        med = float(np.median(a))
+        low = 1.4826 * float(np.median(med - a[a <= med]))
+        floors[key] = (len(b), med, low)
+        for s in b:
+            if low > 0 and s["ai"] < med - depth * low:
+                s.update(floor=med, scatter=low, z=(s["ai"] - med) / low)
+                quiet.append(s)
+    for s in quiet:
+        s["vet"] = ("metal-poor" if s["mh"] < -1.0 else
+                    "not-measured" if (s["sn"] or 0) < 20 else
+                    "binary" if (s["ruwe"] or 0) > 1.4 or s["nss"] else
+                    "published-solution" if s["dteff"] is not None and s["dteff"] > 250 else None)
+    left = [s for s in quiet if s["vet"] is None]
+    count = lambda k: sum(s["vet"] == k for s in quiet)
+    measured = sum(f[0] for f in floors.values())
+    print("dwarfs at 4500-6500 K within %g pc with the activity index: %d, %d in bins of 50 or more; floors by bin (n, median, scatter below it, nm): %s" % (
+        1000 / plx_min, len(stars), measured, "; ".join("%d K %+.1f: %d %.4f %.4f" % (k[0], k[1], f[0], f[1], f[2]) for k, f in sorted(floors.items()))))
+    print("more than %g scatters below the floor: %d: metal-poor %d, RVS signal-to-noise below 20 %d, a companion %d, GSP-Spec and GSP-Phot temperatures 250 K apart %d; "
+          "unexplained %d" % (depth, len(quiet), count("metal-poor"), count("not-measured"), count("binary"), count("published-solution"), len(left)))
+    for s in sorted(quiet, key=lambda s: (s["vet"] is not None, s["z"]))[:40]:
+        print("  Gaia DR3 %s: index %.4f +- %s nm against the floor %.4f (%.1f scatters), Teff %.0f, log g %.2f, [M/H] %+.2f (%s), dTeff %s, S/N %s, RUWE %s, NSS %d, G %.2f; %s" % (
+            s["source_id"], s["ai"], "%.4f" % s["aie"] if s["aie"] is not None else "-", s["floor"], s["z"], s["teff"], s["logg"], s["mh"], s["inp"],
+            "%.0f" % s["dteff"] if s["dteff"] is not None else "-", "%.0f" % s["sn"] if s["sn"] else "-", s["ruwe"], s["nss"], s["G"] or 0, s["vet"] or "unexplained"))
+    json.dump(dict(floors={"%d_%+.1f" % k: v for k, v in floors.items()}, quiet=quiet), open(core.results("quiet_chromospheres.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gaia_cairt_quiet_floor", "Chromospheres quieter than the floor", "Gaia DR3 ESP-CS activity index, GSP-Spec and GSP-Phot parameters (Gaia archive)",
+            "dwarfs at 4500-6500 K within %g pc in bins of 50 or more: %d" % (1000 / plx_min, measured), os.path.abspath(__file__), "quietfloor", measured, "stars",
+            dict(plx_min=plx_min, depth=depth), "each bin's median and the robust scatter below it: %s" % "; ".join(
+                "%d K %+.1f %.4f %.4f" % (k[0], k[1], f[1], f[2]) for k, f in sorted(floors.items())),
+            "an index more than %g scatters below its bin's floor" % depth,
+            "%d: %d metal-poor, %d of low signal-to-noise, %d with a companion, %d with temperatures apart; %d unexplained" % (
+                len(quiet), count("metal-poor"), count("not-measured"), count("binary"), count("published-solution"), len(left)),
+            [dict(target="gaia_dr3:%s" % s["source_id"], stat=round(s["z"], 2), unit="scatters below the floor", vet=s["vet"],
+                  note="index %.4f nm, Teff %.0f, log g %.2f, [M/H] %+.2f (%s), S/N %s, RUWE %s" % (s["ai"], s["teff"], s["logg"], s["mh"], s["inp"],
+                                                                                                "%.0f" % s["sn"] if s["sn"] else "-", s["ruwe"])) for s in quiet])
+        print("recorded")
+
+
+contradict_DOC = r"""Stellar parameters that contradict one another: Gaia DR3's three independent temperatures of its stars with RVS spectra of signal-to-noise above SN, GSP-Spec's from the RVS spectrum, GSP-Phot's from the BP/RP spectrum and the parallax, and that of the template that matched the RVS spectrum for its radial velocity, each pair set apart in its joint error (each estimator's own 16-84 per cent half-range, and 250 K for the template grid); a star whose three temperatures disagree pairwise by more than SPREAD K and Z joint errors has no single temperature, and is read for a temperature outside 3500-7500 K, where the three pipelines' model grids part, GSP-Spec's own flags on its parameters (a non-zero among the first thirteen), a companion (RUWE above 1.4, a non-single-star solution, or radial velocities that vary, a chi-square p-value below 0.01 at a renormalised goodness of fit above 4), an emission-line class from ESP-ELS, and dust GSP-Phot trades against temperature (A_G above 1 mag).
+
+    python -I seti.py neighbourhood contradict [record] [--sn 100] [--spread 1000] [--z 5]"""
+
+
+def contradict_main(record=False, sn=100.0, spread=1000.0, z=5.0):
+    rows = core.gaia_by_range(
+        "SELECT g.source_id, g.rv_template_teff, g.rvs_spec_sig_to_noise, g.ruwe, g.non_single_star, g.rv_chisq_pvalue, g.rv_renormalised_gof, g.phot_g_mean_mag, g.bp_rp, "
+        "a.teff_gspspec, a.teff_gspspec_lower, a.teff_gspspec_upper, a.teff_gspphot, a.teff_gspphot_lower, a.teff_gspphot_upper, a.flags_gspspec, a.ag_gspphot, "
+        "a.classlabel_espels FROM gaiadr3.gaia_source AS g JOIN gaiadr3.astrophysical_parameters AS a ON a.source_id = g.source_id WHERE g.source_id BETWEEN {lo} AND {hi} "
+        "AND g.rvs_spec_sig_to_noise > %g AND a.teff_gspspec IS NOT NULL AND a.teff_gspphot IS NOT NULL AND g.rv_template_teff IS NOT NULL" % sn, n=8, maxrec=2000000)
+    stars, odd = 0, []
+    for r in rows:
+        ts, tp, tr = num(r["teff_gspspec"]), num(r["teff_gspphot"]), num(r["rv_template_teff"])
+        if None in (ts, tp, tr):
+            continue
+        stars += 1
+        es = ((num(r["teff_gspspec_upper"]) or ts) - (num(r["teff_gspspec_lower"]) or ts)) / 2.0
+        ep = ((num(r["teff_gspphot_upper"]) or tp) - (num(r["teff_gspphot_lower"]) or tp)) / 2.0
+        pairs = ((ts, tp, math.hypot(es, ep)), (ts, tr, math.hypot(es, 250.0)), (tp, tr, math.hypot(ep, 250.0)))
+        if all(abs(a - b) > max(spread, z * e) for a, b, e in pairs):
+            flags = str(r["flags_gspspec"] or "")
+            o = dict(source_id=str(r["source_id"]), spec=ts, phot=tp, tmpl=tr, sn=num(r["rvs_spec_sig_to_noise"]), G=num(r["phot_g_mean_mag"]), bprp=num(r["bp_rp"]),
+                     ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), rvp=num(r["rv_chisq_pvalue"]), gof=num(r["rv_renormalised_gof"]), flags=flags[:13],
+                     ag=num(r["ag_gspphot"]), els=str(r["classlabel_espels"] or "").strip())
+            o["vet"] = ("outside-selection" if min(ts, tp, tr) < 3500 or max(ts, tp, tr) > 7500 else
+                        "published-solution" if flags[:13].strip("0") else
+                        "binary" if (o["ruwe"] or 0) > 1.4 or o["nss"] or ((o["rvp"] is not None and o["rvp"] < 0.01) and (o["gof"] or 0) > 4) else
+                        "active-star" if o["els"] else
+                        "interstellar" if (o["ag"] or 0) > 1.0 else None)
+            odd.append(o)
+    left = [o for o in odd if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in odd)
+    print("stars with RVS signal-to-noise above %g and all three temperatures: %d; all three apart pairwise by %g K and %g joint errors: %d: outside 3500-7500 K %d, "
+          "GSP-Spec's own flags %d, a companion %d, an emission-line class %d, dust %d; unexplained %d" % (
+              sn, stars, spread, z, len(odd), count("outside-selection"), count("published-solution"), count("binary"), count("active-star"), count("interstellar"), len(left)))
+    for o in sorted(odd, key=lambda o: (o["vet"] is not None, o["vet"] or "", -o["sn"]))[:50]:
+        print("  Gaia DR3 %s: GSP-Spec %.0f, GSP-Phot %.0f, template %.0f K; S/N %.0f, G %.2f, BP-RP %s, RUWE %s, NSS %d, RV p %s gof %s, flags %s, A_G %s, ELS %s; %s" % (
+            o["source_id"], o["spec"], o["phot"], o["tmpl"], o["sn"], o["G"] or 0, "%.2f" % o["bprp"] if o["bprp"] is not None else "-", o["ruwe"], o["nss"], o["rvp"],
+            o["gof"], o["flags"], o["ag"], o["els"] or "-", o["vet"] or "unexplained"))
+    json.dump(odd, open(core.results("contradicting_parameters.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gaia_contradicting_temperatures", "Stellar parameters that contradict one another", "Gaia DR3 GSP-Spec, GSP-Phot and RV-template temperatures (Gaia archive)",
+            "stars with RVS signal-to-noise above %g and all three temperatures: %d" % (sn, stars), os.path.abspath(__file__), "contradict", stars, "stars",
+            dict(sn=sn, spread=spread, z=z), "each pair's joint error from the estimators' own ranges and 250 K for the template grid",
+            "three temperatures apart pairwise by %g K and %g joint errors" % (spread, z),
+            "%d: %d outside 3500-7500 K, %d flagged by GSP-Spec, %d with a companion, %d emission-line stars, %d behind dust; %d unexplained" % (
+                len(odd), count("outside-selection"), count("published-solution"), count("binary"), count("active-star"), count("interstellar"), len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(max(abs(o["spec"] - o["phot"]), abs(o["spec"] - o["tmpl"]), abs(o["phot"] - o["tmpl"]))),
+                  unit="K between the farthest two temperatures", vet=o["vet"],
+                  note="GSP-Spec %.0f, GSP-Phot %.0f, template %.0f K; S/N %.0f, RUWE %s" % (o["spec"], o["phot"], o["tmpl"], o["sn"], o["ruwe"])) for o in odd])
+        print("recorded")
+
+
+chemistry_DOC = r"""Unusual chemistry in the solar neighbourhood: the Hypatia Catalog's abundances of its FGK dwarfs (Hinkel et al. 2014, from its own API, the median over the catalogues it gathers, on Lodders et al. 2009's solar scale; 4500-6500 K and log g of 3.5 or more on Hypatia's own temperatures and gravities, which leaves out the chemically peculiar A and B stars, the giants and the M dwarfs whose analyses differ), each element with MIN_STARS stars or more read as [X/Fe] against the neighbourhood's median in cells of 500 K by 0.1 dex of [Fe/H] (0.1 dex of [Fe/H] alone where a cell holds fewer than 20 stars), which takes up the analyses' own dependence on temperature, and the robust scatter about it; an element more than DEPTH scatters off the trend is anomalous, and a star anomalous in two elements or more is read for one nucleosynthetic channel (every anomaly of one sign within one group: lithium and the elements giants mix, C, N, O and Na; the alpha elements; the odd-Z elements; the iron peak; the s-process elements Sr, Y, Zr, Ba, La, Ce and Nd, which mass transfer from an AGB companion brings; the r-process elements Eu and Sm), as natural populations and mass transfer give, for anomalies of one sign across three channels or more, which an error in the star's own iron abundance gives, since it shifts every ratio to iron together, and for an alpha or iron-peak ratio more than 1 dex off the trend, which no FGK dwarf holds and a catalogue value does; stars below [Fe/H] -1, where the trend is thin, are left out, and a star whose anomalies cross the channels with both signs is a composition no single process makes.
+
+    python -I seti.py neighbourhood chemistry [record] [--min-stars 500] [--depth 6]"""
+
+CHEMISTRY_API = "https://www.hypatiacatalog.com/hypatia/api/v2/data?xaxis1=%s"
+CHEMISTRY_GROUPS = {"light": ("li", "c", "n", "o", "na"), "alpha": ("o", "mg", "si", "s", "ca", "ti"), "odd-Z": ("na", "al", "k", "sc", "v", "cu"),
+                    "iron peak": ("cr", "mn", "co", "ni", "zn"), "s-process": ("sr", "y", "zr", "ba", "la", "ce", "nd"), "r-process": ("eu", "sm", "nd")}
+
+
+def chemistry_element(el, prop=False):
+    """The Hypatia Catalog's [X/H] of every star with element EL (by its lowercase symbol), or with PROP a stellar property (teff, logg, dist), from the API into the data cache: star name to value."""
+    path = core.data("hypatia", "%s.json" % el)
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        raw = core.get(CHEMISTRY_API % (el if prop else el + "&xaxis2=h"), timeout=300)
+        open(path, "wb").write(raw)
+    js = json.load(open(path, encoding="utf-8"))
+    return {v["name"]: float(v["xaxis"]) for v in js.get("values") or [] if v.get("xaxis") is not None}
+
+
+def chemistry_main(record=False, min_stars=500, depth=6.0):
+    teff, logg = chemistry_element("teff", prop=True), chemistry_element("logg", prop=True)
+    fe = {n: v for n, v in chemistry_element("fe").items() if n in teff and n in logg and 4500 <= teff[n] < 6500 and logg[n] >= 3.5}
+    elements = sorted({e for g in CHEMISTRY_GROUPS.values() for e in g})
+    trend, used = {}, []
+    anomalies = {}
+    for el in elements:
+        xh = chemistry_element(el)
+        common = [n for n in xh if n in fe]
+        if len(common) < min_stars:
+            continue
+        used.append((el, len(common)))
+        feh = np.array([fe[n] for n in common])
+        tt = np.array([teff[n] for n in common])
+        xfe = np.array([xh[n] - fe[n] for n in common])
+        edges = np.arange(-1.0, 0.71, 0.1)
+        cells = {}
+        for k in range(len(edges) - 1):
+            s = (feh >= edges[k]) & (feh < edges[k + 1])
+            if s.sum() >= 20:
+                cells[(k, None)] = (float(np.median(xfe[s])), float(core.robust_sigma(xfe[s])))
+            for t0 in range(4500, 6500, 500):
+                st = s & (tt >= t0) & (tt < t0 + 500)
+                if st.sum() >= 20:
+                    cells[(k, t0)] = (float(np.median(xfe[st])), float(core.robust_sigma(xfe[st])))
+        trend[el] = cells
+        for n, f, t, x in zip(common, feh, tt, xfe):
+            if f < -1.0:
+                continue
+            k = int((f - edges[0]) // 0.1)
+            m = cells.get((k, int(t // 500 * 500))) or cells.get((k, None))
+            if m and m[1] > 0:
+                z = (x - m[0]) / m[1]
+                if abs(z) > depth:
+                    anomalies.setdefault(n, {})[el] = (round(float(z), 1), round(float(x - m[0]), 2))
+    stars = []
+    for n, both in anomalies.items():
+        if len(both) < 2:
+            continue
+        real = {e: v[0] for e, v in both.items()}
+        signs = {np.sign(z) for z in real.values()}
+        channel = next((g for g, els in CHEMISTRY_GROUPS.items() if set(real) <= set(els) and len(signs) == 1), "")
+        groups = {g for g, els in CHEMISTRY_GROUPS.items() for e in real if e in els}
+        wild = [e for e, v in both.items() if abs(v[1]) > 1.0 and (e in CHEMISTRY_GROUPS["alpha"] or e in CHEMISTRY_GROUPS["iron peak"])]
+        stars.append(dict(name=n, feh=fe.get(n), teff=teff.get(n), logg=logg.get(n), anomalies=real, dex={e: v[1] for e, v in both.items()}, channel=channel,
+                          vet="abundance-pattern" if channel else "published-solution" if len(signs) == 1 and len(groups) >= 3 else "artefact" if wild else None))
+    left = [s for s in stars if s["vet"] is None]
+    count = lambda k: sum(s["vet"] == k for s in stars)
+    by = {}
+    for s in stars:
+        if s["channel"]:
+            by[s["channel"]] = by.get(s["channel"], 0) + 1
+    print("Hypatia FGK dwarfs with [Fe/H]: %d, %d of them at -1 or above; elements with %d stars or more: %s; stars anomalous by %g scatters in two elements or more: %d: "
+          "one nucleosynthetic channel %d (%s), one sign across three channels or more %d, a ratio no FGK dwarf holds %d; unexplained %d" % (
+              len(fe), sum(v >= -1.0 for v in fe.values()), min_stars, ", ".join("%s %d" % u for u in used), depth, len(stars), count("abundance-pattern"),
+              ", ".join("%s %d" % kv for kv in sorted(by.items())), count("published-solution"), count("artefact"), len(left)))
+    for s in sorted(stars, key=lambda s: (s["vet"] is not None, -len(s["anomalies"])))[:40]:
+        print("  %s: Teff %s, log g %s, [Fe/H] %s, %s; %s" % (s["name"], s["teff"], s["logg"], s["feh"], ", ".join("[%s/Fe] %+.1f" % (e.capitalize(), z) for e, z in sorted(s["anomalies"].items())) or "-",
+                                          (s["vet"] or "unexplained") + (" (%s)" % s["channel"] if s["channel"] else "")))
+    json.dump(dict(used=used, stars=stars), open(core.results("unusual_chemistry.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "hypatia_unusual_chemistry", "Unusual chemistry in the solar neighbourhood", "Hypatia Catalog (its own API)",
+            "Hypatia FGK dwarfs with [Fe/H] of -1 or more: %d, over %d elements" % (sum(v >= -1.0 for v in fe.values()), len(used)), os.path.abspath(__file__), "chemistry", sum(v >= -1.0 for v in fe.values()), "stars",
+            dict(min_stars=min_stars, depth=depth), "each element's median [X/Fe] in cells of 500 K by 0.1 dex of [Fe/H] and the robust scatter about it",
+            "a star more than %g scatters off the trend in two elements or more across nucleosynthetic channels with both signs" % depth,
+            "%d stars anomalous in two elements or more: %d in one channel, %d of one sign across three channels, %d with a ratio no FGK dwarf holds; %d unexplained" % (
+                len(stars), count("abundance-pattern"), count("published-solution"), count("artefact"), len(left)),
+            [dict(target="hypatia:%s" % " ".join(s["name"].split()), stat=len(s["anomalies"]), unit="elements off the trend", vet=s["vet"],
+                  note="[Fe/H] %s; %s%s" % (s["feh"], ", ".join("[%s/Fe] %+.1f sigma" % (e.capitalize(), z) for e, z in sorted(s["anomalies"].items())) or "-",
+                                            "; %s" % s["channel"] if s["channel"] else "")) for s in stars])
+        print("recorded")
+
+
+uvmissing_DOC = r"""Sun-like neighbours missing ultraviolet light: Gaia DR3's single G dwarfs within 100 pc (BP-RP 0.75-0.95, absolute G 4.0-5.6, RUWE below 1.4) at G 9-11, where GALEX's near-ultraviolet count rates stay linear, each matched in GALEX's catalogue at MAST within 5 arcsec of its position carried to 2007 by its proper motion, the detection away from the field's edge (within 0.55 deg of its centre) with no artefact flag and an NUV error below 0.1 mag; each star's NUV - G against the trend in BP-RP (a quadratic, fitted robustly) and the scatter below it; a star more than DEPTH scatters fainter than the trend holds less near-ultraviolet light than a photosphere of its colour gives without a chromosphere, and is read for a high metallicity ([M/H] above 0.3 from GSP-Spec or GSP-Phot, whose lines blanket the near ultraviolet), dust (GALEX's own E(B-V) above 0.05), and a match more than 2 arcsec off.
+
+    python -I seti.py neighbourhood uvmissing [record] [--depth 5] [--workers 4]"""
+
+
+def uvmissing_galex(ra, dec, radius_arcsec=5.0):
+    """GALEX catalogue sources at MAST within RADIUS_ARCSEC of a position, nearest first, kept in the data cache."""
+    import hashlib
+    import urllib.parse
+    req = {"service": "Mast.Galex.Catalog", "params": {"ra": round(ra, 6), "dec": round(dec, 6), "radius": radius_arcsec / 3600.0}, "format": "json"}
+    q = json.dumps(req, sort_keys=True)
+    path = core.data("galex_cones", hashlib.sha1(q.encode()).hexdigest()[:24] + ".json")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    js = json.loads(core.get("https://mast.stsci.edu/api/v0/invoke?request=" + urllib.parse.quote(q), timeout=120))
+    rows = sorted(js.get("data") or [], key=lambda d: d.get("distance_arcmin") or 0)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rows, f)
+    return rows
+
+
+def uvmissing_sample(workers=4):
+    """The single G dwarfs within 100 pc at G 9-11 and those with a clean GALEX NUV detection, each with NUV - G against the robust quadratic in BP-RP: (stars, rows, trend, scatter below, scatter above)."""
+    from concurrent.futures import ThreadPoolExecutor
+    stars = core.tap_async("gaia", "SELECT g.source_id, g.ra, g.dec, g.pmra, g.pmdec, g.parallax, g.phot_g_mean_mag, g.bp_rp, g.ruwe, a.mh_gspspec, a.mh_gspphot "
+                                   "FROM gaiadr3.gaia_source AS g LEFT JOIN gaiadr3.astrophysical_parameters AS a ON a.source_id = g.source_id WHERE g.parallax > 10 "
+                                   "AND g.bp_rp BETWEEN 0.75 AND 0.95 AND g.phot_g_mean_mag BETWEEN 9 AND 11 AND g.ruwe < 1.4 "
+                                   "AND g.phot_g_mean_mag + 5 * LOG10(g.parallax / 100) BETWEEN 4.0 AND 5.6", maxrec=50000)
+
+    def one(r):
+        ra, dec = catalogues.carried(float(r["ra"]), float(r["dec"]), num(r["pmra"]) or 0.0, num(r["pmdec"]) or 0.0, 2007.0 - 2016.0)
+        hits = [d for d in uvmissing_galex(ra, dec) if d.get("nuv_mag") not in (None, "") and float(d["nuv_mag"]) > 0]
+        return r, hits[0] if hits else None
+    with ThreadPoolExecutor(workers) as ex:
+        got = list(ex.map(one, stars))
+    rows = []
+    for r, d in got:
+        if d is None or (d.get("nuv_artifact") or 0) != 0 or (d.get("fov_radius") or 1.0) > 0.55 or (d.get("nuv_magerr") or 1.0) >= 0.1:
+            continue
+        rows.append(dict(source_id=str(r["source_id"]), G=float(r["phot_g_mean_mag"]), bprp=float(r["bp_rp"]), nuv=float(d["nuv_mag"]), enuv=float(d["nuv_magerr"]),
+                         fuv=num(d.get("fuv_mag")) if (num(d.get("fuv_mag")) or 0) > 0 else None, ebv=num(d.get("e_bv")), sep=60 * float(d.get("distance_arcmin") or 0), mh=num(r["mh_gspspec"]) or num(r["mh_gspphot"]),
+                         survey=str(d.get("survey") or "")))
+    x, y = np.array([o["bprp"] for o in rows]), np.array([o["nuv"] - o["G"] for o in rows])
+    keep = np.ones(len(x), bool)
+    for _ in range(5):
+        c = np.polyfit(x[keep], y[keep], 2)
+        res = y - np.polyval(c, x)
+        sig = float(core.robust_sigma(res[keep]))
+        keep = np.abs(res) < 4 * sig
+    low = 1.4826 * float(np.median(np.abs(res[res < 0])))
+    high = 1.4826 * float(np.median(res[res > 0]))
+    for o, rr in zip(rows, res):
+        o["res"] = float(rr)
+    return stars, rows, c, low, high
+
+
+def uvmissing_main(record=False, depth=5.0, workers=4):
+    stars, rows, c, low, high = uvmissing_sample(workers)
+    faint = []
+    for o in rows:
+        rr = o["res"]
+        if rr > depth * high:
+            o["vet"] = ("metal-rich" if (o["mh"] or 0) > 0.3 else "interstellar" if (o["ebv"] or 0) > 0.05 else "misidentified" if o["sep"] > 2.0 else None)
+            faint.append(o)
+    left = [o for o in faint if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in faint)
+    print("G dwarfs within 100 pc at G 9-11: %d; with a clean GALEX NUV detection: %d; NUV - G trend %s, scatter below %.3f and above %.3f mag; fainter by %g scatters "
+          "or more: %d: metal-rich %d, dust %d, a match off by more than 2 arcsec %d; unexplained %d" % (
+              len(stars), len(rows), [round(float(v), 3) for v in c], low, high, depth, len(faint), count("metal-rich"), count("interstellar"),
+              count("misidentified"), len(left)))
+    for o in sorted(faint, key=lambda o: -o["res"]):
+        print("  Gaia DR3 %s: G %.2f, BP-RP %.3f, NUV %.2f +- %.2f (%s), FUV %s, NUV - G %.2f above the trend by %.2f mag; [M/H] %s, E(B-V) %s, match at %.1f arcsec; %s" % (
+            o["source_id"], o["G"], o["bprp"], o["nuv"], o["enuv"], o["survey"], o["fuv"], o["nuv"] - o["G"], o["res"], o["mh"], o["ebv"], o["sep"], o["vet"] or "unexplained"))
+    json.dump(dict(trend=list(map(float, c)), faint=faint), open(core.results("uv_missing.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "galex_sunlike_missing_uv", "Sun-like neighbours missing ultraviolet light", "Gaia DR3 (Gaia archive); GALEX catalogue (MAST)",
+            "single G dwarfs within 100 pc at G 9-11 with a clean GALEX NUV detection: %d" % len(rows), os.path.abspath(__file__), "uvmissing", len(rows), "stars",
+            dict(depth=depth), "NUV - G against a robust quadratic in BP-RP; the scatter above it %.3f mag" % high, "a star %g scatters fainter in NUV than the trend" % depth,
+            "%d: %d metal-rich, %d behind dust, %d matched off; %d unexplained" % (len(faint), count("metal-rich"), count("interstellar"), count("misidentified"),
+                                                                                  len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["res"], 3), unit="mag fainter in NUV than the trend", vet=o["vet"],
+                  note="NUV %.2f +- %.2f, G %.2f, BP-RP %.3f, [M/H] %s, E(B-V) %s" % (o["nuv"], o["enuv"], o["G"], o["bprp"], o["mh"], o["ebv"])) for o in faint])
+        print("recorded")
+
+
+wdmass_DOC = r"""White dwarfs lighter than any star leaves: the Gaia Catalogue of Nearby Stars' white dwarfs within 100 pc (white-dwarf probability above 0.75), each one's mass read from its absolute G and BP-RP against the Montreal cooling tracks of pure-hydrogen white dwarfs of 0.2-1.3 solar masses (Bedard et al. 2020, their Gaia EDR3 synthetic photometry), interpolated in mass at the star's colour; a white dwarf below MASS solar masses is lighter than a single star leaves in the age of the Galaxy, and is read for an unresolved pair of white dwarfs (overluminous by no more than 0.75 mag against the 0.6 solar-mass track, the light of two), a companion in Gaia's astrometry (RUWE above 1.4 or a non-single-star solution), BP and RP photometry contaminated by a neighbour (the excess factor above 1.5), a temperature below 5000 K, where the hydrogen and helium tracks part and the colours stop fixing the mass, and a star brighter than the 0.2 solar-mass track at its colour, which no track weighs; those that remain stand brighter than a pair of 0.6 solar-mass white dwarfs would.
+
+    python -I seti.py neighbourhood wdmass [record] [--mass 0.45] [--prob 0.75]"""
+
+WDMASS_TABLE = "https://www.astro.umontreal.ca/~bergeron/CoolingModels/Tables/Table_Mass_%.1f"
+
+
+def wdmass_tracks():
+    """The Montreal pure-hydrogen cooling tracks: mass to rows of (Teff, BP-RP, absolute G) in Gaia EDR3 bands, sorted by colour, kept in the data cache."""
+    out = {}
+    for m in np.arange(0.2, 1.31, 0.1):
+        path = core.data("wd_tracks", "Table_Mass_%.1f" % m)
+        if not os.path.exists(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            open(path, "wb").write(core.get(WDMASS_TABLE % m, timeout=120))
+        rows = []
+        for line in open(path, encoding="latin-1"):
+            t = line.split()
+            if len(t) >= 43 and num(t[0]) is not None and num(t[37]) is not None:
+                rows.append((float(t[0]), float(t[38]) - float(t[39]), float(t[37])))
+        out[round(float(m), 1)] = sorted(rows, key=lambda r: r[1])
+    return out
+
+
+def wdmass_mass(c, mg, tracks):
+    """A white dwarf's mass from its BP-RP C and absolute G MG between the tracks, and its temperature on the nearest track: (mass, Teff), mass below 0.2 or above 1.3 left at the end."""
+    pts = []
+    for m, rows in sorted(tracks.items()):
+        cs = np.array([r[1] for r in rows])
+        if not cs[0] <= c <= cs[-1]:
+            continue
+        pts.append((m, float(np.interp(c, cs, [r[2] for r in rows])), float(np.interp(c, cs, [r[0] for r in rows]))))
+    if len(pts) < 2:
+        return None, None
+    ms, gs, ts = np.array([p[0] for p in pts]), np.array([p[1] for p in pts]), np.array([p[2] for p in pts])
+    order = np.argsort(gs)
+    return float(np.interp(mg, gs[order], ms[order])), float(np.interp(mg, gs[order], ts[order]))
+
+
+def wdmass_main(record=False, mass=0.45, prob=0.75):
+    tracks = wdmass_tracks()
+    wds = core.tap_async("gaia", "SELECT n.source_id, n.phot_g_mean_mag, n.phot_bp_mean_mag, n.phot_rp_mean_mag, n.dist_50, n.wd_prob, g.ruwe, g.non_single_star, "
+                                 "g.phot_bp_rp_excess_factor FROM %s AS n JOIN gaiadr3.gaia_source AS g ON g.source_id = n.source_id WHERE n.wd_prob > %g "
+                                 "AND n.gcns_prob > 0.38" % (catalogues.GCNS, prob), maxrec=100000)
+    six = np.array([r[1] for r in tracks[0.6]]), np.array([r[2] for r in tracks[0.6]])
+    weighed, light = 0, []
+    for r in wds:
+        G, B, R, d = num(r["phot_g_mean_mag"]), num(r["phot_bp_mean_mag"]), num(r["phot_rp_mean_mag"]), num(r["dist_50"])
+        if None in (G, B, R) or not d:
+            continue
+        c, mg = B - R, G - 5 * math.log10(d * 100.0)
+        m, t = wdmass_mass(c, mg, tracks)
+        if m is None:
+            continue
+        weighed += 1
+        if m >= mass:
+            continue
+        over = float(np.interp(c, six[0], six[1])) - mg if six[0][0] <= c <= six[0][-1] else None
+        o = dict(source_id=str(r["source_id"]), G=G, bprp=c, MG=mg, dist=1000 * d, mass=m, teff=t, over=over, ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0),
+                 excess=num(r["phot_bp_rp_excess_factor"]), pwd=num(r["wd_prob"]))
+        o["vet"] = ("binary" if (o["ruwe"] or 0) > 1.4 or o["nss"] else
+                    "blend" if (o["excess"] or 0) > 1.5 else
+                    "outside-selection" if (t or 0) < 5000 else
+                    "binary" if over is not None and over <= 0.75 else
+                    "fit-boundary" if m <= 0.2001 else None)
+        light.append(o)
+    left = [o for o in light if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in light)
+    elm = [o for o in left if o["mass"] < 0.3]
+    print("GCNS white dwarfs within 100 pc at probability above %g: %d, weighed on the tracks %d; below %g solar masses: %d: a companion in Gaia's astrometry or an "
+          "unresolved pair of white dwarfs %d, contaminated colours %d, cooler than 5000 K %d, brighter than the lightest track %d; left, overluminous beyond a pair %d, "
+          "%d of them below 0.3 solar masses" % (prob, len(wds), weighed, mass, len(light), count("binary"), count("blend"), count("outside-selection"),
+                                                 count("fit-boundary"), len(left), len(elm)))
+    for o in sorted(light, key=lambda o: (o["vet"] is not None, o["mass"]))[:40]:
+        print("  Gaia DR3 %s: %.1f pc, G %.2f, BP-RP %.3f, M_G %.2f, mass %.3f, Teff %.0f, over the 0.6 track by %s mag, RUWE %s, NSS %d, excess %s; %s" % (
+            o["source_id"], o["dist"], o["G"], o["bprp"], o["MG"], o["mass"], o["teff"] or 0, "%.2f" % o["over"] if o["over"] is not None else "-", o["ruwe"], o["nss"],
+            "%.2f" % o["excess"] if o["excess"] else "-", o["vet"] or "unexplained"))
+    json.dump(light, open(core.results("light_white_dwarfs.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcns_light_white_dwarfs", "White dwarfs lighter than any star leaves", "Gaia Catalogue of Nearby Stars (Gaia archive); Montreal cooling tracks (Bedard et al. 2020)",
+            "GCNS white dwarfs within 100 pc weighed on the tracks: %d" % weighed, os.path.abspath(__file__), "wdmass", weighed, "white dwarfs",
+            dict(mass=mass, prob=prob), "the pure-hydrogen tracks of 0.2-1.3 solar masses in Gaia EDR3's bands", "a white dwarf below %g solar masses" % mass,
+            "%d: %d with a companion or a pair's light, %d with contaminated colours, %d cooler than 5000 K, %d brighter than the lightest track; %d unexplained, "
+            "%d below 0.3 solar masses" % (len(light), count("binary"), count("blend"), count("outside-selection"), count("fit-boundary"), len(left), len(elm)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["mass"], 3), unit="solar masses on the hydrogen tracks", vet=o["vet"],
+                  note="%.1f pc, BP-RP %.3f, M_G %.2f, Teff %.0f, over the 0.6 track %s mag" % (o["dist"], o["bprp"], o["MG"], o["teff"] or 0,
+                                                                                            "%.2f" % o["over"] if o["over"] is not None else "-")) for o in light])
+        print("recorded")
+
+
+twins_DOC = r"""Twins that do not match: wide binaries of the Gaia Catalogue of Nearby Stars within 100 pc (pairs within 120 arcsec and SEP_AU in projection whose parallaxes agree within 3 joint errors and whose proper motions differ by less than the orbital speed a circular orbit of 5 solar masses gives at that separation, with a 0.5 km/s floor), twins among them (G within 0.1 mag, both within 1.5 mag of the dwarf sequence in absolute G at their colours), which share birth, age and composition; each twin pair compared in Gaia's own measurements, the radial velocity (more than 5 joint errors and 3 km/s apart), the metallicity from GSP-Spec (more than 5 joint errors and 0.15 dex apart), the Ca II activity index (more than 0.05 nm apart) and the colour (BP-RP more than 0.05 mag from what the main sequence's slope gives across the twins' G, where both twins' BP and RP fluxes reach 50 times their errors), and each disagreement read for a pair closer than 5 arcsec, whose light falls in each other's BP, RP and RVS windows, a colour from BP or RP transits Gaia counts as blended in a tenth or more or with a BP and RP flux excess three of its scatters from what its colour gives (C*, Riello et al. 2021), a third Gaia source within 3 arcsec of either twin and 4 mag of it, an unresolved companion of one twin (RUWE above 1.4, a non-single-star solution, or radial velocities that vary), an RVS spectrum of signal-to-noise below 30, and GSP-Spec's own flags on its parameters, a colour difference beside a twin Gaia flags variable, as spots shift a star's colour, and a colour difference whose redder twin stands no more than 0.9 mag higher above the dwarf sequence than its sibling, which an unresolved companion of the redder twin gives (two equal stars stand 0.75 mag above it).
+
+    python -I seti.py neighbourhood twins [record] [--sep-au 10000] [--dg 0.1]"""
+
+
+def twins_excess(X):
+    """A source's BP and RP flux excess over G against what its colour gives, in its own scatter at its G (Riello et al. 2021, the corrected factor C*), or 0."""
+    c, x, g = num(X["phot_bp_rp_excess_factor"]), num(X["bp_rp"]), num(X["phot_g_mean_mag"])
+    if None in (c, x, g):
+        return 0.0
+    f = (1.154360 + 0.033772 * x + 0.032277 * x * x if x < 0.5 else 1.162004 + 0.011464 * x + 0.049255 * x * x - 0.005879 * x ** 3 if x < 4.0 else 1.057572 + 0.140537 * x)
+    return abs(c - f) / (0.0059898 + 8.817481e-12 * g ** 7.618399)
+
+
+def twins_main(record=False, sep_au=10000.0, dg=0.1):
+    from scipy.spatial import cKDTree
+    rows = [r for r in catalogues.gcns("source_id, ra, dec, parallax, parallax_error, pmra, pmdec, phot_g_mean_mag", where="gcns_prob > 0.38", ranges=8)
+            if None not in (num(r["parallax"]), num(r["pmra"]), num(r["pmdec"]), num(r["phot_g_mean_mag"]))]
+    ra, dec = np.radians([float(r["ra"]) for r in rows]), np.radians([float(r["dec"]) for r in rows])
+    xyz = np.stack([np.cos(dec) * np.cos(ra), np.cos(dec) * np.sin(ra), np.sin(dec)], axis=1)
+    pairs = cKDTree(xyz).query_pairs(2 * math.sin(math.radians(120 / 3600.0) / 2))
+    bound = []
+    for i, j in pairs:
+        A, B = rows[i], rows[j]
+        pa, pb, ea, eb = (num(X[k]) for X, k in ((A, "parallax"), (B, "parallax"), (A, "parallax_error"), (B, "parallax_error")))
+        ga, gb = num(A["phot_g_mean_mag"]), num(B["phot_g_mean_mag"])
+        if abs(ga - gb) >= dg or pa <= 0 or abs(pa - pb) > 3 * math.hypot(ea or 1, eb or 1):
+            continue
+        sep = core.sep_arcsec(float(A["ra"]), float(A["dec"]), float(B["ra"]), float(B["dec"]))
+        au = sep * 1000.0 / pa
+        if au > sep_au:
+            continue
+        dv = 4.74 * math.hypot(num(A["pmra"]) - num(B["pmra"]), num(A["pmdec"]) - num(B["pmdec"])) / pa
+        vorb = max(0.5, 29.78 * math.sqrt(5.0 / au))
+        if dv <= vorb:
+            bound.append(dict(a=str(A["source_id"]), b=str(B["source_id"]), au=au, dv=dv, ga=ga, gb=gb, plx=pa))
+    ids = sorted({x for p in bound for x in (p["a"], p["b"])})
+    info = core.tap_by_ids("gaia", ids, "SELECT g.source_id, g.radial_velocity, g.radial_velocity_error, g.rv_chisq_pvalue, g.rv_renormalised_gof, g.rvs_spec_sig_to_noise, "
+                                        "g.ruwe, g.non_single_star, g.bp_rp, g.phot_g_mean_mag, g.phot_variable_flag, g.phot_bp_n_blended_transits, g.phot_rp_n_blended_transits, g.phot_bp_n_obs, g.phot_rp_n_obs, "
+                                        "g.phot_bp_mean_flux_over_error, g.phot_rp_mean_flux_over_error, g.phot_bp_rp_excess_factor, a.mh_gspspec, a.mh_gspspec_lower, a.mh_gspspec_upper, "
+                                        "a.flags_gspspec, "
+                                        "a.activityindex_espcs FROM gaiadr3.gaia_source AS g LEFT JOIN gaiadr3.astrophysical_parameters AS a ON a.source_id = g.source_id "
+                                        "WHERE g.source_id IN (%s)") if ids else {}
+    seq = sorted((s["bprp"], s["mv"] - (0.02704 - 0.01424 * s["bprp"] + 0.2156 * s["bprp"] ** 2 - 0.01426 * s["bprp"] ** 3)) for s in catalogues.dwarf_sequence()
+                 if s["bprp"] is not None and s["mv"] is not None)
+    sx, sg = np.array([q[0] for q in seq]), np.array([q[1] for q in seq])
+
+    def dwarf(X, plx):
+        """Whether a twin lies within 1.5 mag of the dwarf sequence in absolute G at its colour."""
+        c, g = num(X["bp_rp"]), num(X["phot_g_mean_mag"])
+        return c is not None and g is not None and sx[0] <= c <= sx[-1] and abs(g + 5 * math.log10(plx / 100.0) - float(np.interp(c, sx, sg))) <= 1.5
+    odd = []
+    tested = dict(rv=0, mh=0, act=0, colour=0, dwarfs=0)
+    for p in bound:
+        A, B = info.get(p["a"]), info.get(p["b"])
+        if not A or not B or not dwarf(A, p["plx"]) or not dwarf(B, p["plx"]):
+            continue
+        tested["dwarfs"] += 1
+        diffs = []
+        va, vb = num(A["radial_velocity"]), num(B["radial_velocity"])
+        if va is not None and vb is not None:
+            tested["rv"] += 1
+            e = math.hypot(num(A["radial_velocity_error"]) or 1, num(B["radial_velocity_error"]) or 1)
+            if abs(va - vb) > max(5 * e, 3.0):
+                diffs.append("RV %+.1f km/s" % (va - vb))
+        ma, mb = num(A["mh_gspspec"]), num(B["mh_gspspec"])
+        if ma is not None and mb is not None:
+            tested["mh"] += 1
+            ea = ((num(A["mh_gspspec_upper"]) or ma) - (num(A["mh_gspspec_lower"]) or ma)) / 2
+            eb = ((num(B["mh_gspspec_upper"]) or mb) - (num(B["mh_gspspec_lower"]) or mb)) / 2
+            if abs(ma - mb) > max(5 * math.hypot(ea, eb), 0.15):
+                diffs.append("[M/H] %+.2f" % (ma - mb))
+        aa, ab = num(A["activityindex_espcs"]), num(B["activityindex_espcs"])
+        if aa is not None and ab is not None:
+            tested["act"] += 1
+            if abs(aa - ab) > 0.05:
+                diffs.append("activity %+.3f nm" % (aa - ab))
+        ca, cb = num(A["bp_rp"]), num(B["bp_rp"])
+        sharp = all((num(X["phot_%s_mean_flux_over_error" % k]) or 0) >= 50 for X in (A, B) for k in ("bp", "rp"))
+        if ca is not None and cb is not None and sharp:
+            tested["colour"] += 1
+            # along the main sequence a twin 0.1 mag fainter in G is about 0.04 mag redder
+            if abs((ca - cb) - (num(A["phot_g_mean_mag"]) - num(B["phot_g_mean_mag"])) / 2.5) > 0.05:
+                diffs.append("BP-RP %+.3f" % (ca - cb))
+        if not diffs:
+            continue
+
+        def double(X):
+            """Whether a twin shows a companion of its own in Gaia's astrometry or radial velocities."""
+            return (num(X["ruwe"]) or 0) > 1.4 or int(num(X["non_single_star"]) or 0) > 0 or ((num(X["rv_chisq_pvalue"]) is not None and num(X["rv_chisq_pvalue"]) < 0.01)
+                                                                                           and (num(X["rv_renormalised_gof"]) or 0) > 4)
+        flags = (str(A["flags_gspspec"] or "")[:13] + str(B["flags_gspspec"] or "")[:13]).strip("0")
+        lowsn = any(d.startswith(("RV", "[M/H]", "activity")) for d in diffs) and min(num(A["rvs_spec_sig_to_noise"]) or 0, num(B["rvs_spec_sig_to_noise"]) or 0) < 30
+        sep = p["au"] * p["plx"] / 1000.0
+        blended = (any((num(X["phot_%s_n_blended_transits" % k]) or 0) > 0.1 * (num(X["phot_%s_n_obs" % k]) or 1) for X in (A, B) for k in ("bp", "rp"))
+                   or any(twins_excess(X) > 3 for X in (A, B)))
+        vet = ("blend" if sep < 5.0 or (blended and any(d.startswith("BP-RP") for d in diffs)) else "binary" if double(A) or double(B) else "not-measured" if lowsn else
+               "published-solution" if flags and any(d.startswith("[M/H]") for d in diffs) else
+               "chromatic" if any(str(X["phot_variable_flag"]) == "VARIABLE" for X in (A, B)) and all(d.startswith("BP-RP") for d in diffs) else None)
+        if vet is None and any(d.startswith("BP-RP") for d in diffs):
+            # a third source inside one twin's BP and RP windows, a close companion or a neighbour on the sky
+            for X, other in ((A, p["b"]), (B, p["a"])):
+                near = core.tap("gaia", "SELECT g.source_id FROM gaiadr3.gaia_source AS g, gaiadr3.gaia_source AS t WHERE t.source_id = %s AND g.source_id <> %s "
+                                        "AND g.source_id <> %s AND 1 = CONTAINS(POINT('ICRS', g.ra, g.dec), CIRCLE('ICRS', t.ra, t.dec, %g)) AND g.phot_g_mean_mag < %g"
+                                        % (X["source_id"], X["source_id"], other, 3 / 3600.0, num(X["phot_g_mean_mag"]) + 4))
+                if near:
+                    vet = "blend"
+                    break
+        lifted = None
+        if vet is None and all(d.startswith("BP-RP") for d in diffs):
+            # at one G the redder twin stands above the sequence by what its colour gives, and an unresolved pair of stars stands up to 0.75 mag above it
+            h = sorted((num(X["bp_rp"]), float(np.interp(num(X["bp_rp"]), sx, sg)) - num(X["phot_g_mean_mag"]) - 5 * math.log10(p["plx"] / 100.0)) for X in (A, B))
+            if 0 < h[1][1] - h[0][1] <= 0.9:
+                vet, lifted = "binary", h[1][1] - h[0][1]
+        odd.append(dict(p, diffs=diffs, vet=vet, lifted=lifted))
+    left = [o for o in odd if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in odd)
+    print("GCNS pairs within 120 arcsec: %d; bound pairs at G within %g mag within %g au: %d, both dwarfs %d; compared in RV %d, [M/H] %d, activity %d, colour %d; twins that disagree: %d: "
+          "a pair inside Gaia's windows %d, a companion of one twin %d (%d by the redder twin's height above the sequence), low signal-to-noise %d, GSP-Spec's flags %d, a variable twin's colour %d; "
+          "unexplained %d" % (
+              len(pairs), dg, sep_au, len(bound), tested["dwarfs"], tested["rv"], tested["mh"], tested["act"], tested["colour"], len(odd), count("blend"), count("binary"),
+              sum(o["lifted"] is not None for o in odd), count("not-measured"), count("published-solution"), count("chromatic"), len(left)))
+    for o in sorted(odd, key=lambda o: (o["vet"] is not None, -len(o["diffs"])))[:40]:
+        print("  Gaia DR3 %s and %s: %.0f au, dv %.2f km/s, G %.2f and %.2f, %.1f pc; %s%s; %s" % (o["a"], o["b"], o["au"], o["dv"], o["ga"], o["gb"], 1000 / o["plx"],
+                                                                                         ", ".join(o["diffs"]), "; the redder twin %.2f mag higher above the sequence" % o["lifted"]
+                                                                                         if o["lifted"] is not None else "", o["vet"] or "unexplained"))
+    json.dump(dict(tested=tested, odd=odd), open(core.results("wide_twins.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcns_wide_twins_disagree", "Twins that do not match", "Gaia Catalogue of Nearby Stars and Gaia DR3 (Gaia archive)",
+            "bound wide twins within 100 pc: %d" % len(bound), os.path.abspath(__file__), "twins", len(bound), "pairs", dict(sep_au=sep_au, dg=dg),
+            "a twin's own sibling, born with it", "twins apart in radial velocity, metallicity, activity or colour beyond their errors",
+            "%d dwarf twins; %d disagree: %d pairs inside Gaia's windows, %d with a companion of one twin (%d by the redder twin's height above the sequence), %d of low "
+            "signal-to-noise, %d flagged by GSP-Spec, %d a variable twin's colour; %d unexplained" % (tested["dwarfs"], len(odd), count("blend"), count("binary"),
+                                                                                    sum(o["lifted"] is not None for o in odd), count("not-measured"),
+                                                                                    count("published-solution"), count("chromatic"), len(left)),
+            [dict(target="gaia_dr3:%s#%s" % (o["a"], o["b"]), stat=len(o["diffs"]), unit="properties apart", vet=o["vet"],
+                  note="%.0f au, %.1f pc; %s%s" % (o["au"], 1000 / o["plx"], ", ".join(o["diffs"]), "; the redder twin %.2f mag higher above the sequence" % o["lifted"]
+                                                     if o["lifted"] is not None else "")) for o in odd])
+        print("recorded")
+
+
+uvexcess_DOC = r"""Ultraviolet light without an apparent cause: the sample of the missing-ultraviolet test, Gaia DR3's single G dwarfs within 100 pc at G 9-11 with clean GALEX NUV detections at their 2007 places, each star's NUV - G against the trend in BP-RP; a star more than DEPTH scatters brighter than the trend gives more near-ultraviolet light than its photosphere and an ordinary chromosphere do, and is read for a hot companion (an FUV detection with FUV - NUV below 1.5, where a G dwarf's photosphere gives 3 or more), a Gaia neighbour within 6 arcsec no more than 4 mag fainter, whose light falls in GALEX's image of the star, a strong chromosphere (Gaia's Ca II activity index above 0.03 nm), and a companion in Gaia's non-single-star solutions.
+
+    python -I seti.py neighbourhood uvexcess [record] [--depth 5] [--workers 4]"""
+
+
+def uvexcess_main(record=False, depth=5.0, workers=4):
+    stars, rows, c, low, high = uvmissing_sample(workers)
+    bright = [o for o in rows if o["res"] < -depth * low]
+    extra = core.tap_by_ids("gaia", [o["source_id"] for o in bright], "SELECT g.source_id, g.ra, g.dec, g.non_single_star, a.activityindex_espcs FROM gaiadr3.gaia_source AS g "
+                                                                        "LEFT JOIN gaiadr3.astrophysical_parameters AS a ON a.source_id = g.source_id WHERE g.source_id IN (%s)") if bright else {}
+    for o in bright:
+        x = extra.get(o["source_id"], {})
+        o["act"], o["nss"] = num(x.get("activityindex_espcs")), int(num(x.get("non_single_star")) or 0)
+        near = core.tap("gaia", "SELECT source_id, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %s, %s, %g)) "
+                                "AND source_id <> %s AND phot_g_mean_mag < %g" % (x.get("ra"), x.get("dec"), 6 / 3600.0, o["source_id"], o["G"] + 4)) if x else []
+        o["near"] = ["Gaia DR3 %s G %.2f" % (n["source_id"], num(n["phot_g_mean_mag"])) for n in near]
+        o["vet"] = ("white-dwarf" if o["fuv"] and o["fuv"] - o["nuv"] < 1.5 else "blend" if o["near"] else "active-star" if (o["act"] or 0) > 0.03 else
+                    "binary" if o["nss"] else None)
+    left = [o for o in bright if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in bright)
+    print("G dwarfs within 100 pc at G 9-11 with a clean GALEX NUV detection: %d; NUV - G scatter below the trend %.3f mag; brighter by %g scatters or more: %d: a hot companion "
+          "%d, a neighbour in GALEX's image %d, a strong chromosphere %d, a non-single-star solution %d; unexplained %d" % (
+              len(rows), low, depth, len(bright), count("white-dwarf"), count("blend"), count("active-star"), count("binary"), len(left)))
+    for o in sorted(bright, key=lambda o: o["res"]):
+        print("  Gaia DR3 %s: G %.2f, BP-RP %.3f, NUV %.2f +- %.2f, FUV %s, NUV brighter than the trend by %.2f mag; activity %s, NSS %d, neighbours %s; %s" % (
+            o["source_id"], o["G"], o["bprp"], o["nuv"], o["enuv"], o["fuv"], -o["res"], o["act"], o["nss"], ", ".join(o["near"]) or "-", o["vet"] or "unexplained"))
+    json.dump(bright, open(core.results("uv_excess.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "galex_sunlike_uv_excess", "Ultraviolet light without an apparent cause", "Gaia DR3 (Gaia archive); GALEX catalogue (MAST)",
+            "single G dwarfs within 100 pc at G 9-11 with a clean GALEX NUV detection: %d" % len(rows), os.path.abspath(__file__), "uvexcess", len(rows), "stars",
+            dict(depth=depth), "NUV - G against a robust quadratic in BP-RP; the scatter below it %.3f mag" % low, "a star %g scatters brighter in NUV than the trend" % depth,
+            "%d: %d hot companions, %d neighbours in the image, %d strong chromospheres, %d non-single-star solutions; %d unexplained" % (
+                len(bright), count("white-dwarf"), count("blend"), count("active-star"), count("binary"), len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(-o["res"], 3), unit="mag brighter in NUV than the trend", vet=o["vet"],
+                  note="NUV %.2f, FUV %s, G %.2f, BP-RP %.3f, activity %s; neighbours %s" % (o["nuv"], o["fuv"], o["G"], o["bprp"], o["act"], ", ".join(o["near"]) or "-"))
+             for o in bright])
+        print("recorded")
+
+
+seticands_DOC = r"""Every published SETI candidate across the toolkit's own searches: the stars a paper has put forward for a signal, a light curve or an excess no natural explanation then met (Proxima Centauri for BLC1, Sheikh et al. 2021; HD 164595 for the RATAN-600 report of 2016; Ross 128 for the Arecibo signal of 2017; KIC 8462852, Boyajian et al. 2016; Przybylski's star, HD 101065; HD 139139, Rappaport et al. 2019; 2MASS J19281982-2640123 in the Wow! signal's field, Caballero 2022; the five stars of Ma et al. 2023's eight signals of interest; the seven Dyson-sphere candidates of Suazo et al. 2024), each resolved to its Gaia DR3 source through the Gaia archive's own cross-matches (Hipparcos by HIP and HD, Tycho-2, 2MASS), and every row the coverage store holds of it under any of its identifiers read for the search's verdict: a candidate a search flagged and left unexplained (a row without a vet in a search that records only the targets it flags, as opposed to one that records every target it measured, and that the search's own result names) is listed with that search.
+
+    python -I seti.py neighbourhood seticands [record]"""
+
+SETICANDS = (("Proxima Centauri", "BLC1 (Sheikh et al. 2021)", dict(hip=70890)), ("HD 164595", "RATAN-600 report (2016)", dict(hd=164595)),
+             ("Ross 128", "Arecibo signal (2017)", dict(hip=57548)), ("KIC 8462852", "dips (Boyajian et al. 2016)", dict(tyc="3162-665-1", kic=8462852)),
+             ("Przybylski's star", "short-lived elements (HD 101065)", dict(hd=101065)), ("HD 139139", "random transits (Rappaport et al. 2019)", dict(hd=139139, epic=249706694)),
+             ("2MASS J19281982-2640123", "the Wow! signal's field (Caballero 2022)", dict(tmass="19281982-2640123")),
+             ("HIP 13402", "signals of interest (Ma et al. 2023)", dict(hip=13402)), ("HIP 118212", "signals of interest (Ma et al. 2023)", dict(hip=118212)),
+             ("HIP 62207", "signals of interest (Ma et al. 2023)", dict(hip=62207)), ("HIP 54677", "signals of interest (Ma et al. 2023)", dict(hip=54677)),
+             ("HIP 56802", "signals of interest (Ma et al. 2023)", dict(hip=56802)),
+             ("Hephaistos A", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="3496509309189181184")),
+             ("Hephaistos B", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="4843191593270342656")),
+             ("Hephaistos C", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="4649396037451459712")),
+             ("Hephaistos D", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="2660349163149053824")),
+             ("Hephaistos E", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="3190232820489766656")),
+             ("Hephaistos F", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="2956570141274256512")),
+             ("Hephaistos G", "Dyson-sphere candidate (Suazo et al. 2024)", dict(gaia="2644370304260053376")))
+
+
+def seticands_resolve(ids):
+    """A candidate's identifiers completed through the Gaia archive's cross-matches: HD to HIP, HIP, Tycho-2 and 2MASS to Gaia DR3, and Gaia DR3 back to HIP."""
+    ids = dict(ids)
+    if "hd" in ids and "hip" not in ids:
+        r = core.tap("gaia", "SELECT hip FROM public.hipparcos WHERE hd = %d" % ids["hd"])
+        if r:
+            ids["hip"] = int(num(r[0]["hip"]))
+    if "hip" in ids and "gaia" not in ids:
+        r = core.tap("gaia", "SELECT source_id FROM gaiadr3.hipparcos2_best_neighbour WHERE original_ext_source_id = %d" % ids["hip"])
+        if r:
+            ids["gaia"] = str(r[0]["source_id"])
+    if "tyc" in ids and "gaia" not in ids:
+        r = core.tap("gaia", "SELECT source_id FROM gaiadr3.tycho2tdsc_merge_best_neighbour WHERE original_ext_source_id = '%s'" % ids["tyc"])
+        if r:
+            ids["gaia"] = str(r[0]["source_id"])
+    if "tmass" in ids and "gaia" not in ids:
+        r = core.tap("gaia", "SELECT source_id FROM gaiadr3.tmass_psc_xsc_best_neighbour WHERE original_ext_source_id = '%s'" % ids["tmass"])
+        if r:
+            ids["gaia"] = str(r[0]["source_id"])
+    if "gaia" in ids and "hip" not in ids:
+        r = core.tap("gaia", "SELECT original_ext_source_id FROM gaiadr3.hipparcos2_best_neighbour WHERE source_id = %s" % ids["gaia"])
+        if r:
+            ids["hip"] = int(num(r[0]["original_ext_source_id"]))
+    return ids
+
+
+def seticands_main(record=False):
+    db = core.connect()
+    out, subset = [], {}
+    for name, why, ids in SETICANDS:
+        ids = seticands_resolve(ids)
+        keys = (["gaia_dr3:%s" % ids["gaia"]] if "gaia" in ids else []) + (["hip:%d" % ids["hip"], "hip_%d" % ids["hip"]] if "hip" in ids else []) + \
+               (["hd:%d" % ids["hd"]] if "hd" in ids else []) + (["kic:%d" % ids["kic"], "KIC %d" % ids["kic"]] if "kic" in ids else []) + \
+               (["epic:%d" % ids["epic"]] if "epic" in ids else [])
+        rows = {}
+        for k in keys:
+            for r in core.card(k, db):
+                rows[(r[9], r[10])] = r
+        if "gaia" in ids:
+            for r in db.execute("SELECT s.approach, s.archive, s.release, c.stat, c.p, c.upper_limit, c.unit, c.vet, c.note, s.id, c.target FROM coverage c "
+                                "JOIN searches s ON c.search_id = s.id WHERE c.target LIKE ?", ("%" + ids["gaia"] + "%",)):
+                rows[(r[9], r[10])] = r
+        res = sorted(rows.values(), key=lambda r: r[9])
+        # a run that records only the targets it flags leaves its unexplained ones without a vet; one that records every target measured holds measurements
+        for sid in {r[9] for r in res}:
+            if sid not in subset:
+                n_t = db.execute("SELECT n_targets FROM searches WHERE id = ?", (sid,)).fetchone()[0]
+                n_rows = db.execute("SELECT COUNT(*) FROM coverage WHERE search_id = ?", (sid,)).fetchone()[0]
+                subset[sid] = bool(n_t) and n_rows < 0.5 * n_t
+        names = [ids["gaia"]] if "gaia" in ids else []
+        names += ["HIP %d" % ids["hip"]] if "hip" in ids else []
+        names += ["KIC %d" % ids["kic"]] if "kic" in ids else []
+        names += ["HD %d" % ids["hd"]] if "hd" in ids else []
+        names += ["EPIC %d" % ids["epic"]] if "epic" in ids else []
+        named = lambda sid: any(x in (db.execute("SELECT result FROM searches WHERE id = ?", (sid,)).fetchone()[0] or "") for x in names + [name])
+        open_rows = [r for r in res if r[7] is None and r[5] is None and subset[r[9]] and named(r[9])]
+        out.append(dict(name=name, why=why, ids=ids, n=len(res), searches=sorted({r[9] for r in res}), vets=sorted({r[7] for r in res if r[7]}),
+                        open=[dict(search=r[9], target=r[10], stat=r[3], unit=r[6], note=(r[8] or "")[:160]) for r in open_rows]))
+    hit = [o for o in out if o["n"]]
+    print("published SETI candidates: %d; resolved to Gaia DR3: %d; held by the coverage store: %d, in %d rows over %d searches; rows left unexplained: %d" % (
+        len(out), sum("gaia" in o["ids"] for o in out), len(hit), sum(o["n"] for o in out), len({s for o in out for s in o["searches"]}),
+        sum(len(o["open"]) for o in out)))
+    for o in out:
+        print("  %s (%s): %s; %d rows in %d searches, vets %s%s" % (o["name"], o["why"], ", ".join("%s %s" % kv for kv in sorted(o["ids"].items())), o["n"], len(o["searches"]),
+                                                            ", ".join(o["vets"]) or "-", "; open: " + "; ".join("%s %s %s" % (x["search"], x["stat"], x["unit"] or "") for x in o["open"])
+                                                            if o["open"] else ""))
+    json.dump(out, open(core.results("seti_candidates.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "published_seti_candidates", "Every published SETI candidate across the toolkit's own searches", "the coverage store; Gaia DR3 cross-matches (Gaia archive)",
+            "published SETI candidates: %d" % len(out), os.path.abspath(__file__), "seticands", len(out), "candidates", {},
+            "the coverage store's own verdicts", "a published candidate one of the toolkit's searches leaves unexplained",
+            "%d of %d held in %d rows; %d rows unexplained" % (len(hit), len(out), sum(o["n"] for o in out), sum(len(o["open"]) for o in out)),
+            [dict(target="gaia_dr3:%s" % o["ids"]["gaia"] if "gaia" in o["ids"] else "name:%s" % o["name"].replace(" ", "_"), stat=o["n"], unit="rows in the coverage store",
+                  vet=None if o["open"] else "not-measured" if not o["n"] else "covered-null",
+                  note="%s; searches %s; vets %s%s" % (o["why"], ", ".join(o["searches"]) or "-", ", ".join(o["vets"]) or "-",
+                                                      "; open in " + ", ".join(x["search"] for x in o["open"]) if o["open"] else "")) for o in out])
+        print("recorded")
+
+
 orbitmass_DOC = r"""Binary stars heavier than their light: the Sixth Catalog of Orbits of Visual Binary Stars (Matson et al., USNO, read from its Georgia State mirror), its orbits of grades 1 and 2 with a Hipparcos number, both stars' V magnitudes unflagged and published errors on the period and the semi-major axis, within 100 pc by a parallax from Gaia DR3 through Gaia's Hipparcos best neighbours where Gaia's RUWE is below 1.4 and its parallax at ten sigma, and from the Hipparcos new reduction (van Leeuwen 2007) otherwise; the dynamical mass a^3 / (parallax^3 P^2) against the sum of each star's main-sequence mass for its absolute V from Pecaut and Mamajek's (2013) dwarf table, where a system heavier than its light by half again at three sigma (the orbit's and the parallax's errors with 10 per cent for the mass-luminosity relation) holds mass that does not shine; each is read for the two parallaxes' agreement, for the catalogue's own notes on the system, where an orbit called spurious, a ghost or contradicted by later measures is the published solution's error, for another orbit of the same WDS system in the catalogue (a third star), for Gaia's non-single-star solution of the primary, and for a Gaia source at the system's parallax within twice the semi-major axis on the white-dwarf sequence (absolute G fainter than 9 and BP-RP below 1).
 
     python -I seti.py neighbourhood orbitmass [record] [--grades 1 2] [--plx-min 10] [--ratio 1.5] [--sigma 3] [--mlr-err 0.1]"""
 
 orbitmass_ORB6 = "http://www.astro.gsu.edu/wds/orb6/orb6orbits.txt"
-orbitmass_MAMAJEK = "https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt"
 
 
 def orbitmass_orbits():
@@ -4371,13 +5255,9 @@ def orbitmass_notes():
 def orbitmass_mlr():
     """Pecaut and Mamajek's dwarf sequence as (absolute V, mass) pairs sorted by absolute V."""
     pts = {}
-    for x in core.get(orbitmass_MAMAJEK, timeout=120).decode("latin-1").splitlines():
-        t = x.split()
-        if len(t) < 30 or not re.match(r"^[OBAFGKMLTY][0-9.]+V$", t[0]):
-            continue
-        mv, m = num(t[7]), num(t[-2])
-        if mv is not None and m:
-            pts.setdefault(mv, []).append(m)
+    for r in catalogues.dwarf_sequence():
+        if r["mv"] is not None and r["mass"]:
+            pts.setdefault(r["mv"], []).append(r["mass"])
     mv = np.array(sorted(pts))
     return mv, np.array([np.mean(pts[k]) for k in mv])
 
@@ -4481,6 +5361,16 @@ def orbitmass_main(record=False, grades=["1", "2"], plx_min=10.0, ratio=1.5, sig
 
 
 APPROACHES = {
+    "seticands": (lambda: core.run_cli(seticands_main), seticands_DOC),
+    "uvexcess": (lambda: core.run_cli(uvexcess_main), uvexcess_DOC),
+    "twins": (lambda: core.run_cli(twins_main), twins_DOC),
+    "wdmass": (lambda: core.run_cli(wdmass_main), wdmass_DOC),
+    "uvmissing": (lambda: core.run_cli(uvmissing_main), uvmissing_DOC),
+    "chemistry": (lambda: core.run_cli(chemistry_main), chemistry_DOC),
+    "contradict": (lambda: core.run_cli(contradict_main), contradict_DOC),
+    "quietfloor": (lambda: core.run_cli(quietfloor_main), quietfloor_DOC),
+    "darkmass": (lambda: core.run_cli(darkmass_main), darkmass_DOC),
+    "negspace": (lambda: core.run_cli(negspace_main), negspace_DOC),
     "orbitmass": (lambda: core.run_cli(orbitmass_main), orbitmass_DOC),
     "timecluster": (lambda: core.run_cli(timecluster_main), timecluster_DOC),
     "nearoutliers": (lambda: core.run_cli(nearoutliers_main), nearoutliers_DOC),

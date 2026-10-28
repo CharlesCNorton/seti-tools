@@ -2950,6 +2950,737 @@ def candles_main(record=False, widths=5.0, clip=3.0, plx_sigma=10.0, min_group=2
         print("recorded")
 
 
+stopped_DOC = r"""Variables that stopped, and stars that started: the GCVS's pulsators (Miras, RV Tauri stars, classical and type II Cepheids, RR Lyrae and high-amplitude delta Scuti stars) with a range of 1 mag or more, matched to Gaia DR3 within 5 arcsec with their positions carried to 2016 by their GCVS proper motions, each one's G-band scatter in 2014-17 read from its mean flux's own error and number of observations (1.0857 sqrt(N) / (flux / error)); a pulsator Gaia measures steady to 0.01 mag has stopped, and is read in turn for a G mean that misses the variation (Gaia's BP and RP of the same transits both scattering 0.1 mag, BP and RP flux summing to less than G's, or Gaia DR2's G scattering 0.1 mag), for a matched source that is another star (a colour bluer than any Mira's, BP-RP below 1.8; a G outside the variable's own optical range carried to G by its colour, 1 mag wider each side; a neighbour within 3 arcmin that Gaia, VSX or ZTF shows varying with the variable's period, or within 1 arcmin with its brightness; a Gaia source that varies at the position VSX holds, none of them another GCVS variable; out to 15 arcmin, a Gaia RR Lyrae, Cepheid or long-period variable of the family with its period or brightness where the density of such sources within 30 arcmin puts one that close by a chance of 0.05 or less), for an infrared-band variable on a sightline of E(B-V) 5 or more (Schlafly and Finkbeiner 2011), which no optical survey sees, and for a star VSX calls constant or doubtful or whose type, range or identification the GCVS marks uncertain; and the reverse, the Hipparcos stars it found constant in 1989-93 whose G scatter reaches 0.1 mag, read for a Gaia neighbour that is another star, saturation in G, companions, an image Gaia finds double in a tenth of its transits or more, and the class Gaia's classifier gives.
+
+    python -I seti.py dimming stopped [record] [--amp-min 1] [--steady 0.01] [--started 0.1] [--radius-arcsec 5] [--g-range 6 19] [--near-arcsec 180] [--bright-arcsec 60] [--ebv-ir 5] [--wide-arcsec 900] [--chance 0.05]"""
+
+stopped_TYPES = ("M", "RV", "RVA", "RVB", "DCEP", "DCEPS", "CEP", "CW", "CWA", "CWB", "RRAB", "RRC", "RR", "HADS")
+stopped_OPTICAL = {"V": "V", "v": "V", "vis": "V", "pv": "V", "p": "B", "pg": "B", "B": "B"}
+stopped_IR = ("J", "H", "K", "Ks", "L", "L'", "M", "N")
+
+
+def stopped_scatter(r, band="g"):
+    """A Gaia source's scatter in magnitudes in BAND (g, bp or rp) from its mean flux's error and number of observations, or None."""
+    fe, n = num(r.get("phot_%s_mean_flux_over_error" % band)), num(r.get("phot_%s_n_obs" % band))
+    return 1.0857 * math.sqrt(n) / fe if fe and n else None
+
+
+def stopped_family(t):
+    """The family of a GCVS, VSX or Gaia variability type for matching a variable to its neighbours: RR, CEP, LPV or DSCT, or None."""
+    t = (t or "").strip().upper()
+    if t.startswith("RR"):
+        return "RR"
+    if "CEP" in t or t.startswith(("CW", "RV", "BLBOO")):
+        return "CEP"
+    if t in ("M", "L", "LB", "LC") or t.startswith(("M:", "LPV", "SR")):
+        return "LPV"
+    return "DSCT" if t.startswith(("HADS", "DSCT", "SXPHE")) else None
+
+
+def stopped_same_period(p, q):
+    """Whether two periods in days agree, to 0.5 per cent below 50 days and 10 per cent above, directly or through a one-cycle-per-day alias."""
+    if not p or not q:
+        return False
+    tol, df = (0.005 if p < 50 else 0.1) / p, abs(1 / p - 1 / q)
+    return df <= tol or (p < 5 and q < 5 and min(abs(df - 1.0), abs(df - 1.0027)) <= tol)
+
+
+def stopped_window(x, bprp, seq):
+    """The G range a GCVS variable's optical range implies at Gaia colour BPRP (Riello et al. 2021 for V - G; the dwarf sequence and the reddening line for B - V), 1 mag wider each side, or None."""
+    band = stopped_OPTICAL.get(x["band"].strip())
+    faint = x["min"] if x["min"] is not None else (x["max"] + x["amp_gcvs"] if x["max"] is not None else None)
+    if band is None or x["max"] is None or faint is None or bprp is None:
+        return None
+    c = min(max(bprp, -0.5), 5.0)
+    off = 0.02704 - 0.01424 * c + 0.2156 * c ** 2 - 0.01426 * c ** 3
+    if band == "B":
+        off += float(np.interp(c, seq[0], seq[1])) + max(c - seq[0][-1], 0.0) / 1.339
+    return x["max"] - off - 1.0, faint - off + 1.0
+
+
+def stopped_near(ra, dec, radius_arcsec):
+    """Gaia DR3 sources to G 19.5 within RADIUS_ARCSEC of a position, nearest first: G, scatter, classifier class, the period of any Gaia RR Lyrae, Cepheid or long-period solution, and separation in arcsec, cached by position."""
+    key = core.data(os.path.join("gaia_near", "%.6f_%+.6f_%g.json" % (ra, dec, radius_arcsec)))
+    if os.path.exists(key):
+        return json.load(open(key))
+    rows = core.tap("gaia", "SELECT g.source_id, g.ra, g.dec, g.phot_g_mean_mag, g.phot_g_mean_flux_over_error, g.phot_g_n_obs, r.pf, r.p1_o, c.pf AS cpf, c.p1_o AS cp1, "
+                            "l.frequency, k.best_class_name FROM gaiadr3.gaia_source AS g LEFT JOIN gaiadr3.vari_rrlyrae AS r ON r.source_id = g.source_id "
+                            "LEFT JOIN gaiadr3.vari_cepheid AS c ON c.source_id = g.source_id LEFT JOIN gaiadr3.vari_long_period_variable AS l ON l.source_id = g.source_id "
+                            "LEFT JOIN gaiadr3.vari_classifier_result AS k ON k.source_id = g.source_id "
+                            "WHERE 1 = CONTAINS(POINT('ICRS', g.ra, g.dec), CIRCLE('ICRS', %.7f, %.7f, %g)) AND g.phot_g_mean_mag < 19.5" % (ra, dec, radius_arcsec / 3600.0))
+    out = []
+    for n in rows:
+        f = num(n["frequency"])
+        cls = str(n["best_class_name"] or "").strip()
+        out.append(dict(source_id=str(n["source_id"]), ra=float(n["ra"]), dec=float(n["dec"]), G=num(n["phot_g_mean_mag"]), scatter=stopped_scatter(n), cls=cls,
+                        P=num(n["pf"]) or num(n["p1_o"]) or num(n["cpf"]) or num(n["cp1"]) or (1 / f if f else None),
+                        family=("RR" if num(n["pf"]) or num(n["p1_o"]) else "CEP" if num(n["cpf"]) or num(n["cp1"]) else "LPV" if f else stopped_family(cls)),
+                        sep=core.sep_arcsec(ra, dec, float(n["ra"]), float(n["dec"]))))
+    out = sorted(out, key=lambda n: n["sep"])
+    os.makedirs(os.path.dirname(key), exist_ok=True)
+    json.dump(out, open(key, "w"))
+    return out
+
+
+def stopped_ztf(ra, dec, radius_arcsec):
+    """ZTF DR24 objects with 20 good epochs or more within RADIUS_ARCSEC of a position: filter, good epochs, median magnitude, rms and separation in arcsec."""
+    rows = core.tap("irsa", "SELECT ra, dec, filtercode, ngoodobs, medianmag, magrms FROM ztf_objects_dr24 WHERE "
+                            "1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %g)) AND ngoodobs >= 20" % (ra, dec, radius_arcsec / 3600.0))
+    return [dict(f=str(r["filtercode"]), n=int(num(r["ngoodobs"])), med=num(r["medianmag"]), rms=num(r["magrms"]),
+                 sep=core.sep_arcsec(ra, dec, float(r["ra"]), float(r["dec"]))) for r in rows]
+
+
+def stopped_other(ra, dec, others):
+    """Whether a position lies within 3 arcsec of another GCVS variable among OTHERS, (ra, dec) pairs."""
+    return any(core.sep_arcsec(ra, dec, o[0], o[1]) <= 3.0 for o in others)
+
+
+def stopped_identify(x, near, fam, period, steady, bright_arcsec, others=()):
+    """The neighbour that is a steady pulsator's variable: a Gaia source with its period, or within BRIGHT_ARCSEC with its brightness, its family or no class, and a scatter of ten times STEADY, that is not another GCVS variable of OTHERS; or None."""
+    w = x["window"]
+    for n in near:
+        if n["source_id"] == x["source_id"] or stopped_other(n["ra"], n["dec"], others):
+            continue
+        bright = (n["sep"] <= bright_arcsec and (n["scatter"] or 0) >= 10 * steady and w is not None and n["G"] is not None and w[0] <= n["G"] <= w[1]
+                  and (not n["cls"] or n["family"] == fam))
+        if stopped_same_period(period, n["P"]) or bright:
+            return "Gaia DR3 %s at %.0f arcsec, G %.2f, scatter %.2f, %s%s" % (n["source_id"], n["sep"], n["G"], n["scatter"] or 0, n["cls"] or "unclassified",
+                                                                             ", P %.6f" % n["P"] if n["P"] else "")
+    return None
+
+
+def stopped_wide(x, fam, period, wide_arcsec, chance, others=()):
+    """A Gaia RR Lyrae, Cepheid or long-period variable of a steady pulsator's family out to WIDE_ARCSEC with its period or its brightness, where the family's density at that period or brightness within twice the radius puts one that close by CHANCE or less, and that is not another GCVS variable of OTHERS; or None."""
+    table = {"RR": ("vari_rrlyrae", "v.pf, v.p1_o"), "CEP": ("vari_cepheid", "v.pf, v.p1_o"), "LPV": ("vari_long_period_variable", "v.frequency")}.get(fam)
+    if table is None:
+        return None
+    rows = core.tap("gaia", "SELECT g.source_id, g.ra, g.dec, g.phot_g_mean_mag, %s FROM gaiadr3.%s AS v JOIN gaiadr3.gaia_source AS g ON g.source_id = v.source_id "
+                            "WHERE 1 = CONTAINS(POINT('ICRS', g.ra, g.dec), CIRCLE('ICRS', %.7f, %.7f, %g))" % (table[1], table[0], x["gra"], x["gdec"], 2 * wide_arcsec / 3600.0))
+    w, out = x["window"], []
+    for r in rows:
+        if str(r["source_id"]) == x["source_id"]:
+            continue
+        f, G = num(r.get("frequency")), num(r["phot_g_mean_mag"])
+        P = num(r.get("pf")) or num(r.get("p1_o")) or (1 / f if f else None)
+        out.append(dict(source_id=str(r["source_id"]), sep=core.sep_arcsec(x["gra"], x["gdec"], float(r["ra"]), float(r["dec"])), G=G, P=P,
+                        inw=w is not None and G is not None and w[0] <= G <= w[1], same=stopped_same_period(period, P),
+                        other=stopped_other(float(r["ra"]), float(r["dec"]), others)))
+    area = math.pi * (2 * wide_arcsec) ** 2
+    dens_w, dens_p = sum(o["inw"] for o in out) / area, sum(o["same"] for o in out) / area
+    for o in sorted(out, key=lambda o: o["sep"]):
+        if o["sep"] > wide_arcsec:
+            break
+        if not o["other"] and ((o["same"] and dens_p * math.pi * o["sep"] ** 2 <= chance) or (o["inw"] and dens_w * math.pi * o["sep"] ** 2 <= chance)):
+            return "Gaia DR3 %s at %.0f arcsec, G %.2f, %s P %s" % (o["source_id"], o["sep"], o["G"] or 0, fam, "%.6f" % o["P"] if o["P"] else "-")
+    return None
+
+
+def stopped_main(record=False, amp_min=1.0, steady=0.01, started=0.1, radius_arcsec=5.0, g_range=[6.0, 19.0], near_arcsec=180.0, bright_arcsec=60.0, ebv_ir=5.0,
+                 wide_arcsec=900.0, chance=0.05):
+    from setitools import catalogues
+    cols = ("g.source_id, g.ra, g.dec, g.phot_g_mean_mag, g.phot_g_mean_flux_over_error, g.phot_g_n_obs, g.phot_variable_flag, g.ruwe, g.bp_rp, "
+            "g.phot_bp_mean_flux_over_error, g.phot_bp_n_obs, g.phot_rp_mean_flux_over_error, g.phot_rp_n_obs, g.phot_bp_rp_excess_factor")
+    sample = []
+    for x in catalogues.gcvs():
+        t = re.split(r"[:/+(]", x["type"])[0]
+        amp = x["amp"] if x["amp"] is not None else (x["min"] - x["max"] if x["min"] is not None and x["max"] is not None and not x["fainter"] else None)
+        if t in stopped_TYPES and amp is not None and amp >= amp_min:
+            sample.append(dict(x, amp_gcvs=amp, uncertain=":" in x["type"] or "(" in x["type"] or x["ident"] in ("?", ":")))
+    match = catalogues.gaia_match(sample, cols=cols, radius_arcsec=radius_arcsec)
+    measured, still = [], []
+    for i, x in enumerate(sample):
+        m = match.get(i)
+        if not m:
+            continue
+        g = m[0]
+        s, gm = stopped_scatter(g), num(g["phot_g_mean_mag"])
+        if s is None or gm is None or not g_range[0] <= gm <= g_range[1]:
+            continue
+        x.update(source_id=str(g["source_id"]), G=gm, scatter=s, flag=str(g["phot_variable_flag"]), sep=float(g["sep"]), gra=float(g["ra"]), gdec=float(g["dec"]),
+                 bprp=num(g["bp_rp"]), s_bp=stopped_scatter(g, "bp"), s_rp=stopped_scatter(g, "rp"), excess=num(g["phot_bp_rp_excess_factor"]))
+        measured.append(x)
+        if s < steady:
+            still.append(x)
+    # Gaia DR2's G scatter of the same sources over 2014-16, whose transits DR3 holds as well
+    dr2 = core.tap_by_ids("gaia", [x["source_id"] for x in still], "SELECT n.dr3_source_id AS source_id, d.phot_g_mean_flux_over_error, d.phot_g_n_obs FROM "
+                                                                   "gaiadr3.dr2_neighbourhood AS n JOIN gaiadr2.gaia_source AS d ON d.source_id = n.dr2_source_id "
+                                                                   "WHERE n.dr3_source_id IN (%s) ORDER BY n.angular_distance DESC") if still else {}
+    seq = sorted({s["bprp"]: s["bv"] for s in catalogues.dwarf_sequence() if s["bprp"] is not None and s["bv"] is not None}.items())
+    seq = ([p[0] for p in seq], [p[1] for p in seq])
+    for x in still:
+        fam = stopped_family(x["type"])
+        x["s_dr2"] = stopped_scatter(dr2[x["source_id"]]) if x["source_id"] in dr2 else None
+        x["window"] = stopped_window(x, x["bprp"], seq)
+        v = catalogues.vsx_object(x["name"])
+        x["vsx"], period = v, x["period"] or (v or {}).get("P")
+        near = stopped_near(x["gra"], x["gdec"], near_arcsec)
+        # the other GCVS variables round it, which a neighbour cannot stand for
+        others = [(o["ra"], o["dec"]) for o in catalogues.vsx_near(x["ra"], x["dec"], wide_arcsec)
+                  if o["name"] not in (x["name"], (v or {}).get("name")) and re.match(r"^(V\d{3,4}|[A-Z]{1,2}) [A-Z][a-z]{2}$", o["name"] or "")]
+        x["near"] = stopped_identify(x, near, fam, period, steady, bright_arcsec, others)
+        if x["near"] is None and v and core.sep_arcsec(v["ra"], v["dec"], x["gra"], x["gdec"]) > 2.0:
+            # a source that varies at the position VSX holds, where VSX has moved the variable off the GCVS position
+            moved = [n for n in near if n["source_id"] != x["source_id"] and core.sep_arcsec(v["ra"], v["dec"], n["ra"], n["dec"]) <= 10.0 and (n["scatter"] or 0) >= 10 * steady]
+            x["near"] = "Gaia DR3 %s at VSX's position, %.0f arcsec off, G %.2f, scatter %.2f" % (moved[0]["source_id"], moved[0]["sep"], moved[0]["G"],
+                                                                                               moved[0]["scatter"]) if moved else None
+        if x["near"] is None and period:
+            for o in catalogues.vsx_near(x["ra"], x["dec"], near_arcsec):
+                if o["name"] not in (x["name"], (v or {}).get("name")) and stopped_family(o["type"]) == fam and stopped_same_period(period, o["P"]):
+                    x["near"] = "VSX's %s (%s, P %s) at %.0f arcsec" % (o["name"], o["type"], o["P"], o["sep"])
+                    break
+        x["ebv"] = catalogues.reddening(x["ra"], x["dec"]) if x["band"].strip() in stopped_IR else None
+        x["ztf"] = None
+        w, doubted = x["window"], v is not None and (v["type"].upper().startswith("CST") or "?" in v["type"])
+        x["vet"] = ("artefact" if ((x["s_bp"] or 0) >= 10 * steady and (x["s_rp"] or 0) >= 10 * steady) or (x["excess"] is not None and x["excess"] < 1.0)
+                    or (x["s_dr2"] or 0) >= 10 * steady else
+                    "misidentified" if (fam == "LPV" and x["bprp"] is not None and x["bprp"] < 1.8) or (w is not None and not w[0] <= x["G"] <= w[1]) or x["near"] else
+                    "interstellar" if (x["ebv"] or 0) >= ebv_ir else
+                    "published-solution" if doubted or x["uncertain"] else None)
+        if x["vet"] is None and x["gdec"] >= -30.0:
+            # ZTF from 2018 on: the matched source's own rms, and a source within reach that varies at the variable's brightness
+            z = stopped_ztf(x["gra"], x["gdec"], near_arcsec)
+            mine = [r for r in z if r["sep"] < 1.5 and r["n"] >= 50]
+            x["ztf"] = max((r["rms"] for r in mine), default=None)
+            hit = [r for r in z if r["sep"] >= 1.5 and r["n"] >= 50 and r["f"] == "zr" and (r["rms"] or 0) >= 0.15 and w is not None and r["med"] is not None
+                   and w[0] <= r["med"] <= w[1] + 0.5]
+            if hit:
+                r = min(hit, key=lambda r: r["sep"])
+                x["near"] = "ZTF source at %.0f arcsec, r %.2f, rms %.2f" % (r["sep"], r["med"], r["rms"])
+                x["vet"] = "misidentified"
+        if x["vet"] is None:
+            x["near"] = stopped_wide(x, fam, period, wide_arcsec, chance, others)
+            x["vet"] = "misidentified" if x["near"] else None
+    # the reverse: Hipparcos's constant stars that vary in Gaia
+    hip = core.tap_async("gaia", "SELECT h.hip, h.hpmag, h.hpscat, h.vmag, %s, g.non_single_star, g.ipd_frac_multi_peak, g.duplicated_source FROM public.hipparcos AS h "
+                                 "JOIN gaiadr3.hipparcos2_best_neighbour AS b ON b.original_ext_source_id = h.hip JOIN gaiadr3.gaia_source AS g ON g.source_id = b.source_id "
+                                 "WHERE h.hvartype = 'C'" % cols, maxrec=200000)
+    began = []
+    for r in hip:
+        s = stopped_scatter(r)
+        if s is not None and s >= started:
+            began.append(dict(hip=int(num(r["hip"])), source_id=str(r["source_id"]), G=num(r["phot_g_mean_mag"]), hp=num(r["hpmag"]), hpscat=num(r["hpscat"]),
+                              scatter=s, ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), bprp=num(r["bp_rp"]), peaks=num(r["ipd_frac_multi_peak"]),
+                              dup=str(r["duplicated_source"]).lower() == "true"))
+    classes = {k: str(v["best_class_name"]).strip() for k, v in core.tap_by_ids(
+        "gaia", [b["source_id"] for b in began], "SELECT source_id, best_class_name FROM gaiadr3.vari_classifier_result WHERE source_id IN (%s)").items()} if began else {}
+    for b in began:
+        b["cls"] = classes.get(b["source_id"], "")
+        # Hp - G from BP-RP for a star the same in both (Riello et al. 2021 for V - G; Hp lies near V for these colours)
+        vg = 0.02704 - 0.01424 * b["bprp"] + 0.2156 * b["bprp"] ** 2 - 0.01426 * b["bprp"] ** 3 if b["bprp"] is not None else 0.0
+        b["vet"] = ("artefact" if b["G"] is not None and b["G"] < g_range[0] else
+                    "misidentified" if b["G"] is not None and b["hp"] is not None and abs(b["hp"] - b["G"] - vg) > 1.0 else
+                    "binary" if (b["ruwe"] or 0) > 1.4 or b["nss"] else
+                    "blend" if (b["peaks"] or 0) >= 10 or b["dup"] else
+                    "eclipsing-binary" if b["cls"] == "ECL" else
+                    "variable-star" if b["cls"] else None)
+    left_s, left_b = [x for x in still if x["vet"] is None], [b for b in began if b["vet"] is None]
+    count = lambda rows, k: sum(r["vet"] == k for r in rows)
+    print("GCVS pulsators of range %g mag or more: %d; matched and measured at G %g-%g: %d; G scatter quantiles 5/16/50 %s; steady to %g mag: %d: a G mean that misses the "
+          "variation %d, another star %d, an infrared variable behind dust %d, a type or range in doubt %d; unexplained %d" % (
+              amp_min, len(sample), g_range[0], g_range[1], len(measured), [round(float(v), 4) for v in np.percentile([x["scatter"] for x in measured], [5, 16, 50])],
+              steady, len(still), count(still, "artefact"), count(still, "misidentified"), count(still, "interstellar"), count(still, "published-solution"), len(left_s)))
+    for x in sorted(still, key=lambda x: (x["vet"] is not None, x["vet"] or "", x["scatter"])):
+        print("  %s (%s, GCVS %s-%s %s, P %s): Gaia DR3 %s at %.1f arcsec, G %.2f, BP-RP %s, scatter G %.4f BP %s RP %s DR2 %s, C %s; G window %s; %s; VSX %s%s%s; %s" % (
+            x["name"], x["type"], x["max"], x["min"] if x["min"] is not None else "(%s)" % x["amp_gcvs"], x["band"], x["period"], x["source_id"], x["sep"], x["G"],
+            "%.2f" % x["bprp"] if x["bprp"] is not None else "-", x["scatter"], "%.3f" % x["s_bp"] if x["s_bp"] is not None else "-",
+            "%.3f" % x["s_rp"] if x["s_rp"] is not None else "-", "%.3f" % x["s_dr2"] if x["s_dr2"] is not None else "-", "%.2f" % x["excess"] if x["excess"] else "-",
+            "%.1f-%.1f" % x["window"] if x["window"] else "-", x["near"] or "no neighbour identified",
+            "%s %s P %s" % (x["vsx"]["name"], x["vsx"]["type"], x["vsx"]["P"]) if x["vsx"] else "-", "; E(B-V) %.1f" % x["ebv"] if x["ebv"] is not None else "",
+            "; ZTF rms %.3f" % x["ztf"] if x["ztf"] is not None else "", x["vet"] or "unexplained"))
+    print("Hipparcos constant stars: %d; G scatter %g mag or more: %d; saturated %d, another star %d, a companion %d, a double image %d, eclipsing in Gaia %d, "
+          "another variable class in Gaia %d; unexplained %d" % (len(hip), started, len(began), count(began, "artefact"), count(began, "misidentified"), count(began, "binary"),
+                                                                 count(began, "blend"), count(began, "eclipsing-binary"), count(began, "variable-star"), len(left_b)))
+    for b in sorted(began, key=lambda b: (b["vet"] is not None, -b["scatter"]))[:25]:
+        print("  HIP %d: Hp %s (scatter %s), G %.2f, G scatter %.3f, BP-RP %s, RUWE %s, NSS %d, double in %s%% of transits, Gaia class %s; %s" % (
+            b["hip"], b["hp"], b["hpscat"], b["G"], b["scatter"], b["bprp"], b["ruwe"], b["nss"], b["peaks"], b["cls"] or "-", b["vet"] or "unexplained"))
+    json.dump(dict(still=still, began=began), open(core.results("stopped_started_variables.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcvs_gaia_stopped_variables", "Variables that stopped, and stars that started", "GCVS (its own site); Gaia DR3 and DR2 by table upload; Hipparcos (Gaia archive); "
+            "AAVSO VSX; ZTF DR24 and the dust service (IRSA)",
+            "GCVS pulsators of range %g mag or more measured in Gaia at G %g-%g, and Hipparcos's constant stars: %d and %d" % (amp_min, g_range[0], g_range[1], len(measured),
+                                                                                                                         len(hip)),
+            os.path.abspath(__file__), "stopped", len(measured) + len(hip), "stars", dict(amp_min=amp_min, steady=steady, started=started, radius_arcsec=radius_arcsec,
+                                                                                          g_range=g_range, near_arcsec=near_arcsec, bright_arcsec=bright_arcsec, ebv_ir=ebv_ir,
+                                                                                          wide_arcsec=wide_arcsec, chance=chance),
+            "the G scatter of the measured pulsators: quantiles 5/16/50 %s" % [round(float(v), 4) for v in np.percentile([x["scatter"] for x in measured], [5, 16, 50])],
+            "a pulsator of 1 mag steady to %g mag in Gaia, or a constant Hipparcos star scattering %g mag" % (steady, started),
+            "%d steady: %d with a G mean that misses the variation, %d another star, %d infrared variables behind dust, %d with a type or range in doubt; %d unexplained; "
+            "%d Hipparcos constant stars varying: %d saturated, %d another star, %d companions, %d double images, %d eclipsing, %d another class; %d unexplained" % (
+                len(still), count(still, "artefact"), count(still, "misidentified"), count(still, "interstellar"), count(still, "published-solution"), len(left_s), len(began),
+                count(began, "artefact"), count(began, "misidentified"), count(began, "binary"), count(began, "blend"), count(began, "eclipsing-binary"),
+                count(began, "variable-star"), len(left_b)),
+            [dict(target="gcvs:%s" % x["name"].replace(" ", "_"), stat=round(x["scatter"], 4), unit="mag of G scatter", vet=x["vet"],
+                  note="%s, GCVS %s-%s %s; Gaia DR3 %s at %.1f arcsec, G %.2f, BP and RP scatter %s and %s, DR2 %s; %s" % (
+                      x["type"], x["max"], x["min"] if x["min"] is not None else "(%s)" % x["amp_gcvs"], x["band"], x["source_id"], x["sep"], x["G"],
+                      "%.3f" % x["s_bp"] if x["s_bp"] is not None else "-", "%.3f" % x["s_rp"] if x["s_rp"] is not None else "-",
+                      "%.3f" % x["s_dr2"] if x["s_dr2"] is not None else "-", x["near"] or "no neighbour identified")) for x in still] +
+            [dict(target="hip:%d" % b["hip"], stat=round(b["scatter"], 3), unit="mag of G scatter", vet=b["vet"],
+                  note="Hipparcos constant, Hp %s; G %.2f, BP-RP %s, RUWE %s, NSS %d, double in %s%% of transits, Gaia class %s" % (
+                      b["hp"], b["G"], b["bprp"], b["ruwe"], b["nss"], b["peaks"], b["cls"] or "-")) for b in began])
+        print("recorded")
+
+
+periodchange_DOC = r"""Periods that changed across the century: the GCVS's RR Lyrae, classical and type II Cepheids, RV Tauri stars, high-amplitude delta Scuti stars and Miras with a period, matched to Gaia DR3 within 5 arcsec with their positions carried to 2016 by their GCVS proper motions, each GCVS period set against the Gaia DR3 period of the same star (of its RR Lyrae or Cepheid fundamental and first-overtone periods the one nearer the GCVS period, or its long-period frequency) in the errors of both (one unit of the GCVS period's last digit, ten for a period the GCVS marks uncertain, 2 per cent more for a Mira's cycle-to-cycle wander, and Gaia's own) and an allowance for the change evolution makes between the GCVS epoch (70 years before 2016 where it has none) and 2016: 3 d/Myr for RR Lyrae, for classical Cepheids three times the trend log dP/dt (s/yr) = 2.5 log P - 2 that Turner et al. (2006) measured, 1e-5 of the period a year for type II Cepheids and delta Scuti stars, and 1e-3 a year for RV Tauri stars and Miras; a period that moved by more than Z of these is read for a Gaia source that is another star (its G outside the variable's optical range carried to G, 1 mag wider each side), for two periods of one star (a harmonic, a multiple the GCVS marks with /N or *N, an alias of one, two or three cycles a day between the frequencies or their sum, or two of its pulsation modes, first overtone to fundamental 0.735-0.755 for RR Lyrae, 0.68-0.74 or second to first overtone 0.79-0.82 for Cepheids), for a companion whose orbit shifts the period by its light time (RUWE above 1.4 or a non-single-star solution, with the shift below 3e-4 of the period), and for a neighbour within 3 arcmin that Gaia or VSX shows varying with the GCVS period; before the neighbours, each pair is set against Gaia's own epoch photometry, a three-harmonic series fitted at each period, so that a harmonic of a light curve that is no sinusoid does not pass for its period (the GCVS period within its errors, Gaia's within the baseline's resolution) and the residuals compared by an F-test at 99 per cent, which reads Gaia's period as Gaia's own error where the GCVS period fits better and leaves the change unmeasured where neither fits better or the 34 months hold fewer than two cycles; a GCVS period Gaia's photometry rejects is tested the same way, for a GCVS epoch before 1990 and G below 13.5, on DASCH's plates within 12 years of that epoch, both periods there within the errors and the allowance, whose holding Gaia's period in the GCVS's own era reads the GCVS period as its own error; a Mira whose secular period change the literature follows over a century of observations (T UMi, R Hya, R Aql, LX Cyg, BH Cru, W Dra and R Cen; Templeton et al. 2005) is read for that change.
+
+    python -I seti.py dimming periodchange [record] [--radius-arcsec 5] [--z 5] [--near-arcsec 180]"""
+
+# Miras whose period the literature follows changing over a century of observations, by a helium-shell flash or a slow change of the envelope
+periodchange_SECULAR = ("T UMi", "R Hya", "R Aql", "LX Cyg", "BH Cru", "W Dra", "R Cen")
+periodchange_FAMILY = {"RRAB": "RR", "RRC": "RR", "RR": "RR", "RRD": "RR", "DCEP": "DCEP", "DCEPS": "DCEP", "CEP": "DCEP", "CW": "CW", "CWA": "CW", "CWB": "CW",
+                       "RV": "RV", "RVA": "RV", "RVB": "RV", "HADS": "HADS", "M": "M"}
+
+
+def periodchange_allow(fam, P, years):
+    """The change in days evolution allows the period P of a pulsator of family FAM over YEARS."""
+    if fam == "RR":
+        return 3e-6 * years
+    if fam == "DCEP":
+        return 3 * 10 ** (2.5 * math.log10(P) - 2.0) / 86400.0 * years
+    return (1e-5 if fam in ("CW", "HADS") else 1e-3) * P * years
+
+
+def periodchange_digits(mark):
+    """One unit of the last digit of a GCVS period as written, ten units where the GCVS marks it uncertain."""
+    m = re.search(r"\d+(?:\.(\d*))?", mark or "")
+    unit = 10.0 ** -len(m.group(1) or "") if m else 1.0
+    return unit * (10 if ":" in (mark or "") else 1)
+
+
+def periodchange_relation(P, Q, fam, mark=""):
+    """How two periods of one star relate when one is a harmonic, a daily alias, a multiple the GCVS marks or another pulsation mode of the other, or None."""
+    r = Q / P
+    for k, name in ((2.0, "twice"), (0.5, "half"), (3.0, "three times"), (1 / 3.0, "a third of"), (1.5, "3/2 of"), (2 / 3.0, "2/3 of")):
+        if abs(r / k - 1) < 0.005:
+            return "Gaia's period %s the GCVS period" % name
+    for j in range(2, 6):
+        if ("/N" in (mark or "") and abs(r * j - 1) < 0.01) or ("*N" in (mark or "") and abs(r / j - 1) < 0.01):
+            return "the GCVS period marked as a multiple, %s %d" % ("over" if "/N" in mark else "times", j)
+    df, sf = abs(1 / P - 1 / Q), 1 / P + 1 / Q
+    if max(P, Q) < 5 and min(abs(df - 1.0), abs(df - 1.0027)) < 0.005 * max(1 / P, 1 / Q):
+        return "a one-cycle-per-day alias"
+    for k, name in ((1, "one"), (2, "two"), (3, "three")):
+        if max(P, Q) < 5 and any(k - 0.003 <= x <= 1.0027 * k + 0.003 for x in (df, sf)):
+            return "a %s-cycle-per-day alias" % name
+    lo = min(r, 1 / r)
+    modes = ((0.735, 0.755),) if fam == "RR" else ((0.68, 0.74), (0.79, 0.82)) if fam == "DCEP" else ()
+    if any(a <= lo <= b for a, b in modes):
+        return "two pulsation modes, ratio %.3f" % lo
+    return None
+
+
+def periodchange_epochs(ids, batch=50):
+    """Gaia DR3 G-band epoch photometry of each source id from the archive's DataLink service, cached under the data cache: {source_id: (times in days, magnitudes)}."""
+    import zipfile
+    root = core.data("gaia_epochs")
+    os.makedirs(root, exist_ok=True)
+    want = [i for i in ids if not os.path.exists(os.path.join(root, "%s.csv" % i))]
+    for k in range(0, len(want), batch):
+        part = want[k:k + batch]
+        b = core.get("https://gea.esac.esa.int/data-server/data?" + urllib.parse.urlencode(dict(
+            RETRIEVAL_TYPE="EPOCH_PHOTOMETRY", ID=",".join("Gaia DR3 " + i for i in part), FORMAT="CSV", VALID_DATA="false")), timeout=300, retries=2, soft=True, pause=3)
+        if not b:
+            continue
+        got = {part[0]: b} if b[:2] != b"PK" else {}
+        if b[:2] == b"PK":
+            z = zipfile.ZipFile(io.BytesIO(b))
+            for n in z.namelist():
+                m = re.search(r"(\d{6,})\.csv$", n)
+                if m:
+                    got[m.group(1)] = z.read(n)
+        for i in part:
+            open(os.path.join(root, "%s.csv" % i), "wb").write(got.get(i, b""))
+    out = {}
+    for i in ids:
+        p = os.path.join(root, "%s.csv" % i)
+        t = open(p, encoding="utf-8", errors="replace").read() if os.path.exists(p) else ""
+        rows = [r for r in csv.DictReader(io.StringIO("\n".join(ln for ln in t.splitlines() if not ln.startswith("#"))))
+                if num(r.get("g_transit_mag")) is not None and num(r.get("g_transit_time")) is not None
+                and r.get("rejected_by_photometry", "false") != "true" and r.get("variability_flag_g_reject", "false") != "true"]
+        out[i] = (np.array([float(r["g_transit_time"]) for r in rows]), np.array([float(r["g_transit_mag"]) for r in rows]))
+    return out
+
+
+def periodchange_fit(t, m, f, half, k=3):
+    """The largest fraction of a light curve's variance a K-harmonic series explains at a frequency within HALF of F (cycles a day)."""
+    tss = float(np.sum((m - m.mean()) ** 2))
+    best = 0.0
+    for g in np.linspace(f - half, f + half, int(min(4001, max(41, 40 * half * (t.max() - t.min()))))):
+        ph = 2 * np.pi * g * (t - t.min())
+        A = np.column_stack([np.ones_like(t)] + [fn(j * ph) for j in range(1, k + 1) for fn in (np.sin, np.cos)])
+        c = np.linalg.lstsq(A, m, rcond=None)[0]
+        best = max(best, 1 - float(np.sum((m - A @ c) ** 2)) / tss)
+    return best
+
+
+def periodchange_test(t, m, p, wide=False):
+    """Which of a pair's periods a light curve holds, by an F-test at 99 per cent between the residuals of a three-harmonic series at each, the GCVS period within its errors and the modern one within the baseline's resolution or, where WIDE, within the same errors: ("gcvs", ratio), ("modern", ratio), ("either", ratio), or (None, None) for fewer than 19 epochs or fewer than two cycles."""
+    from scipy import stats
+    K = 3
+    if t is None or len(t) < 2 * K + 13 or max(p["period"], p["Pg"]) > (t.max() - t.min()) / 2:
+        return None, None
+    T = t.max() - t.min()
+    rg = periodchange_fit(t, m, 1 / p["period"], max(p["sigma"] / p["period"] ** 2, 0.1 / T), K)
+    rm = periodchange_fit(t, m, 1 / p["Pg"], max(p["sigma"] / p["Pg"] ** 2 if wide else 0.0, 0.1 / T), K)
+    q = (1 - rg) / max(1 - rm, 1e-9)
+    F = float(stats.f.ppf(0.99, len(t) - 2 * K - 1, len(t) - 2 * K - 1))
+    return ("modern" if q > F else "gcvs" if q < 1 / F else "either"), q
+
+
+def periodchange_dasch(ra, dec, key, year, span=12.0):
+    """DASCH's plates of a star within SPAN years of YEAR, cached under KEY: (days, magnitudes), or None."""
+    path = core.data(os.path.join("dasch_lc", "%s.npz" % key))
+    if not os.path.exists(path):
+        try:
+            got = core.dasch_lightcurves(ra, dec, core.data(os.path.join("dasch_sessions", key)), radius_arcsec=120, n_comp=0)
+        except Exception:
+            return None
+        if not got or got["target"] is None:
+            return None
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        np.savez(path, t=np.asarray(got["target"][0], float), m=np.asarray(got["target"][1], float))
+    d = np.load(path)
+    ok = np.abs(d["t"] - year) <= span
+    return (d["t"][ok] - 2000.0) * 365.25, d["m"][ok]
+
+
+def periodchange_main(record=False, radius_arcsec=5.0, z=5.0, near_arcsec=180.0):
+    from setitools import catalogues
+    sample = []
+    for x in catalogues.gcvs():
+        fam = periodchange_FAMILY.get(re.split(r"[:/+(]", x["type"])[0])
+        if fam and x["period"]:
+            amp = x["amp"] if x["amp"] is not None else (x["min"] - x["max"] if x["min"] is not None and x["max"] is not None and not x["fainter"] else None)
+            sample.append(dict(x, fam=fam, amp_gcvs=amp if amp is not None else 0.0))
+    match = catalogues.gaia_match(sample, cols="g.source_id, g.phot_g_mean_mag, g.bp_rp, g.ruwe, g.non_single_star", radius_arcsec=radius_arcsec)
+    ids = sorted({str(m[0]["source_id"]) for m in match.values()})
+    rr = core.tap_by_ids("gaia", ids, "SELECT source_id, pf, pf_error, p1_o, p1_o_error, best_classification FROM gaiadr3.vari_rrlyrae WHERE source_id IN (%s)")
+    ce = core.tap_by_ids("gaia", ids, "SELECT source_id, pf, pf_error, p1_o, p1_o_error, type_best_classification, mode_best_classification FROM gaiadr3.vari_cepheid "
+                                      "WHERE source_id IN (%s)")
+    lp = core.tap_by_ids("gaia", ids, "SELECT source_id, frequency, frequency_error FROM gaiadr3.vari_long_period_variable WHERE source_id IN (%s)")
+    seq = sorted({s["bprp"]: s["bv"] for s in catalogues.dwarf_sequence() if s["bprp"] is not None and s["bv"] is not None}.items())
+    seq = ([p[0] for p in seq], [p[1] for p in seq])
+    pairs = []
+    for i, x in enumerate(sample):
+        m = match.get(i)
+        if not m:
+            continue
+        g, sid = m[0], str(m[0]["source_id"])
+        cands = []
+        for tab, cls in ((rr.get(sid), "RR %s" % (rr.get(sid) or {}).get("best_classification", "")),
+                         (ce.get(sid), "%s %s" % ((ce.get(sid) or {}).get("type_best_classification", ""), (ce.get(sid) or {}).get("mode_best_classification", "")))):
+            for k in ("pf", "p1_o"):
+                if tab and num(tab[k]):
+                    cands.append((num(tab[k]), num(tab[k + "_error"]) or 0.0, "%s %s" % (cls.strip(), k)))
+        if sid in lp and num(lp[sid]["frequency"]):
+            f, fe = num(lp[sid]["frequency"]), num(lp[sid]["frequency_error"]) or 0.0
+            cands.append((1 / f, fe / f ** 2, "LPV"))
+        if not cands:
+            continue
+        Pg, eg, which = min(cands, key=lambda c: abs(math.log(c[0] / x["period"])))
+        year = 2000 + (x["epoch"] + 2400000 - 2451545.0) / 365.25 if x["epoch"] else 2016 - 70
+        years = max(2016 - year, 1.0)
+        sig = math.sqrt(periodchange_digits(x["period_mark"]) ** 2 + eg ** 2 + periodchange_allow(x["fam"], x["period"], years) ** 2 +
+                        ((0.02 * x["period"]) ** 2 if x["fam"] == "M" else 0.0))
+        pairs.append(dict(x, source_id=sid, G=num(g["phot_g_mean_mag"]), bprp=num(g["bp_rp"]), ruwe=num(g["ruwe"]), nss=int(num(g["non_single_star"]) or 0),
+                          sep=float(g["sep"]), Pg=Pg, eg=eg, which=which, years=years, sigma=sig, dP=Pg - x["period"], z=abs(Pg - x["period"]) / sig))
+    moved = [p for p in pairs if p["z"] > z]
+    for p in moved:
+        p["window"] = stopped_window(p, p["bprp"], seq)
+        p["relation"] = periodchange_relation(p["period"], p["Pg"], p["fam"], p["period_mark"])
+        w = p["window"]
+        p["near"] = p["gaia"] = p["dasch"] = None
+        p["vet"] = ("misidentified" if w is not None and p["G"] is not None and not w[0] <= p["G"] <= w[1] else
+                    "published-solution" if p["relation"] else
+                    "binary" if ((p["ruwe"] or 0) > 1.4 or p["nss"]) and abs(p["dP"]) / p["period"] < 3e-4 else None)
+    # Gaia's own photometry at both periods: a GCVS period it fits better reads Gaia's period as Gaia's error, and one it cannot tell apart leaves the change unmeasured
+    epochs = periodchange_epochs([p["source_id"] for p in moved if p["vet"] is None])
+    for p in moved:
+        if p["vet"] is None:
+            p["gaia"] = periodchange_test(*epochs[p["source_id"]], p)
+            p["vet"] = "published-solution" if p["gaia"][0] == "gcvs" else "not-measured" if p["gaia"][0] in (None, "either") else None
+    for p in moved:
+        if p["vet"] is None:
+            # a neighbour holding the GCVS period, where the GCVS position points beside its variable
+            near = stopped_near(*catalogues.carried(p["ra"], p["dec"], p["pmra"], p["pmdec"], 2016 - p["pos_epoch"]) if p["pmra"] is not None and p["pmdec"] is not None
+                                else (p["ra"], p["dec"]), near_arcsec)
+            hit = [n for n in near if n["source_id"] != p["source_id"] and stopped_same_period(p["period"], n["P"])]
+            if hit:
+                p["near"] = "Gaia DR3 %s at %.0f arcsec, G %.2f, %s, P %.6f" % (hit[0]["source_id"], hit[0]["sep"], hit[0]["G"], hit[0]["cls"] or "unclassified", hit[0]["P"])
+            if p["near"] is None:
+                for o in catalogues.vsx_near(p["ra"], p["dec"], near_arcsec):
+                    if o["sep"] > 2.0 and stopped_same_period(p["period"], o["P"]):
+                        p["near"] = "VSX's %s (%s, P %s) at %.0f arcsec" % (o["name"], o["type"], o["P"], o["sep"])
+                        break
+            p["vet"] = "misidentified" if p["near"] else None
+    # a third measurement: DASCH's plates of the GCVS's own era for a star bright on them
+    rest = [p for p in moved if p["vet"] is None]
+    pos = core.tap_by_ids("gaia", [p["source_id"] for p in rest], "SELECT source_id, ra, dec, pmra, pmdec FROM gaiadr3.gaia_source WHERE source_id IN (%s)") if rest else {}
+
+    def third(p):
+        g = pos.get(p["source_id"])
+        if not g:
+            return
+        ra, dec, key = float(g["ra"]), float(g["dec"]), p["name"].replace(" ", "_")
+        if 2016 - p["years"] < 1990 and (p["G"] or 99) < 13.5:
+            lc = periodchange_dasch(ra, dec, key, 2016 - p["years"])
+            p["dasch"] = periodchange_test(*lc, p, wide=True) if lc else (None, None)
+    # one star at a time, since each DASCH call redirects the process's own output streams
+    for p in rest:
+        third(p)
+    for p in rest:
+        if p["dasch"] and p["dasch"][0] == "modern":
+            p["vet"] = "published-solution"
+        elif p["fam"] == "M" and p["name"] in periodchange_SECULAR:
+            p["vet"] = "secular-change"
+    left = [p for p in moved if p["vet"] is None]
+    held = [p["name"] for p in left if p["dasch"] and p["dasch"][0] == "gcvs"]
+    zs = np.array([p["z"] for p in pairs])
+    by = {}
+    for p in pairs:
+        by.setdefault(p["fam"], []).append(p)
+    count = lambda k: sum(p["vet"] == k for p in moved)
+    word = lambda v: "-" if not v else "too few epochs or cycles" if v[0] is None else "%s (residual ratio %.2g)" % (
+        {"gcvs": "the GCVS period", "modern": "Gaia's period", "either": "either period"}[v[0]], v[1])
+    tally = lambda key, k: sum(1 for p in rest if p[key] and p[key][0] == k)
+    nd = sum(1 for p in rest if p["dasch"])
+    rel = sum(1 for p in moved if p["vet"] == "published-solution" and p["relation"])
+    gerr = sum(1 for p in moved if p["vet"] == "published-solution" and p["gaia"] and p["gaia"][0] == "gcvs")
+    derr = sum(1 for p in moved if p["vet"] == "published-solution" and p["dasch"] and p["dasch"][0] == "modern")
+    third_ = "of the %d Gaia's photometry holds apart, DASCH's plates hold Gaia's period for %d, the GCVS period for %d and either for %d of %d" % (
+        len(rest), tally("dasch", "modern"), tally("dasch", "gcvs"), tally("dasch", "either"), nd)
+    print("GCVS pulsators with a period: %d; matched to a Gaia DR3 period: %d (%s); |dP| over its allowance, quantiles 50/84/99 %s; beyond %g: %d: another star %d, "
+          "two periods of one star %d, a companion's light time %d, Gaia's period where its own photometry fits the GCVS period better %d, not measured by Gaia's photometry %d; "
+          "%s; the GCVS's own era on DASCH's plates %d; a Mira's published secular change %d; unexplained %d, %d of them with the GCVS period on DASCH's plates of its era (%s)" % (
+              len(sample), len(pairs), ", ".join("%s %d" % (k, len(v)) for k, v in sorted(by.items())), [round(float(v), 2) for v in np.percentile(zs, [50, 84, 99])], z,
+              len(moved), count("misidentified"), rel, count("binary"), gerr, count("not-measured"), third_, derr, count("secular-change"), len(left), len(held),
+              ", ".join(held) or "-"))
+    for k, v in sorted(by.items()):
+        r = np.array([p["dP"] / p["period"] for p in v])
+        print("  %s: %d pairs, dP/P median %.2e, robust scatter %.2e, beyond %g: %d, unexplained %d" % (k, len(v), float(np.median(r)), float(core.robust_sigma(r)), z,
+                                                                                                   sum(p["z"] > z for p in v), sum(p in left for p in v)))
+    for p in sorted(moved, key=lambda p: (p["vet"] is not None, p["name"] not in held, p["vet"] or "", -p["z"]))[:80]:
+        print("  %s (%s, %s-%s %s): GCVS P %s (epoch %.0f), Gaia DR3 %s at %.1f arcsec, G %.2f, %s P %.7f +- %.1e; dP/P %.2e, %.1f allowances; RUWE %s, NSS %d; %s; "
+              "Gaia's photometry %s, DASCH %s; %s" % (
+                  p["name"], p["type"], p["max"], p["min"], p["band"], p["period_mark"], 2016 - p["years"], p["source_id"], p["sep"], p["G"] or 0, p["which"], p["Pg"], p["eg"],
+                  p["dP"] / p["period"], p["z"], p["ruwe"], p["nss"], p["relation"] or p["near"] or ("G window %.1f-%.1f" % p["window"] if p["window"] else "-"),
+                  word(p["gaia"]), word(p["dasch"]), p["vet"] or "unexplained"))
+    json.dump(moved, open(core.results("period_changes.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gcvs_gaia_period_change", "Periods that changed across the century",
+            "GCVS (its own site); Gaia DR3 by table upload and its epoch photometry (Gaia archive); AAVSO VSX; DASCH",
+            "GCVS pulsators with a period matched to a Gaia DR3 period: %d" % len(pairs), os.path.abspath(__file__), "periodchange", len(pairs), "stars",
+            dict(radius_arcsec=radius_arcsec, z=z, near_arcsec=near_arcsec),
+            "|dP| over its allowance: quantiles 50/84/99 %s; dP/P robust scatter by family %s" % (
+                [round(float(v), 2) for v in np.percentile(zs, [50, 84, 99])],
+                ", ".join("%s %.1e" % (k, float(core.robust_sigma(np.array([p["dP"] / p["period"] for p in v])))) for k, v in sorted(by.items()))),
+            "a period moved by more than %g allowances of measurement and evolution, which Gaia's own photometry holds apart from the GCVS period" % z,
+            "%d moved: %d another star, %d two periods of one star, %d a companion's light time, %d Gaia's period where its own photometry fits the GCVS period better, "
+            "%d not measured by Gaia's photometry; %s; %d the GCVS's own era on DASCH's plates; %d a Mira's published secular change; %d unexplained, %d of them with the "
+            "GCVS period on DASCH's plates of its era (%s)" % (len(moved), count("misidentified"), rel, count("binary"), gerr, count("not-measured"), third_, derr,
+                                                               count("secular-change"), len(left), len(held), ", ".join(held) or "-"),
+            [dict(target="gcvs:%s" % p["name"].replace(" ", "_"), stat=round(p["z"], 2), unit="allowances of period change", vet=p["vet"],
+                  note="%s; GCVS P %s, Gaia DR3 %s %s P %.7f; dP/P %.2e over %.0f years%s; Gaia's photometry %s, DASCH %s" % (
+                      p["type"], p["period_mark"], p["source_id"], p["which"], p["Pg"], p["dP"] / p["period"], p["years"],
+                      "; " + (p["relation"] or p["near"]) if p["relation"] or p["near"] else "", word(p["gaia"]), word(p["dasch"]))) for p in moved])
+        print("recorded")
+
+
+pecflags_DOC = r"""The peculiar classifications of the twentieth century: the Hipparcos stars whose catalogued spectral type carries a mark of something the classifier could not place, a composite spectrum (comp or a second type after +), emission (e), a peculiar spectrum (p) or a chemically peculiar element (Si, Sr, Cr, Eu, Hg, Mn), carbon or s-process bands (C, Ba, CH, CN, S), and nebulous lines (n), each read in Gaia DR3 for what explains the mark today: for a composite, a Gaia neighbour within 10 arcsec and 5 mag, RUWE above 1.4, a non-single-star solution or radial velocities that vary; for emission, an ESP-ELS emission-line class among the stars ESP-ELS measured, a long-period variable in Gaia's classifier for an M, S or C star, whose pulsation drives the shocks that make its lines, a Ca II activity index above 0.05 nm for an F, G or K star or an M dwarf, and, for an O or B star ESP-ELS measured without emission, the disc of a Be star, which comes and goes; for a peculiar spectrum, a rotational variable of the chemically peculiar kind (ACV, CP, MCP, ROAP, SXARI) among the variables Gaia's classifier placed; for carbon and s-process bands, Gaia's carbon-star flag on a long-period variable or [Ce/Fe] above 0.4 from GSP-Spec; for nebulous lines, a vbroad above 50 km/s; Gaia's carbon flag does not test an S star, whose mark is left unmeasured unless GSP-Spec gives its cerium. A mark Gaia has no measurement to test is counted apart, and one Gaia measured without finding its cause is an old anomaly with no modern resolution.
+
+    python -I seti.py dimming pecflags [record]"""
+
+PECFLAGS_MARKS = (("composite", r"comp|\+\s*(?:\.\.\.|[OBAFGKMDW][\dCNe])"), ("emission", r"(?<!F)e(?![a-z])"), ("peculiar", r"(?<!com)p|Si|Sr|Cr|Eu|Hg|Mn"),
+                  ("carbon", r"Ba\d|Ba\b|(?<![A-Za-z])CH(?![a-z])|CN[-+\d]|(?<![A-Za-z])[CS]\d"), ("nebulous", r"(?<=[IVab\d:])nn?"))
+
+
+def pecflags_main(record=False):
+    from setitools import catalogues
+    rows = core.tap_async("gaia", "SELECT h.hip, h.sptype, g.source_id, g.ra, g.dec, g.phot_g_mean_mag, g.ruwe, g.non_single_star, g.rv_chisq_pvalue, g.rv_renormalised_gof, "
+                                  "g.vbroad, a.classlabel_espels, a.ew_espels_halpha, a.cefe_gspspec, a.teff_gspphot, a.activityindex_espcs FROM public.hipparcos AS h JOIN gaiadr3.hipparcos2_best_neighbour AS b "
+                                  "ON b.original_ext_source_id = h.hip JOIN gaiadr3.gaia_source AS g ON g.source_id = b.source_id LEFT JOIN gaiadr3.astrophysical_parameters AS a "
+                                  "ON a.source_id = g.source_id WHERE h.sptype IS NOT NULL", maxrec=200000)
+    flagged = []
+    for r in rows:
+        sp = str(r["sptype"])
+        marks = [k for k, pat in PECFLAGS_MARKS if re.search(pat, sp)]
+        if marks:
+            flagged.append(dict(hip=int(num(r["hip"])), sptype=sp, marks=marks, source_id=str(r["source_id"]), ra=float(r["ra"]), dec=float(r["dec"]), G=num(r["phot_g_mean_mag"]),
+                                ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), rvp=num(r["rv_chisq_pvalue"]), gof=num(r["rv_renormalised_gof"]),
+                                vbroad=num(r["vbroad"]), els=str(r["classlabel_espels"] or "").strip(), ew=num(r["ew_espels_halpha"]), cefe=num(r["cefe_gspspec"]),
+                                teff=num(r["teff_gspphot"]), act=num(r["activityindex_espcs"]),
+                                pmra=None, pmdec=None, pos_epoch=2016.0))
+    comp = [f for f in flagged if "composite" in f["marks"]]
+    near = catalogues.gaia_match(comp, cols="g.source_id, g.phot_g_mean_mag", radius_arcsec=10.0) if comp else {}
+    for i, f in enumerate(comp):
+        f["neighbours"] = [("Gaia DR3 %s" % m["source_id"], round(float(m["sep"]), 1), num(m["phot_g_mean_mag"])) for m in near.get(i, [])
+                           if str(m["source_id"]) != f["source_id"] and num(m["phot_g_mean_mag"]) is not None and f["G"] is not None and num(m["phot_g_mean_mag"]) - f["G"] < 5]
+    ids = [f["source_id"] for f in flagged]
+    cls = {k: str(v["best_class_name"]).strip() for k, v in core.tap_by_ids("gaia", ids, "SELECT source_id, best_class_name FROM gaiadr3.vari_classifier_result "
+                                                                                         "WHERE source_id IN (%s)").items()}
+    lpv = {k: str(v["is_cstar"]).lower() for k, v in core.tap_by_ids("gaia", ids, "SELECT source_id, is_cstar FROM gaiadr3.vari_long_period_variable WHERE source_id IN (%s)").items()}
+    tally = {k: dict(n=0, explained=0, unmeasured=0, left=0) for k, _ in PECFLAGS_MARKS}
+    out = []
+    for f in flagged:
+        f["cls"], f["cstar"] = cls.get(f["source_id"], ""), lpv.get(f["source_id"], "")
+        for k in f["marks"]:
+            t = tally[k]
+            t["n"] += 1
+            if k == "composite":
+                rv_var = f["rvp"] is not None and f["rvp"] < 0.01 and (f["gof"] or 0) > 4
+                why = ("a neighbour %s" % (f["neighbours"][0],) if f.get("neighbours") else "RUWE %.2f" % f["ruwe"] if (f["ruwe"] or 0) > 1.4 else
+                       "a non-single-star solution" if f["nss"] else "varying radial velocities" if rv_var else None)
+                measured = f["ruwe"] is not None
+            elif k == "emission":
+                hot, dwarf = re.match(r"^[OB]", f["sptype"]), re.match(r"^[FGK]|^M[\d.]+\s*V", f["sptype"])
+                cool = re.match(r"^[MSC]", f["sptype"]) and not dwarf
+                why = (("ESP-ELS class %s" % f["els"]) if f["els"] else ("a long-period variable") if cool and f["cls"] == "LPV" else
+                       ("activity index %.3f nm" % f["act"]) if dwarf and (f["act"] or 0) > 0.05 else
+                       "a Be star measured without emission" if hot and f["ew"] is not None else None)
+                measured = f["ew"] is not None or bool(f["els"]) or (cool and bool(f["cls"])) or (dwarf and f["act"] is not None)
+            elif k == "peculiar":
+                why = ("Gaia class %s" % f["cls"]) if re.match(r"^(ACV|CP|MCP|ROAP|SXARI)", f["cls"]) or "ACV" in f["cls"] else None
+                measured = bool(f["cls"])
+            elif k == "carbon":
+                why = "a carbon-star LPV" if f["cstar"] == "true" else ("[Ce/Fe] %+.2f" % f["cefe"]) if (f["cefe"] or -9) > 0.4 else None
+                measured = (f["cstar"] != "" and not re.match(r"^S\d", f["sptype"])) or f["cefe"] is not None
+            else:
+                why = ("vbroad %.0f km/s" % f["vbroad"]) if (f["vbroad"] or 0) > 50 else None
+                measured = f["vbroad"] is not None
+            if why:
+                t["explained"] += 1
+            elif not measured:
+                t["unmeasured"] += 1
+            else:
+                t["left"] += 1
+            out.append(dict(hip=f["hip"], sptype=f["sptype"], mark=k, source_id=f["source_id"], why=why,
+                            vet=("binary" if k == "composite" else ("variable-star" if why in ("a long-period variable", "a Be star measured without emission") else
+                                                                     "active-star") if k == "emission" else "variable-star" if k == "peculiar" else
+                                 "abundance-pattern" if k == "carbon" else "rotation") if why else None if measured else "not-measured"))
+    left = [o for o in out if o["vet"] is None]
+    print("Hipparcos stars with a type and a Gaia DR3 best neighbour: %d; with a peculiarity mark: %d; by mark (n, explained by Gaia, not measured by Gaia, left): %s; "
+          "unexplained %d" % (len(rows), len(flagged), "; ".join("%s %d %d %d %d" % (k, t["n"], t["explained"], t["unmeasured"], t["left"]) for k, t in tally.items()), len(left)))
+    for k, _ in PECFLAGS_MARKS:
+        sample = [o for o in left if o["mark"] == k][:8]
+        print("  %s left: %s" % (k, "; ".join("HIP %d %s" % (o["hip"], o["sptype"]) for o in sample) or "-"))
+    json.dump(dict(tally=tally, out=out), open(core.results("peculiar_flags.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "hipparcos_peculiar_flags", "The peculiar classifications of the twentieth century", "Hipparcos catalogue spectral types and Gaia DR3 (Gaia archive)",
+            "Hipparcos stars with a peculiarity mark in their type and a Gaia DR3 best neighbour: %d" % len(flagged), os.path.abspath(__file__), "pecflags", len(flagged),
+            "stars", {}, "Gaia's own neighbours, binarity, emission classes, variability classes, carbon flags, [Ce/Fe] and vbroad",
+            "a mark Gaia measured without finding its cause",
+            "; ".join("%s: %d, %d explained, %d not measured, %d left" % (k, t["n"], t["explained"], t["unmeasured"], t["left"]) for k, t in tally.items()),
+            [dict(target="hip:%d#%s" % (o["hip"], o["mark"]), stat=None, unit="mark", vet=o["vet"], note="%s; %s" % (o["sptype"], o["why"] or "-")) for o in out])
+        print("recorded")
+
+
+typechange_DOC = r"""Spectral types that changed in a century: the Hipparcos stars within 100 pc with a catalogued spectral type (Henry Draper classifications of 1918-24, the Michigan types of 1975-99 and later MK types among them) and a Gaia DR3 best neighbour, each star's temperature read on Pecaut and Mamajek's (2013) dwarf scale in subclasses three times, from its catalogued type, from its Hipparcos B-V of about 1991 and from Gaia DR3's GSP-Phot fit and BP-RP colour of 2014-17; a star whose Gaia temperature lies more than five robust scatters of its class and two subclasses from its type is read for a Gaia neighbour that is another star (parallaxes five sigmas apart or V - G 1 mag from what the colour gives), for a companion (RUWE above 1.4, a non-single-star solution, a composite type, or several components or a double-star flag in Hipparcos's own solution), for Gaia's fit against Gaia's own colour, and for the 1991 colour against the B-V that each temperature gives, in its own error with 0.1 mag for the scale: within three of Gaia's nothing changed since 1991 and the catalogued type was the error, and beyond five of Gaia's and nearer the type's, with Gaia's own colour on Gaia's temperature, the star changed after 1991.
+
+    python -I seti.py dimming typechange [record] [--plx-min 10] [--widths 5] [--min-sub 2] [--tol-sub 2]"""
+
+
+def typechange_parse(sp):
+    """A spectral type's subclass number on the O0 = 0 ... M0 = 60 scale, with whether it is composite, or None for types without a temperature class."""
+    m = re.match(r"^\s*(?:sd|esd|usd|d|g|sg)?([OBAFGKM])\s*([0-9]+(?:\.[0-9]+)?)?", sp or "")
+    if not m or m.group(2) is None:
+        return None, False
+    return 10 * "OBAFGKM".index(m.group(1)) + float(m.group(2)), bool(re.search(r"\+|comp|SB", sp))
+
+
+def typechange_main(record=False, plx_min=10.0, widths=5.0, min_sub=2.0, tol_sub=2.0):
+    from setitools import catalogues
+    seq = [r for r in catalogues.dwarf_sequence() if r["sub"] < 70]
+
+    def scale(key):
+        pts = sorted((r[key], r["sub"]) for r in seq if r[key] is not None)
+        x, y = np.array([p[0] for p in pts]), np.array([p[1] for p in pts])
+        return lambda v: float(np.interp(v, x, y))
+    by_teff, by_bv, by_bprp = scale("teff"), scale("bv"), scale("bprp")
+    pts = sorted((r["sub"], r["bv"]) for r in seq if r["bv"] is not None)
+    bv_of = lambda s: float(np.interp(s, [p[0] for p in pts], [p[1] for p in pts]))  # noqa: E731
+    rows = core.tap_async("gaia", "SELECT h.hip, h.sptype, h.r_sptype, h.vmag, h.b_v, h.e_b_v, h.plx, h.e_plx, h.ccdm, h.ncomp, h.multflag, g.source_id, g.teff_gspphot, g.ruwe, g.non_single_star, "
+                                  "g.bp_rp, g.parallax, g.parallax_error, g.phot_g_mean_mag FROM public.hipparcos AS h "
+                                  "JOIN gaiadr3.hipparcos2_best_neighbour AS b ON b.original_ext_source_id = h.hip "
+                                  "JOIN gaiadr3.gaia_source AS g ON g.source_id = b.source_id WHERE h.plx > %g" % plx_min, maxrec=200000)
+    stars = []
+    for r in rows:
+        s_type, composite = typechange_parse(r["sptype"])
+        t = num(r["teff_gspphot"])
+        if s_type is None or not t:
+            continue
+        bv, ebv, bprp = num(r["b_v"]), num(r["e_b_v"]) or 0.0, num(r["bp_rp"])
+        s_bv = by_bv(bv) if bv is not None else None
+        # the 1991 colour's own error in subclasses, from the scale's slope at the star's colour
+        e_sub = abs(by_bv(bv + ebv) - by_bv(bv - ebv)) / 2 if bv is not None and ebv else 0.0
+        ph, eh, pg, eg = num(r["plx"]), num(r["e_plx"]), num(r["parallax"]), num(r["parallax_error"])
+        vmag, g = num(r["vmag"]), num(r["phot_g_mean_mag"])
+        # the Gaia neighbour is the Hipparcos star: parallaxes within five sigmas and V - G within 1 mag of what its colour gives
+        # V - G from BP-RP (Riello et al. 2021)
+        vg = 0.02704 - 0.01424 * bprp + 0.2156 * bprp ** 2 - 0.01426 * bprp ** 3 if bprp is not None else None
+        same = not (ph and eh and pg and eg and abs(ph - pg) > 5 * math.hypot(eh, eg)) and not (vmag is not None and g is not None and vg is not None
+                                                                                            and abs(vmag - g - vg) > 1.0)
+        # Hipparcos's own multiplicity: more than one component in its solution, or its double-star flag (component, acceleration, orbital, variability-induced or
+        # stochastic solution); a CCDM entry alone also lists wide pairs whose light stays apart
+        double = (num(r["ncomp"]) or 1) > 1 or str(r["multflag"] or "").strip() in ("C", "G", "O", "V", "X")
+        stars.append(dict(hip=int(num(r["hip"])), source_id=str(r["source_id"]), sptype=str(r["sptype"]).strip(), src=str(r["r_sptype"] or "").strip(), s_type=s_type,
+                          composite=composite or double, teff=t, s_gaia=by_teff(t), s_bv=s_bv, e_sub=e_sub, s_bprp=by_bprp(bprp) if bprp is not None else None,
+                          bv=bv, ebv=ebv, bprp=bprp, ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), same=same, plx=(ph, eh, pg, eg), mags=(vmag, g)))
+    for s in stars:
+        s["d"] = s["s_gaia"] - s["s_type"]
+    centre, spread = {}, {}
+    for L in "OBAFGKM":
+        dd = np.array([s["d"] for s in stars if "OBAFGKM"[int(s["s_type"] // 10)] == L])
+        if len(dd) >= 20:
+            centre[L], spread[L] = float(np.median(dd)), float(core.robust_sigma(dd))
+    off = []
+    for s in stars:
+        L = "OBAFGKM"[int(s["s_type"] // 10)]
+        if L in centre and abs(s["d"] - centre[L]) > max(widths * spread[L], min_sub):
+            off.append(s)
+    for s in off:
+        # the 1991 colour against the B-V each temperature gives, in its own error with 0.1 mag for the scale: within three of Gaia's nothing changed since 1991,
+        # beyond five of Gaia's and nearer the type's, with Gaia's own colour on Gaia's temperature, the star changed
+        bv_g, bv_t = bv_of(s["s_gaia"]), bv_of(s["s_type"])
+        e = math.hypot(s["ebv"], 0.1)
+        bv_gaia = s["bv"] is not None and abs(s["bv"] - bv_g) <= 3 * e
+        s["changed"] = (s["bv"] is not None and abs(s["bv"] - bv_g) > 5 * e and abs(s["bv"] - bv_t) < abs(s["bv"] - bv_g) and s["s_bprp"] is not None
+                        and abs(s["s_bprp"] - s["s_gaia"]) <= tol_sub)
+        s["vet"] = ("misidentified" if not s["same"] else
+                    "binary" if (s["ruwe"] or 0) > 1.4 or s["nss"] or s["composite"] else
+                    "fit-boundary" if s["s_bprp"] is not None and abs(s["s_bprp"] - s["s_gaia"]) > tol_sub else
+                    "published-solution" if bv_gaia else None)
+    left = [s for s in off if s["vet"] is None]
+    print("%d Hipparcos stars within %g pc with a parsed type and a Gaia GSP-Phot temperature; Gaia minus type by class (median, robust scatter in subclasses): %s" % (
+        len(stars), 1000 / plx_min, ", ".join("%s %+.2f %.2f" % (L, centre[L], spread[L]) for L in centre)))
+    print("beyond %g scatters and %g subclasses: %d; a Gaia neighbour that is another star %d, a companion %d, Gaia's fit against its own colour %d, a type the 1991 colour "
+          "already contradicts %d; the 1991 colour with the type and Gaia's colour with Gaia %d; unexplained %d" % (
+              widths, min_sub, len(off), sum(s["vet"] == "misidentified" for s in off), sum(s["vet"] == "binary" for s in off), sum(s["vet"] == "fit-boundary" for s in off),
+              sum(s["vet"] == "published-solution" for s in off), sum(1 for s in off if s["changed"]), len(left)))
+    for s in sorted(off, key=lambda s: (s["vet"] is not None, -abs(s["d"])))[:40]:
+        print("  HIP %d %s (source %s): type %.1f, B-V %s +- %s (%s), Gaia %.0f K (%.1f), BP-RP %s (%s), RUWE %s, NSS %d, parallaxes %s, V and G %s%s; %s" % (
+            s["hip"], s["sptype"], s["src"] or "-", s["s_type"], s["bv"], s["ebv"], "%.1f" % s["s_bv"] if s["s_bv"] is not None else "-", s["teff"], s["s_gaia"], s["bprp"],
+            "%.1f" % s["s_bprp"] if s["s_bprp"] is not None else "-", s["ruwe"], s["nss"], s["plx"], s["mags"], ", changed after 1991" if s["changed"] else "",
+            s["vet"] or "unexplained"))
+    json.dump(dict(centre=centre, spread=spread, off=off), open(core.results("spectral_type_change.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "hipparcos_gaia_type_change", "Spectral types that changed in a century", "Hipparcos catalogue spectral types and B-V (Gaia archive); Gaia DR3 GSP-Phot; "
+            "Pecaut and Mamajek's dwarf sequence", "Hipparcos stars within %g pc with a type and a Gaia temperature: %d" % (1000 / plx_min, len(stars)),
+            os.path.abspath(__file__), "typechange", len(stars), "stars", dict(plx_min=plx_min, widths=widths, min_sub=min_sub, tol_sub=tol_sub),
+            "the scatter of Gaia's temperature about the catalogued type in each class: %s" % ", ".join("%s %.2f" % (L, spread[L]) for L in spread),
+            "a type %g scatters and %g subclasses from Gaia's temperature" % (widths, min_sub),
+            "%d beyond: %d whose Gaia neighbour is another star, %d with a companion, %d with Gaia's fit against its own colour, %d whose type the 1991 colour already "
+            "contradicts; %d with the 1991 colour beside the type and Gaia's colour beside Gaia; %d unexplained" % (
+                len(off), sum(s["vet"] == "misidentified" for s in off), sum(s["vet"] == "binary" for s in off), sum(s["vet"] == "fit-boundary" for s in off),
+                sum(s["vet"] == "published-solution" for s in off), sum(1 for s in off if s["changed"]), len(left)),
+            [dict(target="hip:%d" % s["hip"], stat=round(s["d"], 2), unit="subclasses, Gaia's temperature minus the catalogued type", vet=s["vet"],
+                  note="%s (source %s); B-V %s, Gaia %.0f K, BP-RP %s; RUWE %s, NSS %d%s" % (s["sptype"], s["src"] or "-", s["bv"], s["teff"], s["bprp"], s["ruwe"],
+                                                                                       s["nss"], "; the 1991 colour with the type" if s["changed"] else "")) for s in off])
+        print("recorded")
+
+
 overbright_DOC = r"""Stars brighter than themselves: Gaia DR3 stars within 100 pc with parallaxes at twenty sigma whose RVS spectra give GSP-Spec temperatures of 4000-5500 K and dwarf gravities, log g above 4.2, single in Gaia's astrometry (RUWE below 1.4, no non-single-star solution), their absolute G against the main sequence fitted to the same stars in temperature and metallicity; two equal stars unresolved stand 0.753 mag above it, so a star brighter than that by three widths of the sequence carries light no second star of its kind gives, a reflector's or a young star's, and each is read for GSP-Spec's own flags on the fit (any of the thirteen parameter flags at 2 or above), for the MK type Hipparcos gives it through Gaia's best-neighbour table (a luminosity class of I to IV marks a giant or subgiant whose gravity the RVS fit missed), for its activity index (Gaia's Ca II infrared triplet) and for its RV amplitude.
 
     python -I seti.py dimming overbright [record] [--plx-sigma 20] [--teff 4000 5500] [--logg-min 4.2] [--twin 0.753] [--widths 3] [--activity-max 0.05]"""
@@ -3036,6 +3767,10 @@ def overbright_main(record=False, plx_sigma=20.0, teff=[4000.0, 5500.0], logg_mi
 
 
 APPROACHES = {
+    "pecflags": (lambda: core.run_cli(pecflags_main), pecflags_DOC),
+    "periodchange": (lambda: core.run_cli(periodchange_main), periodchange_DOC),
+    "stopped": (lambda: core.run_cli(stopped_main), stopped_DOC),
+    "typechange": (lambda: core.run_cli(typechange_main), typechange_DOC),
     "overbright": (lambda: core.run_cli(overbright_main), overbright_DOC),
     "candles": (lambda: core.run_cli(candles_main), candles_DOC),
     "irchanged": (lambda: core.run_cli(irchanged_main), irchanged_DOC),

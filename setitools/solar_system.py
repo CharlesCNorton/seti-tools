@@ -5855,6 +5855,149 @@ def copycomets_main(record=False, d_max=0.05, family_q=0.1, arc_min_d=30.0):
         print("recorded")
 
 
+jupl12_DOC = r"""Bodies held at Jupiter's L1 and L2 points: asteroids and comets of JPL's Small-Body Database on bound orbits reaching from inside 5.9 au to beyond 4.6 au, each placed at its element epoch by its own elements against Jupiter's place at that epoch (the ERFA ephemeris astropy carries), those within R_AU of the L1 or L2 point, 0.0683 of Jupiter's distance from Jupiter toward and away from the Sun, where nothing stays without station-keeping and a craft watching Jupiter would sit, counted against the same volumes at the points' distances 120 deg round from Jupiter either way, clear of the Trojan clouds and the Hildas' aphelia; each body found there followed across its observed arc in JPL Horizons every STEP_DAYS, a body within R_AU of its point for HELD of an arc of a year or more held there, and one that passes read for an entry into Jupiter's Hill sphere on the arc, the way a comet is captured by Jupiter for a while and leaves, by L1 or L2; an orbit on an arc under 30 days or of condition code 6 or more is placed and left unfollowed.
+
+    python -I seti.py solar_system jupl12 [record] [--r-au 0.15] [--step-days 30] [--held 0.5]"""
+
+JUPL12_H = 0.0683  # (mu / 3)^(1/3) for Jupiter: the L1 and L2 points' distance from Jupiter, and its Hill radius, as a fraction of its distance from the Sun
+
+
+def jupl12_place(o):
+    """A bound orbit's heliocentric J2000 ecliptic position (au) at its element epoch from its elements."""
+    a, e, M = o["a"], o["e"], math.radians(o["ma"] % 360.0)
+    E = M if e < 0.8 else math.pi
+    for _ in range(60):
+        dE = (E - e * math.sin(E) - M) / (1 - e * math.cos(E))
+        E -= dE
+        if abs(dE) < 1e-13:
+            break
+    xp, yp = a * (math.cos(E) - e), a * math.sqrt(1 - e * e) * math.sin(E)
+    i, O, w = (math.radians(o[k]) for k in ("i", "om", "w"))
+    P = (math.cos(O) * math.cos(w) - math.sin(O) * math.sin(w) * math.cos(i), math.sin(O) * math.cos(w) + math.cos(O) * math.sin(w) * math.cos(i), math.sin(w) * math.sin(i))
+    Q = (-math.cos(O) * math.sin(w) - math.sin(O) * math.cos(w) * math.cos(i), -math.sin(O) * math.sin(w) + math.cos(O) * math.cos(w) * math.cos(i),
+         math.cos(w) * math.sin(i))
+    return np.array([xp * P[k] + yp * Q[k] for k in range(3)])
+
+
+def jupl12_jupiter(jds):
+    """Jupiter's heliocentric J2000 ecliptic positions (au) at Julian dates JDS (TDB) from the ERFA ephemeris astropy carries."""
+    from astropy.coordinates import get_body_barycentric
+    from astropy.time import Time
+    t = Time(np.atleast_1d(jds), format="jd", scale="tdb")
+    x, y, z = get_body_barycentric("jupiter", t).xyz.to("AU").value - get_body_barycentric("sun", t).xyz.to("AU").value
+    eps = math.radians(23.4392911)
+    return np.stack([x, y * math.cos(eps) + z * math.sin(eps), -y * math.sin(eps) + z * math.cos(eps)], axis=1)
+
+
+def jupl12_points(rj, deg=0.0):
+    """The L1 and L2 points of Jupiter at heliocentric position RJ, turned DEG about the ecliptic pole."""
+    c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
+    r = np.array([c * rj[0] - s * rj[1], s * rj[0] + c * rj[1], rj[2]])
+    return r * (1 - JUPL12_H), r * (1 + JUPL12_H)
+
+
+def jupl12_horizons(command, start, stop, step_days):
+    """Heliocentric J2000 ecliptic positions (au) of a Horizons body between two Julian dates every STEP_DAYS, as (Julian date, position) pairs."""
+    q = {"format": "json", "COMMAND": "'%s'" % command, "EPHEM_TYPE": "'VECTORS'", "CENTER": "'500@10'", "REF_PLANE": "'ECLIPTIC'", "START_TIME": "'JD%.5f'" % start,
+         "STOP_TIME": "'JD%.5f'" % stop, "STEP_SIZE": "'%d d'" % step_days, "VEC_TABLE": "'1'", "CSV_FORMAT": "'YES'", "OUT_UNITS": "'AU-D'", "OBJ_DATA": "'NO'"}
+    txt = json.loads(core.get("https://ssd.jpl.nasa.gov/api/horizons.api?" + urllib.parse.urlencode(q), timeout=180))["result"]
+    if "$$SOE" not in txt:
+        return []
+    out = []
+    for line in txt.split("$$SOE")[1].split("$$EOE")[0].strip().splitlines():
+        c = [x.strip() for x in line.split(",")]
+        out.append((round(float(c[0]), 4), np.array([float(c[2]), float(c[3]), float(c[4])])))
+    return out
+
+
+def jupl12_main(record=False, r_au=0.15, step_days=30.0, held=0.5):
+    from astropy.time import Time
+    from scipy.stats import poisson
+    fields = "full_name,pdes,spkid,a,e,i,om,w,ma,tp,epoch,H,data_arc,n_obs_used,condition_code,class,first_obs,last_obs"
+    rows = []
+    for kind in ("a", "c"):
+        rows += [dict(r, kind=kind) for r in sbdb_rows(["q|LT|5.9", "ad|GT|4.6"], fields, kind=kind)]
+    bodies, unplaced = [], 0
+    for r in rows:
+        o = {k: num(r[k]) for k in ("a", "e", "i", "om", "w", "ma", "tp", "epoch", "H", "data_arc", "n_obs_used", "condition_code")}
+        if None in (o["a"], o["e"], o["i"], o["om"], o["w"], o["epoch"]) or not 0 <= o["e"] < 1:
+            continue
+        if o["ma"] is None and o["tp"] is not None:
+            o["ma"] = 0.9856076686 / o["a"] ** 1.5 * (o["epoch"] - o["tp"])
+        if o["ma"] is None:
+            continue
+        o["poor"] = (o["data_arc"] or 0) < 30 or (o["condition_code"] or 0) >= 6
+        unplaced += o["poor"]
+        o.update(name=" ".join(str(r["full_name"]).split()), pdes=str(r["pdes"]).strip(), spkid=str(r["spkid"]).strip(), cls=str(r["class"]).strip(), kind=r["kind"],
+                 first=str(r["first_obs"] or "").strip(), last=str(r["last_obs"] or "").strip())
+        bodies.append(o)
+    epochs = sorted({o["epoch"] for o in bodies})
+    jup = dict(zip(epochs, jupl12_jupiter(epochs)))
+    near, ctrl, phase = [], {120: 0, 240: 0}, []
+    for o in bodies:
+        r, rj = jupl12_place(o), jup[o["epoch"]]
+        phase.append((math.degrees(math.atan2(r[1], r[0]) - math.atan2(rj[1], rj[0])) + 180.0) % 360.0 - 180.0)
+        l1, l2 = jupl12_points(rj)
+        d1, d2 = float(np.linalg.norm(r - l1)), float(np.linalg.norm(r - l2))
+        for deg in ctrl:
+            c1, c2 = jupl12_points(rj, deg)
+            ctrl[deg] += int(np.linalg.norm(r - c1) < r_au) + int(np.linalg.norm(r - c2) < r_au)
+        if min(d1, d2) < r_au:
+            o.update(point="L1" if d1 < d2 else "L2", d=min(d1, d2), dj=float(np.linalg.norm(r - rj)) / (JUPL12_H * float(np.linalg.norm(rj))))
+            near.append(o)
+    exp = sum(ctrl.values()) / float(len(ctrl))
+    # the Trojan clouds at 60 deg either side of Jupiter, as the placement's own check
+    ph = np.array(phase)
+    hist = [int(np.sum((ph >= lo) & (ph < lo + 30))) for lo in range(-180, 180, 30)]
+    p = float(poisson.sf(len(near) - 1, exp)) if near else 1.0
+    for o in near:
+        if o["poor"]:
+            o.update(steps=0, share=None, hill_min=None, vet="unconstrained-geometry")
+            continue
+        t0, t1 = Time(o["first"], scale="utc").jd, Time(o["last"], scale="utc").jd
+        t1 = max(t1, t0 + step_days)
+        track = jupl12_horizons(o["spkid"], t0, t1, step_days)
+        jv = dict(jupl12_horizons("599", t0, t1, step_days))
+        dpt, dj = [], []
+        for jd, rb in track:
+            if jd not in jv:
+                continue
+            l1, l2 = jupl12_points(jv[jd])
+            dpt.append(float(np.linalg.norm(rb - (l1 if o["point"] == "L1" else l2))))
+            dj.append(float(np.linalg.norm(rb - jv[jd])) / (JUPL12_H * float(np.linalg.norm(jv[jd]))))
+        o["steps"] = len(dpt)
+        o["share"] = sum(d < r_au for d in dpt) / float(len(dpt)) if dpt else None
+        o["hill_min"] = min(dj) if dj else None
+        o["vet"] = ("unconstrained-geometry" if not dpt or t1 - t0 < 365.25 else
+                    None if o["share"] >= held else
+                    "planetary-encounter" if o["hill_min"] < 1.0 else "chance-rate")
+    left = [o for o in near if o["vet"] is None]
+    count = lambda k: sum(o["vet"] == k for o in near)
+    print("Small-Body Database bound orbits reaching 4.6-5.9 au: %d placed (%d of them on arcs under 30 days or of condition code 6 or more); heliocentric longitude from Jupiter in 30 deg bins from -180: %s; within %g au of Jupiter's L1 or L2 point at their epoch: %d "
+          "(L1 %d, L2 %d) against %.1f in the same volumes 120 deg either side (%s; Poisson p %.3g); followed in Horizons: held for %g of a year's arc or more %d, entering "
+          "Jupiter's Hill sphere %d, passing %d, arcs under a year or poor orbits %d" % (
+              len(bodies), unplaced, hist, r_au, len(near), sum(o["point"] == "L1" for o in near), sum(o["point"] == "L2" for o in near), exp, ctrl, p, held, len(left),
+              count("planetary-encounter"), count("chance-rate"), count("unconstrained-geometry")))
+    for o in sorted(near, key=lambda o: (o["vet"] is not None, o["d"])):
+        print("  %s (%s): %.3f au from %s, %.2f Hill radii from Jupiter at epoch; a %.3f, e %.3f, i %.1f, arc %s to %s; %s steps, %s of them within %g au, least %s Hill radii; %s" % (
+            o["name"], o["cls"], o["d"], o["point"], o["dj"], o["a"], o["e"], o["i"], o["first"], o["last"], o["steps"],
+            "%.2f" % o["share"] if o["share"] is not None else "-", r_au, "%.2f" % o["hill_min"] if o["hill_min"] is not None else "-", o["vet"] or "unexplained"))
+    json.dump(dict(n=len(bodies), ctrl=ctrl, hist=hist, near=near), open(core.results("jupiter_l1_l2.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "sbdb_jupiter_l1_l2", "Bodies held at Jupiter's L1 and L2 points", "JPL Small-Body Database (sbdb_query.api); JPL Horizons",
+            "bound orbits reaching 4.6-5.9 au: %d" % len(bodies), os.path.abspath(__file__), "jupl12", len(bodies), "bodies",
+            dict(r_au=r_au, step_days=step_days, held=held), "the same volumes 120 deg either side of Jupiter: %.1f bodies; longitude from Jupiter in 30 deg bins: %s" % (exp, hist),
+            "a body within %g au of L1 or L2 for %g of an observed arc of a year or more" % (r_au, held),
+            "%d within %g au of L1 or L2 at epoch against %.1f (Poisson p %.3g): %d held, %d entering Jupiter's Hill sphere, %d passing, %d on arcs under a year or poor orbits" % (
+                len(near), r_au, exp, p, len(left), count("planetary-encounter"), count("chance-rate"), count("unconstrained-geometry")),
+            [dict(target="sbdb:%s" % o["pdes"], stat=round(o["share"], 3) if o["share"] is not None else None, unit="share of the observed arc within %g au of %s" % (r_au, o["point"]),
+                  vet=o["vet"], note="%s (%s), %.3f au from %s at epoch; a %.3f, e %.3f, i %.1f; arc %s to %s; least %s Hill radii from Jupiter" % (
+                      o["name"], o["cls"], o["d"], o["point"], o["a"], o["e"], o["i"], o["first"], o["last"],
+                      "%.2f" % o["hill_min"] if o["hill_min"] is not None else "-")) for o in near])
+        print("recorded")
+
+
 jupl3_DOC = r"""Lurkers at Jupiter's far Lagrange point: Small-Body Database bodies with semi-major axes within 0.35 au of Jupiter's and eccentricities below 0.3, their mean longitudes at their element epochs against Jupiter's, the count within 20 deg of the L3 point opposite Jupiter, where nothing natural stays and a watcher of the planet could be parked, against the Trojan swarms at L4 and L5 and the passing bodies between; each body near L3 read for its class, since a Trojan of wide libration reaches far from its point, and for its arc.
 
     python -I seti.py solar_system jupl3 [record] [--half-width-deg 20] [--a-tol 0.35] [--e-max 0.3]"""
@@ -7050,6 +7193,7 @@ def circularmoons_main(record=False, e_max=0.05, i_max_deg=10.0):
 
 
 APPROACHES = {
+    "jupl12": (lambda: core.run_cli(jupl12_main), jupl12_DOC),
     "circularmoons": (lambda: core.run_cli(circularmoons_main), circularmoons_DOC),
     "firestrength": (lambda: core.run_cli(firestrength_main), firestrength_DOC),
     "hohmann": (lambda: core.run_cli(hohmann_main), hohmann_DOC),

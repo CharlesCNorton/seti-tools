@@ -17,6 +17,124 @@ from setitools.core import quiet_warnings
 
 # --------------------------------------------------------------------------------------------------------------
 
+network_DOC = r"""Hits that recur across stars in a common frame: every narrowband hit of the toolkit's curved-drift search of Breakthrough Listen's GBT high-resolution products (the first ON and OFF scans of the nearest stars' cadences, 2.84 Hz channels), each carried from the telescope's frame to the Solar System barycentre at its scan's start, toward its own target (the open-data API's coordinates); hits from different stars observed on different days whose barycentric frequencies agree within TOL_HZ are what a network of transmitters on one frequency standard would give, and are counted against the same count with each hit carried by the correction of another scan, which keeps the hits' density and moves only the frame; pairs that also agree at the telescope within TOL_HZ plus the two scans' own Doppler difference are terrestrial, and the others, set against the shuffled frames' own such pairs, are read for the allocations of satellite navigation and broadcast services and for the chance rate.
+
+    python -I seti.py breakthrough network [record] [--tol-hz 3] [--snr 20] [--trials 20]"""
+
+NETWORK_GBT = (38.4331, -79.8398, 807.0)
+NETWORK_BANDS = ((1164.0, 1189.0, "GPS L5 and Galileo E5a"), (1189.0, 1214.0, "Galileo E5b"), (1215.0, 1240.0, "GPS L2 and GLONASS G2"), (1240.0, 1300.0, "Galileo E6 and radar"),
+                 (1525.0, 1559.0, "Inmarsat downlink"), (1559.0, 1610.0, "GPS L1, Galileo E1 and GLONASS G1"), (1610.0, 1626.5, "Iridium"), (1080.0, 1100.0, "ADS-B and transponders"),
+                 (960.0, 1215.0, "aeronautical radionavigation"))
+
+
+def network_hits(snr):
+    """The curved search's hits above SNR: file, target, scan start (MJD), topocentric MHz and drift."""
+    import glob
+    out = []
+    for f in glob.glob(core.data("nearest_curved", "curved", "*.bin.json")):
+        js = json.load(open(f, encoding="utf-8"))
+        meta = js.get("meta") or {}
+        m = re.search(r"guppi_\d+_\d+_(.+?)_\d{4}\.gpuspec", meta.get("name", ""))
+        if not m or not meta.get("tstart"):
+            continue
+        for h in js.get("hits") or []:
+            if (h.get("snr_curved") or 0) >= snr:
+                out.append((meta["name"], m.group(1), float(meta["tstart"]), float(h["mhz"]), float(h.get("d1_hz_s") or 0.0)))
+    return out
+
+
+def network_coords(targets):
+    """Each target's J2000 position from the Breakthrough Listen open-data API, kept in the data cache."""
+    import urllib.parse
+    path = core.data("bl_target_coords.json")
+    known = json.load(open(path)) if os.path.exists(path) else {}
+    for t in sorted(set(targets) - set(known)):
+        raw = core.get("https://seti.berkeley.edu/opendata/api/query-files?" + urllib.parse.urlencode(dict(target=t, limit=1)), timeout=60, soft=True)
+        d = (json.loads(raw).get("data") or [None])[0] if raw else None
+        known[t] = (float(d["ra"]), float(d["decl"])) if d and d.get("ra") is not None else None
+    json.dump(known, open(path, "w"))
+    return known
+
+
+def network_pairs(f, star, day, tol):
+    """Pairs of hits from different stars on different days whose frequencies F (Hz) agree within TOL: (i, j) indices."""
+    order = np.argsort(f)
+    fs, st, dy = f[order], star[order], day[order]
+    ends = np.searchsorted(fs, fs + tol, side="right")
+    out = []
+    for a in np.where(ends - np.arange(len(fs)) > 1)[0]:
+        sl = slice(a + 1, ends[a])
+        for b in np.where((st[sl] != st[a]) & (dy[sl] != dy[a]))[0]:
+            out.append((int(order[a]), int(order[a + 1 + b])))
+    return out
+
+
+def network_main(record=False, tol_hz=3.0, snr=20.0, trials=20):
+    import astropy.units as u
+    from astropy.coordinates import EarthLocation, SkyCoord
+    from astropy.time import Time
+    hits = network_hits(snr)
+    coords = network_coords([h[1] for h in hits])
+    hits = [h for h in hits if coords.get(h[1])]
+    site = EarthLocation.from_geodetic(NETWORK_GBT[1] * u.deg, NETWORK_GBT[0] * u.deg, NETWORK_GBT[2] * u.m)
+    scans = sorted({(h[0], h[1], h[2]) for h in hits})
+    vc = {}
+    for name, t, mjd in scans:
+        ra, dec = coords[t]
+        vc[name] = float(SkyCoord(ra * u.deg, dec * u.deg).radial_velocity_correction(kind="barycentric", obstime=Time(mjd, format="mjd"), location=site).to(u.km / u.s).value)
+    c = 299792.458
+    ftopo = np.array([h[3] * 1e6 for h in hits])
+    v = np.array([vc[h[0]] for h in hits])
+    star = np.array([h[1] for h in hits])
+    day = np.array([int(h[2]) for h in hits])
+    fbary = ftopo / (1 + v / c)
+    real = network_pairs(fbary, star, day, tol_hz)
+    rng = np.random.default_rng(1)
+    names = [s[0] for s in scans]
+    nulls, null_sky = [], []
+    for _ in range(trials):
+        perm = dict(zip(names, rng.permutation(names)))
+        vw = np.array([vc[perm[h[0]]] for h in hits])
+        ps = network_pairs(ftopo / (1 + vw / c), star, day, tol_hz)
+        nulls.append(len(ps))
+        null_sky.append(sum(abs(ftopo[i] - ftopo[j]) > tol_hz + abs(vw[i] - vw[j]) / c * ftopo[i] for i, j in ps))
+    terrestrial = [(i, j) for i, j in real if abs(ftopo[i] - ftopo[j]) <= tol_hz + abs(v[i] - v[j]) / c * ftopo[i]]
+    land = set(terrestrial)
+    sky = [(i, j) for i, j in real if (i, j) not in land]
+    mu, sd = float(np.mean(nulls)), float(np.std(nulls))
+    mu_sky, sd_sky = float(np.mean(null_sky)), float(np.std(null_sky))
+    groups = []
+    for i, j in sky:
+        mhz = fbary[i] / 1e6
+        band = next((b[2] for b in NETWORK_BANDS if b[0] <= mhz < b[1]), None)
+        groups.append(dict(mhz=round(float(mhz), 6), a=hits[i][1], b=hits[j][1], da=int(day[i]), db=int(day[j]), df_hz=round(float(fbary[j] - fbary[i]), 2),
+                           dtopo_hz=round(float(ftopo[j] - ftopo[i]), 1), band=band, vet="broadcast-band" if band else None))
+    if len(sky) <= mu_sky + 3 * max(sd_sky, 1.0):
+        for g in groups:
+            g["vet"] = g["vet"] or "chance-rate"
+    left = [g for g in groups if g["vet"] is None]
+    print("curved-search hits at S/N %g or more with a target position: %d over %d scans and %d stars; pairs from different stars on different days agreeing within %g Hz at the "
+          "barycentre: %d, against %.1f +- %.1f with the frames of other scans (%d trials); %d of them agreeing at the telescope as well; the rest %d, against %.1f +- %.1f "
+          "in the shuffled frames: in navigation and broadcast allocations %d, at the chance rate %d; unexplained %d" % (
+              snr, len(hits), len(scans), len(set(star)), tol_hz, len(real), mu, sd, trials, len(terrestrial), len(sky), mu_sky, sd_sky,
+              sum(g["vet"] == "broadcast-band" for g in groups), sum(g["vet"] == "chance-rate" for g in groups), len(left)))
+    for g in sorted(groups, key=lambda g: (g["vet"] is not None, g["mhz"]))[:40]:
+        print("  %.6f MHz: %s (MJD %d) and %s (MJD %d), %+.2f Hz apart at the barycentre, %+.1f Hz at the telescope; %s; %s" % (
+            g["mhz"], g["a"], g["da"], g["b"], g["db"], g["df_hz"], g["dtopo_hz"], g["band"] or "-", g["vet"] or "unexplained"))
+    json.dump(dict(n=len(hits), real=len(real), nulls=nulls, terrestrial=len(terrestrial), groups=groups), open(core.results("bl_hit_network.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "bl_hits_common_frame", "Hits that recur across stars in a common frame", "Breakthrough Listen GBT high-resolution products (the toolkit's curved-drift hits); BL open-data API",
+            "curved-search hits at S/N %g or more: %d over %d stars" % (snr, len(hits), len(set(star))), os.path.abspath(__file__), "network", len(hits), "hits",
+            dict(tol_hz=tol_hz, snr=snr, trials=trials), "pairs with each hit carried by another scan's correction: %.1f +- %.1f" % (mu, sd),
+            "hits from different stars and days agreeing within %g Hz at the barycentre beyond the frame-shuffled count" % tol_hz,
+            "%d pairs against %.1f +- %.1f; %d agreeing at the telescope; the other %d against %.1f +- %.1f in the shuffled frames, %d in navigation and broadcast allocations; "
+            "%d unexplained" % (len(real), mu, sd, len(terrestrial), len(sky), mu_sky, sd_sky, sum(g["vet"] == "broadcast-band" for g in groups), len(left)),
+            [dict(target="bl:%s#%s#%.6f" % (g["a"], g["b"], g["mhz"]), stat=g["df_hz"], unit="Hz apart at the barycentre", vet=g["vet"],
+                  note="MJD %d and %d; %+.1f Hz at the telescope; %s" % (g["da"], g["db"], g["dtopo_hz"], g["band"] or "-")) for g in groups])
+        print("recorded")
+
+
 frames_DOC = r"""H I and OH lines tracked in the CMB, barycentre, star and planet frames through BL cadences; stacked ON sums against shifted-track nulls.
 
     python -I seti.py breakthrough frames --session AGBT16A_999_240 --target Hip3765 [--workers 6]
@@ -2946,6 +3064,7 @@ def waterhole_cli():
 
 
 APPROACHES = {
+    "network": (lambda: core.run_cli(network_main), network_DOC),
     "waterhole": (waterhole_cli, waterhole_DOC),
     "shgb": (lambda: core.run_cli(shgb_main), shgb_DOC),
     "highdrift": (highdrift_cli, highdrift_DOC),
