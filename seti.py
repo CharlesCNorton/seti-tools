@@ -409,6 +409,45 @@ def t_owner():
     return "epoch and catalogue positions %.3f and %.3f arcsec from the track, companion %.1f" % (d_now, d_cat, d_comp)
 
 
+@check("infrared: a modified blackbody fit recovers its temperature, and a hot spot of the microwave background taken out by the 217 GHz aperture restores it")
+def t_coldsky():
+    from setitools import infrared as ir
+    t0, beta = 15.0, 1.8
+    nus = np.array([857e9, 545e9, 353e9])
+    shape = nus ** (3 + beta) / np.expm1(ir.coldsky_H * nus / (ir.coldsky_K * t0))
+    s = shape / shape[0]
+    err = [0.02, 0.02, 0.02]
+    t = ir.coldsky_fit(list(s), err, beta)[0]
+    # a hot spot of the background: the same temperature in K_CMB at every band, which the 217 GHz aperture carries alone
+    dt = 0.3 / ir.coldsky_KCMB["217"]
+    flux = {b: v + dt * ir.coldsky_KCMB[b] for b, v in zip(("857", "545", "353"), s)}
+    flux["217"] = dt * ir.coldsky_KCMB["217"]
+    raw = ir.coldsky_fit([flux["857"], flux["545"], flux["353"]], err, beta)[0]
+    clean = ir.coldsky_cmb_correct(flux)
+    fixed = ir.coldsky_fit([clean["857"], clean["545"], clean["353"]], err, beta)[0]
+    assert abs(t - t0) < 0.1 and raw < t0 - 2 and abs(fixed - t0) < 0.1, (t, raw, fixed)
+    return "drawn at %.1f K: fitted %.2f K, %.2f K with the hot spot in, %.2f K with it taken out" % (t0, t, raw, fixed)
+
+
+@check("dimming: an MK type's luminosity class marks giants and subgiants, and IV-V does not")
+def t_mk():
+    from setitools import dimming as dm
+    cases = {"G5III-IVe": True, "G8IV:": True, "G4III-IV": True, "F7/F8V": False, "G1V": False, "sdF6": False, "K0IV-V": False, "G5IV/V": False, "K1III/IV": True,
+             "gK0": True, "G2Ib": True, "K2": False}
+    bad = {k: v for k, v in cases.items() if dm.overbright_evolved(k) != v}
+    assert not bad, bad
+    return "%d types read" % len(cases)
+
+
+@check("neighbourhood: alpha Centauri AB's mass from its visual orbit and parallax")
+def t_orbitmass():
+    from setitools import neighbourhood as nb
+    # alpha Centauri AB: a 17.59 arcsec, P 79.93 y, parallax 747.17 mas; its two masses sum to 2.04
+    m, e = nb.orbitmass_dynamical(17.59, 0.02, 79.93, 0.01, 747.17, 0.61)
+    assert 2.0 < m < 2.1 and e < 0.02, (m, e)
+    return "%.3f +- %.3f solar masses" % (m, e)
+
+
 @check("package: every docstring is one line")
 def t_docstrings():
     import ast
@@ -453,13 +492,42 @@ def online():
         from setitools import core
         return "%d row" % len(core.tap("vizier", 'SELECT TOP 1 * FROM "I/239/hip_main"'))
 
-    for fn in (a, b, c, d, e):
+    @check("online: SkyView")
+    def f():
+        from setitools import infrared as ir
+        d, _ = ir.coldsky_skyview("Planck 857 I", 242.2381, 29.6533, 0.5, 30)
+        return "Planck 857 GHz cutout %d x %d" % d.shape
+
+    @check("online: Herschel Science Archive")
+    def g():
+        return "%d row" % len(core.tap("https://archives.esac.esa.int/hsa/whsa-tap-server/tap/sync", "SELECT TOP 1 source_id FROM hsa.spire_point_source_350"))
+
+    @check("online: AAVSO VSX")
+    def h():
+        from setitools import dimming as dm
+        v = dm.candles_vsx(dict(ra=291.36617, dec=42.78436))
+        assert v, v
+        return "%s %s" % (v["name"], v["type"])
+
+    @check("online: OGLE collection of variable stars")
+    def i():
+        from setitools import dimming as dm
+        return "%d bytes of LMC Cepheid remarks" % len(core.get(dm.CANDLES_OGLE % ("lmc", "cep", "remarks.txt")))
+
+    @check("online: Sixth Orbit Catalog and the dwarf sequence")
+    def j():
+        from setitools import neighbourhood as nb
+        fmt = core.get(nb.orbitmass_ORB6.replace("orb6orbits.txt", "orb6format.txt"))
+        mv, m = nb.orbitmass_mlr()
+        return "%d bytes of ORB6 format; %d dwarf-sequence points" % (len(fmt), len(mv))
+
+    for fn in (a, b, c, d, e, f, g, h, i, j):
         fn()
 
 
 def selftest():
     for fn in (t_matched, t_spiky, t_lsf, t_recurrence, t_dropout, t_twin, t_absorption, t_frames, t_track, t_trend,
-               t_ratio, t_coverage, t_owner, t_skyfibre, t_glints, t_meteors, t_docstrings):
+               t_ratio, t_coverage, t_owner, t_skyfibre, t_glints, t_meteors, t_coldsky, t_mk, t_orbitmass, t_docstrings):
         fn()
     if "--online" in sys.argv:
         online()

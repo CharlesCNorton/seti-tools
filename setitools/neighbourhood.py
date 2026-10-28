@@ -4332,7 +4332,156 @@ def timecluster_main(record=False, window_d=1.0, shifts=500):
         print("recorded")
 
 
+orbitmass_DOC = r"""Binary stars heavier than their light: the Sixth Catalog of Orbits of Visual Binary Stars (Matson et al., USNO, read from its Georgia State mirror), its orbits of grades 1 and 2 with a Hipparcos number, both stars' V magnitudes unflagged and published errors on the period and the semi-major axis, within 100 pc by a parallax from Gaia DR3 through Gaia's Hipparcos best neighbours where Gaia's RUWE is below 1.4 and its parallax at ten sigma, and from the Hipparcos new reduction (van Leeuwen 2007) otherwise; the dynamical mass a^3 / (parallax^3 P^2) against the sum of each star's main-sequence mass for its absolute V from Pecaut and Mamajek's (2013) dwarf table, where a system heavier than its light by half again at three sigma (the orbit's and the parallax's errors with 10 per cent for the mass-luminosity relation) holds mass that does not shine; each is read for the two parallaxes' agreement, for the catalogue's own notes on the system, where an orbit called spurious, a ghost or contradicted by later measures is the published solution's error, for another orbit of the same WDS system in the catalogue (a third star), for Gaia's non-single-star solution of the primary, and for a Gaia source at the system's parallax within twice the semi-major axis on the white-dwarf sequence (absolute G fainter than 9 and BP-RP below 1).
+
+    python -I seti.py neighbourhood orbitmass [record] [--grades 1 2] [--plx-min 10] [--ratio 1.5] [--sigma 3] [--mlr-err 0.1]"""
+
+orbitmass_ORB6 = "http://www.astro.gsu.edu/wds/orb6/orb6orbits.txt"
+orbitmass_MAMAJEK = "https://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt"
+
+
+def orbitmass_orbits():
+    """The Sixth Orbit Catalog's orbits: WDS and discoverer designations, Hipparcos number, V magnitudes and flags, period (years) and semi-major axis (arcsec) with errors, grade."""
+    out = []
+    for x in core.get(orbitmass_ORB6, timeout=300).decode("latin-1").splitlines():
+        if len(x) < 236 or not (x[:6].isdigit() and x[6] == "." and x[9] in "+-"):
+            continue
+        p, pu, ep = num(x[80:92]), x[92:93], num(x[93:104])
+        a, au, ea = num(x[105:114]), x[114:115], num(x[115:124])
+        fp, fa = {"y": 1.0, "d": 1 / 365.25, "c": 100.0}.get(pu), {"a": 1.0, "m": 1e-3, "M": 60.0}.get(au)
+        out.append(dict(wds=x[19:29].strip(), disc=x[30:44].strip(), hip=int(num(x[58:64]) or 0), v1=num(x[66:71]), f1=x[71:72].strip(), v2=num(x[73:78]),
+                        f2=x[78:79].strip(), P=p * fp if p and fp else None, eP=ep * fp if ep and fp else None, a=a * fa if a and fa else None,
+                        ea=ea * fa if ea and fa else None, e=num(x[187:195]), grade=x[233:234], ref=x[237:245].strip()))
+    return out
+
+
+def orbitmass_notes():
+    """The Sixth Orbit Catalog's notes, by WDS designation."""
+    notes, cur = {}, None
+    for x in core.get(orbitmass_ORB6.replace("orb6orbits.txt", "orb6notes.txt"), timeout=300).decode("latin-1").splitlines():
+        m = re.match(r"^(\d{5}[+-]\d{4})\s", x)
+        if m:
+            cur = m.group(1)
+            notes[cur] = x[10:]
+        elif cur and x.startswith(" "):
+            notes[cur] += " " + x.strip()
+    return notes
+
+
+def orbitmass_mlr():
+    """Pecaut and Mamajek's dwarf sequence as (absolute V, mass) pairs sorted by absolute V."""
+    pts = {}
+    for x in core.get(orbitmass_MAMAJEK, timeout=120).decode("latin-1").splitlines():
+        t = x.split()
+        if len(t) < 30 or not re.match(r"^[OBAFGKMLTY][0-9.]+V$", t[0]):
+            continue
+        mv, m = num(t[7]), num(t[-2])
+        if mv is not None and m:
+            pts.setdefault(mv, []).append(m)
+    mv = np.array(sorted(pts))
+    return mv, np.array([np.mean(pts[k]) for k in mv])
+
+
+def orbitmass_dynamical(a, ea, p, ep, plx, eplx):
+    """A visual binary's total mass (solar masses) and its error from the semi-major axis (arcsec), period (years) and parallax (mas): a^3 / (parallax^3 P^2)."""
+    w = plx / 1000.0
+    m = a ** 3 / (w ** 3 * p ** 2)
+    return m, m * math.sqrt((3 * ea / a) ** 2 + (3 * eplx / plx) ** 2 + (2 * ep / p) ** 2)
+
+
+def orbitmass_main(record=False, grades=["1", "2"], plx_min=10.0, ratio=1.5, sigma=3.0, mlr_err=0.1):
+    orbits = orbitmass_orbits()
+    by_wds = {}
+    for o in orbits:
+        by_wds.setdefault(o["wds"], []).append(o)
+    sel = [o for o in orbits if o["grade"] in grades and o["hip"] and o["v1"] is not None and o["v2"] is not None and o["f1"] in ("", "v") and o["f2"] in ("", "v")
+           and o["P"] and o["a"] and o["eP"] and o["ea"]]
+    hips = sorted({o["hip"] for o in sel})
+    gaia, hipp = {}, {}
+    for k in range(0, len(hips), 400):
+        chunk = ",".join(str(h) for h in hips[k:k + 400])
+        for r in core.tap("gaia", "SELECT b.original_ext_source_id AS hip, g.source_id, g.ra, g.dec, g.parallax, g.parallax_error, g.ruwe, g.non_single_star, "
+                                  "g.phot_g_mean_mag FROM gaiadr3.hipparcos2_best_neighbour AS b JOIN gaiadr3.gaia_source AS g ON g.source_id = b.source_id "
+                                  "WHERE b.original_ext_source_id IN (%s)" % chunk):
+            gaia[int(r["hip"])] = r
+        for r in core.tap("gaia", "SELECT hip, plx, e_plx FROM public.hipparcos_newreduction WHERE hip IN (%s)" % chunk):
+            hipp[int(r["hip"])] = (num(r["plx"]), num(r["e_plx"]))
+    mlr_v, mlr_m = orbitmass_mlr()
+    out = []
+    for o in sel:
+        g, h = gaia.get(o["hip"]), hipp.get(o["hip"])
+        pg = (num(g["parallax"]), num(g["parallax_error"]), num(g["ruwe"])) if g else (None, None, None)
+        use_gaia = pg[0] and pg[1] and pg[2] is not None and pg[2] < 1.4 and pg[0] > 10 * pg[1]
+        plx, eplx, src = (pg[0], pg[1], "Gaia DR3") if use_gaia else (h[0], h[1], "Hipparcos") if h and h[0] and h[1] and h[0] > 10 * h[1] else (None, None, None)
+        if not plx or plx < plx_min:
+            continue
+        w = plx / 1000.0
+        mdyn, e_dyn = orbitmass_dynamical(o["a"], o["ea"], o["P"], o["eP"], plx, eplx)
+        mv1, mv2 = o["v1"] + 5 * math.log10(w) + 5, o["v2"] + 5 * math.log10(w) + 5
+        inside = all(mlr_v[0] <= m <= mlr_v[-1] for m in (mv1, mv2))
+        mphot = float(np.interp(mv1, mlr_v, mlr_m) + np.interp(mv2, mlr_v, mlr_m))
+        r = mdyn / mphot
+        e_r = r * math.sqrt((e_dyn / mdyn) ** 2 + mlr_err ** 2)
+        z_plx = ((pg[0] - h[0]) / math.hypot(pg[1], h[1])) if pg[0] and pg[1] and h and h[0] and h[1] else None
+        out.append(dict(o, plx=plx, eplx=eplx, plx_src=src, ruwe=pg[2], nss=int(num(g["non_single_star"]) or 0) if g else 0, source_id=str(g["source_id"]) if g else "",
+                        ra=float(g["ra"]) if g else None, dec=float(g["dec"]) if g else None, mdyn=mdyn, e_dyn=e_dyn, mv1=mv1, mv2=mv2, mphot=mphot, r=r, e_r=e_r,
+                        inside=inside, z_plx=z_plx, others=[x["disc"] for x in by_wds.get(o["wds"], []) if x is not o and x["disc"] != o["disc"]]))
+    heavy = [o for o in out if o["r"] - sigma * o["e_r"] > ratio]
+    notes = orbitmass_notes() if heavy else {}
+    for o in heavy:
+        o["note"] = " ".join(notes.get(o["wds"], "").split())
+        o["wd"] = []
+        if o["ra"] is not None:
+            rad = max(2.0, 2 * o["a"]) / 3600.0
+            for s in core.tap("gaia", "SELECT source_id, parallax, parallax_error, phot_g_mean_mag, bp_rp FROM gaiadr3.gaia_source WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), "
+                                      "CIRCLE('ICRS', %.7f, %.7f, %.6f)) AND source_id <> %s" % (o["ra"], o["dec"], rad, o["source_id"])):
+                sp, se, gm, c = num(s["parallax"]), num(s["parallax_error"]), num(s["phot_g_mean_mag"]), num(s["bp_rp"])
+                if sp and se and gm is not None and c is not None and abs(sp - o["plx"]) < 3 * math.hypot(se, o["eplx"]) and gm + 5 * math.log10(sp / 100.0) > 9 and c < 1.0:
+                    o["wd"].append("Gaia DR3 %s (M_G %.1f, BP-RP %.2f)" % (s["source_id"], gm + 5 * math.log10(sp / 100.0), c))
+        o["vet"] = ("astrometry" if o["z_plx"] is not None and abs(o["z_plx"]) > 3 else
+                    "published-solution" if re.search(r"spurious|ghost|contradict", o["note"], re.I) else
+                    "white-dwarf" if o["wd"] else
+                    "companion" if o["others"] else
+                    "binary" if o["nss"] else None)
+    left = [o for o in heavy if o["vet"] is None]
+    rs = np.array([o["r"] for o in out])
+    print("ORB6: %d orbits, %d of grade %s with a Hipparcos number, V magnitudes for both stars and errors on P and a; %d within %g pc by a parallax at ten sigma (%d from Gaia, "
+          "%d from Hipparcos); dynamical over photometric mass quantiles 16/50/84 %s" % (
+              len(orbits), len(sel), "/".join(grades), len(out), 1000 / plx_min, sum(o["plx_src"] == "Gaia DR3" for o in out), sum(o["plx_src"] == "Hipparcos" for o in out),
+              [round(float(v), 2) for v in np.percentile(rs, [16, 50, 84])]))
+    print("heavier than %g times their light at %g sigma: %d; parallaxes that disagree %d, an orbit the catalogue's notes call spurious %d, a white dwarf in the system %d, "
+          "another orbit in the system %d, a non-single-star solution %d; unexplained %d" % (
+              ratio, sigma, len(heavy), sum(o["vet"] == "astrometry" for o in heavy), sum(o["vet"] == "published-solution" for o in heavy),
+              sum(o["vet"] == "white-dwarf" for o in heavy), sum(o["vet"] == "companion" for o in heavy), sum(o["vet"] == "binary" for o in heavy), len(left)))
+    for o in sorted(heavy, key=lambda o: -(o["r"] - ratio) / o["e_r"]):
+        print("  WDS %s %s (HIP %d), grade %s, %s: P %.4g y, a %.4g arcsec, parallax %.3f +- %.3f mas (%s, RUWE %s, Gaia-Hipparcos %s sigma); M_dyn %.2f +- %.2f, M_V %.2f and %.2f, "
+              "M_phot %.2f%s; ratio %.2f +- %.2f; other orbits %s; white dwarfs %s; NSS %d; %s" % (
+                  o["wds"], o["disc"], o["hip"], o["grade"], o["ref"], o["P"], o["a"], o["plx"], o["eplx"], o["plx_src"], o["ruwe"],
+                  "%+.1f" % o["z_plx"] if o["z_plx"] is not None else "-", o["mdyn"], o["e_dyn"], o["mv1"], o["mv2"], o["mphot"], "" if o["inside"] else " (off the table)",
+                  o["r"], o["e_r"], o["others"] or "-", o["wd"] or "-", o["nss"], o["vet"] or "unexplained"))
+        if o["note"]:
+            print("    ORB6 note: %s" % o["note"][:600])
+    json.dump(dict(n=len(out), heavy=heavy, ratios=[float(v) for v in rs]), open(core.results("orbit_mass_excess.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "orb6_dynamical_mass_excess", "Binary stars heavier than their light", "Sixth Catalog of Orbits of Visual Binary Stars; Gaia DR3; Hipparcos new reduction",
+            "grade %s orbits with Hipparcos numbers, V magnitudes and element errors within %g pc: %d" % ("/".join(grades), 1000 / plx_min, len(out)), os.path.abspath(__file__),
+            "orbitmass", len(out), "binaries", dict(grades=grades, plx_min=plx_min, ratio=ratio, sigma=sigma, mlr_err=mlr_err),
+            "the sample's own ratio of dynamical to photometric mass: quantiles 16/50/84 %s" % [round(float(v), 2) for v in np.percentile(rs, [16, 50, 84])],
+            "a system heavier than %g times its light at %g sigma" % (ratio, sigma),
+            "%d heavier: %d with parallaxes that disagree, %d with an orbit the catalogue's notes call spurious, %d with a white dwarf, %d with another orbit in the "
+            "system, %d with a non-single-star solution; %d unexplained" % (
+                len(heavy), sum(o["vet"] == "astrometry" for o in heavy), sum(o["vet"] == "published-solution" for o in heavy), sum(o["vet"] == "white-dwarf" for o in heavy),
+                sum(o["vet"] == "companion" for o in heavy), sum(o["vet"] == "binary" for o in heavy), len(left)),
+            [dict(target="wds:%s#%s" % (o["wds"], o["disc"].replace(" ", "")), stat=round(o["r"], 3), unit="dynamical over photometric mass", vet=o["vet"],
+                  note="HIP %d, grade %s, %s; P %.4g y, a %.4g arcsec, parallax %.3f +- %.3f mas from %s; M_dyn %.2f +- %.2f, M_phot %.2f; other orbits %s; white dwarfs %s; "
+                       "NSS %d" % (o["hip"], o["grade"], o["ref"], o["P"], o["a"], o["plx"], o["eplx"], o["plx_src"], o["mdyn"], o["e_dyn"], o["mphot"],
+                                   ", ".join(o["others"]) or "-", ", ".join(o["wd"]) or "-", o["nss"])) for o in heavy])
+        print("recorded")
+
+
 APPROACHES = {
+    "orbitmass": (lambda: core.run_cli(orbitmass_main), orbitmass_DOC),
     "timecluster": (lambda: core.run_cli(timecluster_main), timecluster_DOC),
     "nearoutliers": (lambda: core.run_cli(nearoutliers_main), nearoutliers_DOC),
     "missingbright": (lambda: core.run_cli(missingbright_main), missingbright_DOC),

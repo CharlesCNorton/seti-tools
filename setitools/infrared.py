@@ -4830,7 +4830,7 @@ def gcml_main(record=False, widths=3.0, min_rv=50, min_pm=100, ebv_max=1.0):
         print("recorded")
 
 
-coldsky_DOC = r"""Cold, compact sources at high latitude: the Planck Catalogue of Galactic Cold Clumps (PGCC; Planck 2015 XXVIII) and the Second Planck Catalogue of Compact Sources at 857 GHz (PCCS2; Planck 2015 XXVI) beyond 30 deg of Galactic latitude, where little interstellar dust lies; a PGCC clump is cold when the upper end of the 68 per cent range of its temperature lies below 12 K and compact when its major axis is below 6 arcmin, 1.25 times the beam, and a PCCS2 source the catalogue does not flag extended, measured at 857, 545 and 353 GHz at three sigma in its band-merged apertures, is cold when a modified blackbody of emissivity index 1.8 fitted to the three bands keeps the 68 per cent range of its temperature below 12 K. Matter radiating as close to the microwave background as it can, as a civilisation waiting out the cosmic cooling might (Sandberg et al. 2017) or one computing in the cold outer reaches of its system (Garrett et al. 2026), would show as such a source; each is read for a PGCC clump within 5 arcmin (interstellar dust), a Planck high-redshift candidate (Planck 2016 XXXIX) or a PCCS2 143 GHz source within 5 arcmin (a dusty galaxy far away or an active nucleus) and a 2MASS galaxy brighter than Ks 13 within 1 arcmin, the chance of each match coming from the catalogue's own density beyond 30 deg, for its temperature from 857 and 545 GHz alone, where the microwave background's fluctuations add little to an aperture, and from Planck's 857, 545 and 353 GHz maps (SkyView) measured in a 5 arcmin aperture against a 10-15 arcmin annulus with the 217 GHz map taken out as the microwave background's and errors from the same aperture across the 2 deg cutout, so that a source cold only through a hot spot of the background at 353 GHz is the field's, and for an IRAS or AKARI source within 2 arcmin, a Gaia star within 100 pc within 1 arcmin and the distance to the nearest high-redshift candidate, which shows whether that search covered the field.
+coldsky_DOC = r"""Cold, compact sources at high latitude: the Planck Catalogue of Galactic Cold Clumps (PGCC; Planck 2015 XXVIII) and the Second Planck Catalogue of Compact Sources at 857 GHz (PCCS2; Planck 2015 XXVI) beyond 30 deg of Galactic latitude, where little interstellar dust lies; a PGCC clump is cold when the upper end of the 68 per cent range of its temperature lies below 12 K and compact when its major axis is below 6 arcmin, 1.25 times the beam, and a PCCS2 source the catalogue does not flag extended, measured at 857, 545 and 353 GHz at three sigma in its band-merged apertures, is cold when a modified blackbody of emissivity index 1.8 fitted to the three bands keeps the 68 per cent range of its temperature below 12 K. Matter radiating as close to the microwave background as it can, as a civilisation waiting out the cosmic cooling might (Sandberg et al. 2017) or one computing in the cold outer reaches of its system (Garrett et al. 2026), would show as such a source; each is read for a PGCC clump within 5 arcmin (interstellar dust), a Planck high-redshift candidate (Planck 2016 XXXIX) or a PCCS2 143 GHz source within 5 arcmin (a dusty galaxy far away or an active nucleus) and a 2MASS galaxy brighter than Ks 13 within 1 arcmin, the chance of each match coming from the catalogue's own density beyond 30 deg, for its temperature from 857 and 545 GHz alone, where the microwave background's fluctuations add little to an aperture, and from Planck's 857, 545 and 353 GHz maps (SkyView) measured in a 5 arcmin aperture against a 10-15 arcmin annulus with the 217 GHz map taken out as the microwave background's and errors from the same aperture across the 2 deg cutout, so that a source cold only through a hot spot of the background at 353 GHz is the field's, for Herschel SPIRE's 350 um point sources within 2.5 arcmin, whose flux, half the Planck source's or more, resolves it into the galaxies behind it, and, for a source the field's emission or nothing explains, for its rank among every aperture of the 8 x 8 deg of Planck sky around it at each band and in its 545 to 857 GHz colour, and for an IRAS or AKARI source within 2 arcmin, a Gaia star within 100 pc within 1 arcmin and the distance to the nearest high-redshift candidate, which shows whether that search covered the field.
 
     python -I seti.py infrared coldsky [record] [--b-min 30] [--t-max 12] [--beta 1.8] [--snr-min 3] [--compact-arcmin 6] [--match-arcmin 5] [--near-arcmin 1] [--iras-arcmin 2] [--k-max 13]"""
 
@@ -4851,7 +4851,7 @@ def coldsky_fit(s, e, beta, nus=(857e9, 545e9, 353e9)):
 
 
 # Planck HFI unit conversions, MJy/sr per K_CMB (Planck 2015 VIII)
-coldsky_KCMB = {"857": 2.27, "545": 58.04, "353": 287.45, "217": 483.69}
+coldsky_KCMB = {"857": 2.27, "545": 58.04, "353": 287.45, "217": 483.69, "143": 371.74, "100": 244.1}
 
 
 def coldsky_skyview(survey, ra, dec, size=2.0, pixels=120, tries=5):
@@ -4869,8 +4869,14 @@ def coldsky_skyview(survey, ra, dec, size=2.0, pixels=120, tries=5):
     raise IOError("SkyView gave no %s image at %.4f %+.4f" % (survey, ra, dec))
 
 
-def coldsky_cmbfree(ra, dec, beta, size=2.0, pixels=120, r_ap=5.0, r_in=10.0, r_out=15.0):
-    """Planck 857, 545 and 353 GHz fluxes (Jy) in a 5 arcmin aperture against a 10-15 arcmin annulus with the CMB taken out by the 217 GHz map, their errors from the same aperture at every point of the cutout, and the modified blackbody's temperature, range and chi-square."""
+def coldsky_cmb_correct(flux):
+    """Fluxes (Jy) at 857, 545 and 353 GHz with the microwave background taken out, the aperture's 217 GHz flux read as the background's, which is the same in K_CMB at every band."""
+    dt = flux["217"] / coldsky_KCMB["217"]
+    return {"857": flux["857"] - dt * coldsky_KCMB["857"], "545": flux["545"] - dt * coldsky_KCMB["545"], "353": flux["353"] - dt * coldsky_KCMB["353"]}
+
+
+def coldsky_apertures(bands, ra, dec, size, pixels, r_ap=5.0, r_in=10.0, r_out=15.0):
+    """Planck maps of BANDS (SkyView) as aperture fluxes (Jy) at every pixel: a 5 arcmin aperture against a 10-15 arcmin annulus, with the pixel size and the annulus's reach."""
     from scipy import ndimage
     pix = size * 60.0 / pixels
     pix_sr = (pix / 60.0 * math.pi / 180.0) ** 2
@@ -4878,14 +4884,54 @@ def coldsky_cmbfree(ra, dec, beta, size=2.0, pixels=120, r_ap=5.0, r_in=10.0, r_
     rr = np.hypot(xx, yy)
     ap, an = (rr < r_ap).astype(float), ((rr > r_in) & (rr < r_out)).astype(float)
     flux = {}
-    for band in ("857", "545", "353", "217"):
+    for band in bands:
         d, hd = coldsky_skyview("Planck %s I" % band, ra, dec, size, pixels)
         if str(hd.get("BUNIT", "")).strip().upper().startswith("K"):
             d = d * coldsky_KCMB[band]
         flux[band] = (ndimage.convolve(d, ap, mode="nearest") - ndimage.convolve(d, an, mode="nearest") / an.sum() * ap.sum()) * pix_sr * 1e6
-    dt = flux["217"] / coldsky_KCMB["217"]
-    s = {"857": flux["857"], "545": flux["545"] - dt * coldsky_KCMB["545"], "353": flux["353"] - dt * coldsky_KCMB["353"]}
-    c, m = pixels // 2, int(r_out / pix) + 1
+    return flux, pix, int(r_out / pix) + 1
+
+
+def coldsky_field(ra, dec, size=8.0, pixels=480):
+    """The source's rank among the apertures of an 8 x 8 deg Planck field at 857 GHz, at 545 and 353 GHz with the CMB out, and at 217 and 100 GHz, where the microwave background rules, with the share of apertures as bright at 857 GHz that are as red in 545/857."""
+    flux, pix, m = coldsky_apertures(("857", "545", "353", "217", "100"), ra, dec, size, pixels)
+    s = coldsky_cmb_correct(flux)
+    s["217"], s["100"] = flux["217"], flux["100"]
+    c = pixels // 2
+    grid = {b: v[m:-m:3, m:-m:3].ravel() for b, v in s.items()}
+    rank = {b: float(np.mean(grid[b] < v[c, c])) for b, v in s.items()}
+    bright = grid["857"] >= s["857"][c, c]
+    colour = s["545"][c, c] / s["857"][c, c] if s["857"][c, c] > 0 else float("nan")
+    red = float(np.mean(grid["545"][bright] / grid["857"][bright] >= colour)) if bright.any() else float("nan")
+    return dict(rank=rank, colour=float(colour), red_share=red, n=int(grid["857"].size), deg2=float(((pixels - 2 * m) * pix / 60.0) ** 2))
+
+
+def coldsky_spire(ra, dec, radius_arcmin=2.5, snr_min=5.0):
+    """Herschel SPIRE at a position: the observations within 0.3 deg in the Herschel Science Archive, and the 350 um point sources within RADIUS_ARCMIN at S/N SNR_MIN with their summed flux (Jy)."""
+    hsa = "https://archives.esac.esa.int/hsa/whsa-tap-server/tap/sync"
+    obs = core.tap(hsa, "SELECT observation_id FROM hpdp.unique_observation_hpdp WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, 0.3))" % (ra, dec))
+    obs += core.tap(hsa, "SELECT observation_id FROM updp2.unique_observation_updp WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, 0.3))" % (ra, dec))
+    src = core.tap(hsa, "SELECT source_id, flux, snr FROM hsa.spire_point_source_350 WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %g)) "
+                        "AND snr >= %g" % (ra, dec, radius_arcmin / 60.0, snr_min))
+    return dict(observations=len(obs), sources=len(src), flux=sum((num(r["flux"]) or 0.0) for r in src) / 1000.0)
+
+
+def coldsky_context(o):
+    """A cold source's Herschel coverage and its ranks in its own Planck field, in words."""
+    sp, f = o.get("spire"), o.get("field")
+    words = ["Herschel: %d SPIRE observations within 0.3 deg, %d 350 um sources at S/N 5 within 2.5 arcmin (%.2f Jy)" % (sp["observations"], sp["sources"], sp["flux"])
+             if sp else "no Herschel answer"]
+    if f:
+        words.append("among %d apertures over %.0f deg2 of its field it ranks %s, and %.3f of the apertures as bright at 857 GHz are as red in 545/857 GHz (%.2f)" % (
+            f["n"], f["deg2"], ", ".join("%s GHz %.4f" % (b, v) for b, v in f["rank"].items()), f["red_share"], f["colour"]))
+    return "; ".join(words)
+
+
+def coldsky_cmbfree(ra, dec, beta, size=2.0, pixels=120):
+    """Planck 857, 545 and 353 GHz fluxes (Jy) in a 5 arcmin aperture against a 10-15 arcmin annulus with the CMB taken out by the 217 GHz map, their errors from the same aperture at every point of the cutout, and the modified blackbody's temperature, range and chi-square."""
+    flux, pix, m = coldsky_apertures(("857", "545", "353", "217"), ra, dec, size, pixels)
+    s = coldsky_cmb_correct(flux)
+    c = pixels // 2
     val = [float(s[b][c, c]) for b in ("857", "545", "353")]
     err = [float(core.robust_sigma(s[b][m:-m:2, m:-m:2].ravel())) for b in ("857", "545", "353")]
     t, lo, hi, chi = coldsky_fit(val, err, beta)
@@ -4948,8 +4994,22 @@ def coldsky_main(record=False, b_min=30.0, t_max=12.0, beta=1.8, snr_min=3.0, co
         o["star"] = ["Gaia DR3 %s (%.1f pc, G %.1f)" % (x["source_id"], 1000 / float(x["parallax"]), float(x["phot_g_mean_mag"])) for x in core.tap(
             "gaia", "SELECT source_id, parallax, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %g)) "
                     "AND parallax > 10" % (o["ra"], o["dec"], near_arcmin / 60.0))]
-        o["vet"] = ("interstellar" if o["pgcc"] else "background-galaxy" if o["phz"] or o["p143"] or o["xsc"] else
+        # Herschel resolves a Planck peak into the point sources behind it, where it looked
+        try:
+            o["spire"] = coldsky_spire(o["ra"], o["dec"])
+        except Exception as e:  # noqa: BLE001
+            print("  %s: no Herschel answer (%s)" % (o["name"], e))
+            o["spire"] = None
+        resolved = o["spire"] and o["spire"]["flux"] >= 0.5 * o["s857"] / 1000.0
+        o["vet"] = ("interstellar" if o["pgcc"] else "background-galaxy" if o["phz"] or o["p143"] or o["xsc"] or resolved else
                     "diffuse-emission" if o["lo2"] >= t_max or (o["cmbfree"] and o["cmbfree"]["hi"] >= t_max) else None)
+        # how ordinary the source is in its own sky, for the ones the field's emission explains or nothing does
+        o["field"] = None
+        if o["vet"] in (None, "diffuse-emission"):
+            try:
+                o["field"] = coldsky_field(o["ra"], o["dec"])
+            except Exception as e:  # noqa: BLE001
+                print("  %s: no field ranks (%s)" % (o["name"], e))
     left = [o for o in cold if o["vet"] is None]
     print("PGCC beyond %g deg: %d clumps, %d cold (68 per cent range below %g K), %d of them compact (major axis below %g arcmin)" % (
         b_min, len(pgcc), len(cold_pgcc), t_max, len(compact_pgcc), compact_arcmin))
@@ -4971,10 +5031,12 @@ def coldsky_main(record=False, b_min=30.0, t_max=12.0, beta=1.8, snr_min=3.0, co
                   o["s857"], o["s545"], o["s353"],
                   "%.0f" % o["s217"] if o["s217"] is not None else "-", o["fwhm"], o["cirrus"], o["sky"], o["pccs1"], o["pgcc"] or "-", o["phz"] or "-",
                   o["phz_nearest_deg"], o["p143"] or "-", o["xsc"] or "-", o["iras"] or "-", o["akari"] or "-", o["star"] or "-", o["vet"] or "unexplained"))
+        print("    %s" % coldsky_context(o))
     json.dump(dict(pgcc_cold=cold_pgcc, measured=measured, chance=chance), open(core.results("cold_compact_high_latitude.json"), "w"), indent=1)
     if record:
         core.record_run(
-            "planck_cold_compact_high_latitude", "Cold, compact sources at high latitude", "Planck PGCC and PCCS2 857 GHz (IRSA); PHz, PCCS2 143 GHz, 2MASS XSC, IRAS FSC, Gaia DR3",
+            "planck_cold_compact_high_latitude", "Cold, compact sources at high latitude",
+            "Planck PGCC and PCCS2 857 GHz (IRSA); Planck HFI maps (SkyView); PHz, PCCS2 143 GHz, 2MASS XSC, IRAS FSC, AKARI FIS, Gaia DR3; Herschel SPIRE point sources (HSA)",
             "PGCC clumps and PCCS2 857 GHz sources beyond %g deg of latitude: %d and %d" % (b_min, len(pgcc), len(rows)), os.path.abspath(__file__), "coldsky",
             len(pgcc) + len(rows), "sources", dict(b_min=b_min, t_max=t_max, beta=beta, snr_min=snr_min, compact_arcmin=compact_arcmin, match_arcmin=match_arcmin,
                                                    near_arcmin=near_arcmin, iras_arcmin=iras_arcmin, k_max=k_max),
@@ -4986,13 +5048,13 @@ def coldsky_main(record=False, b_min=30.0, t_max=12.0, beta=1.8, snr_min=3.0, co
                 sum(o["vet"] == "background-galaxy" for o in cold), sum(o["vet"] == "diffuse-emission" for o in cold), len(left)),
             [dict(target="planck:%s" % o["name"].replace(" ", "_"), stat=round(o["hi"], 2), unit="K, upper end of the 68 per cent temperature range at beta %g" % beta, vet=o["vet"],
                   note="%.1f K (%.1f-%.1f), 857 and 545 GHz alone %.1f K (%.1f-%.1f), %s; 857/545/353 GHz %.0f/%.0f/%.0f mJy; PGCC %s; PHz %s, nearest %.1f deg; "
-                       "143 GHz %s; 2MASS %s; IRAS %s; AKARI %s; star %s" % (
+                       "143 GHz %s; 2MASS %s; IRAS %s; AKARI %s; star %s; %s" % (
                       o["t"], o["lo"], o["hi"], o["t2"], o["lo2"], o["hi2"],
                       "CMB-free maps %.2f/%.2f/%.2f Jy, 217 GHz %.2f Jy, %.1f K (%.1f-%.1f)" % (
                           o["cmbfree"]["s857"], o["cmbfree"]["s545"], o["cmbfree"]["s353"], o["cmbfree"]["s217"], o["cmbfree"]["t"], o["cmbfree"]["lo"],
                           o["cmbfree"]["hi"]) if o["cmbfree"] else "no CMB-free maps",
                       o["s857"], o["s545"], o["s353"], o["pgcc"] or "-", o["phz"] or "-", o["phz_nearest_deg"],
-                      o["p143"] or "-", o["xsc"] or "-", o["iras"] or "-", o["akari"] or "-", o["star"] or "-")) for o in cold])
+                      o["p143"] or "-", o["xsc"] or "-", o["iras"] or "-", o["akari"] or "-", o["star"] or "-", coldsky_context(o))) for o in cold])
         print("recorded")
 
 
