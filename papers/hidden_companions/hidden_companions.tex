@@ -30,7 +30,7 @@
 
 \begin{frontmatter}
 
-\title{Companions hidden in public HARPS velocities: new stellar companions, a dark 1.2\,M$_\odot$ companion to the giant HD\,20037, and two planet candidates}
+\title{Companions hidden in public HARPS velocities: new stellar companions and a dark 1.2\,M$_\odot$ companion to the giant HD\,20037}
 
 \author{Charles C. Norton}
 
@@ -46,17 +46,11 @@ solutions and its Hipparcos-Gaia proper-motion anomaly fitted together: a period
 $28.5^{+3.2}_{-2.5}$\,yr, an eccentricity of $0.46 \pm 0.04$, an inclination of $98.8 \pm
 1.2^\circ$ and a mass of $1.18 \pm 0.05$\,\Msun. Its lines do not appear in the giant's spectra
 along its own track, where a main-sequence star of that mass, at 4 per cent of the light, would
-read at $7\sigma$, so the companion is a massive white dwarf or a close pair of M dwarfs. A second
-census of the per-night velocities for periodic signals, with every star's activity indicators,
-its Ca\,{\sc ii} H and K emission measured in the HARPS spectra, its TESS photometry and a curved
-long-term trend and an offset across HARPS's 2015 fibre upgrade tested against each signal, leaves
-two planet candidates in no catalogue: HD\,111564\,b, $m\sin i = 0.29^{+0.11}_{-0.08}$\,\Mjup\ at
-856\,d, and HD\,222480\,b, $23.6 \pm 2.3$\,\Mearth\ at 23.4\,d.
+read at $7\sigma$, so the companion is a massive white dwarf or a close pair of M dwarfs.
 \end{abstract}
 
 \begin{keyword}
-Techniques: radial velocities \sep Astrometry \sep Binaries: spectroscopic \sep
-White dwarfs \sep Planets and satellites: detection
+Techniques: radial velocities \sep Astrometry \sep Binaries: spectroscopic \sep White dwarfs
 \end{keyword}
 
 \end{frontmatter}
@@ -73,9 +67,8 @@ astrometry whose acceleration and proper-motion anomaly against Hipparcos~\cite{
 a companion's mass and inclination~\cite{GaiaNSS2023}.
 
 This paper reads the two together for companions that no catalogue holds. Section~\ref{sec:data}
-describes the data, Section~\ref{sec:stellar} the stellar and substellar companions,
-Section~\ref{sec:hd20037} the dark companion of HD\,20037 and Section~\ref{sec:planets} the
-planet candidates.
+describes the data, Section~\ref{sec:stellar} the stellar and substellar companions and
+Section~\ref{sec:hd20037} the dark companion of HD\,20037.
 
 \section{Data}\label{sec:data}
 
@@ -86,10 +79,9 @@ star is matched to Gaia DR3~\cite{GaiaNSS2023} as the brightest source within 30
 J2000 position whose $G$ lies within 2.5\,mag of its $V$, which follows stars of high proper
 motion to Gaia's epoch, and to the Hipparcos-Gaia proper-motion anomaly of
 ref.~\cite{Kervella2022} through its Hipparcos number. The public HARPS spectra of the stars
-discussed here come from the ESO Science Archive, their TESS light curves~\cite{Ricker2015} from
-SPOC, TESS-SPOC or QLP through Lightkurve~\cite{Lightkurve2018}, and their ultraviolet and X-ray
-fluxes from GALEX~\cite{Bianchi2017}, eROSITA's first survey~\cite{Merloni2024}, ROSAT's
-2RXS~\cite{Boller2016} and 4XMM.
+discussed here come from the ESO Science Archive, and their ultraviolet and X-ray fluxes from
+GALEX~\cite{Bianchi2017}, eROSITA's first survey~\cite{Merloni2024}, ROSAT's 2RXS~\cite{Boller2016}
+and 4XMM.
 
 \section{Stellar and substellar companions}\label{sec:stellar}
 
@@ -207,69 +199,6 @@ mass distribution, whose progenitor was more massive than the giant is now, or a
 two M dwarfs near 0.6\,\Msun\ each, whose combined light, below 0.2 per cent of the giant's, the
 spectra cannot reach. The eROSITA source fits the second, but a G8 giant can supply it alone.
 
-\section{Planet candidates}\label{sec:planets}
-
-The second census searches each star's velocities for periodic signals. The velocities and
-activity indicators are averaged per night, the velocity weighted by its inverse variance, and
-each F, G, K or M star of luminosity class III or fainter with 15 or more nights over 100\,d or
-more, 1\,145 stars, is searched by a generalised Lomb-Scargle periodogram from 1.5\,d to twice
-its span, a signal standing at a false-alarm level~\cite{Baluev2008} below $10^{-3}$. A signal
-that an activity indicator shares within 5 per cent at a false-alarm level below 0.01, or with
-which one correlates at $|r| > 0.5$ and $p < 10^{-3}$, is set aside, as are the hosts of the NASA
-Exoplanet Archive, matched by host, HD or Hipparcos name or by position carried back to J2000,
-and the stars the first census explained. A Keplerian fitted from the three best periods leaves
-108 signals below 85 Jupiter masses.
-
-Each of these was set against Gaia DR3, the proper-motion anomaly, SB9, the Washington Double Star
-catalogue, the Open Exoplanet Catalogue, arXiv by every name of the star and SIMBAD's
-references, which return the known planets and companions. The strongest were fitted again with a
-Keplerian, a linear trend and a jitter sampled with emcee from 1.5\,d upward, so that a one-day
-alias cannot stand in for a long period; the long periods were fitted again beside a quadratic
-trend, since a stellar companion's curvature can mimic a partial orbit, and with a free offset
-across HARPS's fibre upgrade of 2015 June where a series spans it; each star's Ca\,{\sc ii}
-H and K index was measured in every public HARPS spectrum and searched for the signal's period
-and correlated with the velocities; and each short period's TESS light curve was searched for
-rotation at the period or half of it and for transits.
-
-Two candidates stand every test and appear in no catalogue or paper (Table~\ref{tab:planets}),
-each observed on one side of the fibre upgrade. HD\,111564, a G0 dwarf at 51\,pc, carries a Saturn-mass candidate at 856\,d,
-the highest peak of its residuals once a quadratic is taken out, with its calcium index flat at
-the period ($r = 0.00$). HD\,222480, a G1 dwarf at 44\,pc, carries a Neptune-mass candidate at
-23.4\,d beside a slow fall of 1.4\,\ms\ a year; its calcium index is flat at the period
-($r = -0.35$) and TESS shows it varying by 80\,ppm with no period near 23\,d.
-
-\begin{table}[t]
-\centering
-\caption{The planet candidates: the host's type and distance, the nights and span of its HARPS
-series, and the orbit's period, semi-amplitude and eccentricity and the planet's minimum mass with
-their 16th to 84th percentiles; the false-alarm level of the host's calcium index near the period
-and its correlation with the velocities; and the Bayesian information criterion's gain of the
-Keplerian over a quadratic trend alone.}\label{tab:planets}
-\footnotesize\setlength{\tabcolsep}{3pt}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccccc}
-\toprule
-Planet & Host, distance & Nights (span, d) & $P$ (d) & $K$ (\ms) & $e$ & $m\sin i$ & Ca\,{\sc ii} at $P$; $r$ & BIC gain\\
-\midrule
-HD\,111564\,b & G0\,V, 51\,pc & 40 (2731) & 856 (827--878) & 6.6 (4.6--10.0) & 0.39 (0.15--0.60) & 0.29 (0.21--0.40)\,\Mjup & 1.00; 0.00 & 20.5\\
-HD\,222480\,b & G1\,V, 44\,pc & 21 (731) & 23.41 (23.34--23.49) & 5.3 (4.8--5.8) & 0.21 (0.10--0.31) & 23.6 (21.3--25.8)\,\Mearth & 1.00; $-0.35$ & --\\
-\bottomrule
-\end{tabular}}
-\end{table}
-
-The other signals fall to the same tests. HD\,55693's 2361\,d signal follows its calcium index,
-which peaks at 2280\,d at a false-alarm level of $10^{-4}$ and correlates with the velocities at
-$r = 0.65$: the magnetic cycle found by ref.~\cite{PenaRojas2025}. GJ\,3102, HIP\,92451 and
-HD\,6790, Neptune-mass signals at 16.1, 16.0 and 12.4\,d, vary in TESS near their periods or half
-of them, HIP\,92451 at 7.5 to 8.6\,d in seven of nine sectors, and GJ\,3102's rotation is estimated
-near 13\,d~\cite{Mignon2024}; they are the stars' rotation until shown otherwise. GJ\,2049's
-874\,d signal runs to an eccentricity of 0.95 beside a quadratic. HD\,129814, the solar twin whose
-velocities curve under a companion above 0.5\,\Msun~\cite{dosSantos2017}, carries a signal of
-1120\,d and 14.6\,\ms\ beside a linear trend, but its series spans the fibre upgrade with six of
-its 34 velocities after it, and with a free offset across the upgrade the orbit falls to an
-eccentricity of 0.83 to 0.95 at 500 to 600\,d, so the signal is not separated from the instrument.
-None of the four short periods shows a transit that repeats in TESS.
-
 \section{Conclusion}\label{sec:conclusion}
 
 Public HARPS velocities read beside Gaia DR3's astrometry and velocities give four stellar and
@@ -277,17 +206,14 @@ substellar companions with no published orbit, among them a 13-day M dwarf in a 
 brown-dwarf-desert minimum mass that the astrometry turns into a low-mass star. They give the
 giant HD\,20037 a dark companion of $1.18 \pm 0.05$\,\Msun\ on a 28.5-year orbit, whose lines are
 absent where a main-sequence star of its mass would stand at $7\sigma$: a massive white dwarf or a
-pair of M dwarfs. And after the activity, rotation, curvature and instrumental offsets that most
-periodic signals in the archive turn out to be, they leave two planet candidates: a Saturn-mass
-planet around HD\,111564 and a Neptune-mass planet around HD\,222480.
+pair of M dwarfs.
 
 \section*{Acknowledgements}
 
 Based on data obtained from the ESO Science Archive Facility, and on HARPS-RVBank. This work has
 made use of data from the European Space Agency mission Gaia, processed by the Gaia Data
 Processing and Analysis Consortium, funded by national institutions, in particular the
-institutions participating in the Gaia Multilateral Agreement; of the TESS mission, funded by
-NASA's Science Mission Directorate; of GALEX and eROSITA data; of the NASA Exoplanet Archive,
+institutions participating in the Gaia Multilateral Agreement; of GALEX and eROSITA data; of the NASA Exoplanet Archive,
 operated by the California Institute of Technology under contract with NASA; and of the SIMBAD
 database and the VizieR catalogue access tool, operated at CDS, Strasbourg, France.
 
@@ -312,14 +238,6 @@ Proper-motion anomaly and resolved common proper-motion pairs, \emph{Astron. Ast
 Gaia Collaboration, F.~Arenou et al., Gaia Data Release 3. Stellar multiplicity, a teaser for the
 hidden treasure, \emph{Astron. Astrophys.} \textbf{674}, A34 (2023).
 
-\bibitem{Ricker2015}
-G.~R. Ricker et al., Transiting Exoplanet Survey Satellite, \emph{J. Astron. Telesc. Instrum.
-Syst.} \textbf{1}, 014003 (2015).
-
-\bibitem{Lightkurve2018}
-Lightkurve Collaboration, Lightkurve: Kepler and TESS time series analysis in Python,
-Astrophysics Source Code Library, ascl:1812.013 (2018).
-
 \bibitem{Bianchi2017}
 L.~Bianchi, B.~Shiao and D.~Thilker, Revised catalog of GALEX ultraviolet sources. I. The
 all-sky survey: GUVcat\_AIS, \emph{Astrophys. J. Suppl.} \textbf{230}, 24 (2017).
@@ -335,22 +253,6 @@ Th.~Boller et al., Second ROSAT all-sky survey (2RXS) source catalogue, \emph{As
 \bibitem{ForemanMackey2013}
 D.~Foreman-Mackey, D.~W. Hogg, D.~Lang and J.~Goodman, emcee: the MCMC hammer, \emph{Publ. Astron.
 Soc. Pac.} \textbf{125}, 306 (2013).
-
-\bibitem{Baluev2008}
-R.~V. Baluev, Assessing the statistical significance of periodogram peaks, \emph{Mon. Not. R.
-Astron. Soc.} \textbf{385}, 1279 (2008).
-
-\bibitem{dosSantos2017}
-L.~A. dos Santos et al., Spectroscopic binaries in the Solar Twin Planet Search program: from
-substellar-mass to M dwarf companions, \emph{Mon. Not. R. Astron. Soc.} \textbf{472}, 3425 (2017).
-
-\bibitem{PenaRojas2025}
-P.~A. Pe\~na Rojas and J.~S. Jenkins, EMPEROR I. Exoplanet MCMC parallel tempering for RV orbit
-retrieval, \emph{Astron. Astrophys.} \textbf{704}, A323 (2025).
-
-\bibitem{Mignon2024}
-L.~Mignon et al., Radial velocity homogeneous analysis of M dwarfs observed with HARPS I.
-Exoplanet detection and candidates, \emph{Astron. Astrophys.} \textbf{689}, A32 (2024).
 
 \end{thebibliography}
 
