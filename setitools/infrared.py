@@ -4742,7 +4742,263 @@ def radioquiet_main(record=False, d_max_mpc=200.0, q_flag=3.3, nvss_limit_mjy=2.
         print("recorded")
 
 
+gcml_DOC = r"""Globular clusters too heavy for their light: the V-band mass-to-light ratios of Baumgardt's Galactic Globular Cluster Database (version 4), from N-body models fitted to each cluster's velocity dispersion and surface density profiles, against a fit in the cluster's metallicity (Harris 2010) and its present mass-function slope, which together set what an old population and the stars it has lost leave; a cluster heavier than that by three widths, the fit's own scatter and the ratio's error together, holds mass its stars do not shine with, dark remnants by the hundred thousand or something built, and each is read for the velocities and proper motions behind its dispersion and its reddening, since a ratio resting on fewer than 50 velocities and 100 proper motions, or on a faint, reddened integrated magnitude, is loose.
+
+    python -I seti.py infrared gcml [record] [--widths 3] [--min-rv 50] [--min-pm 100] [--ebv-max 1]"""
+
+
+def gcml_value(s):
+    """A value and its error from the database's 'x ± e · 10 n' cells, None where blank."""
+    import re
+    m = re.match(r"\s*([-+0-9.]+)\s*(?:±\s*([0-9.]+))?\s*(?:·\s*10\s*([-0-9]+))?", s or "")
+    if not m:
+        return None, None
+    scale = 10.0 ** int(m.group(3)) if m.group(3) else 1.0
+    return float(m.group(1)) * scale, (float(m.group(2)) * scale if m.group(2) else None)
+
+
+def gcml_main(record=False, widths=3.0, min_rv=50, min_pm=100, ebv_max=1.0):
+    import html
+    import re
+    t = core.get("https://people.smp.uq.edu.au/HolgerBaumgardt/globular/parameter.html", timeout=120).decode("utf-8", "replace")
+    harris = {}
+    lines = core.get("https://physics.mcmaster.ca/~harris/mwgc.dat", timeout=120).decode("latin-1").splitlines()
+    k = next(i for i, x in enumerate(lines) if "[Fe/H] wt" in x)
+    for x in lines[k + 1:]:
+        if "ID " in x and "v_r" in x:
+            break
+        if x.strip() and core.num(x[12:18]) is not None:
+            harris[re.sub(r"[^a-z0-9]", "", x[:12].lower())] = (core.num(x[12:18]), core.num(x[21:28]))
+    clusters = []
+    for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S):
+        c = [" ".join(html.unescape(re.sub(r"<[^>]+>", " ", x)).split()) for x in re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", tr, re.S)]
+        if len(c) != 27 or c[0] == "Cluster Name":
+            continue
+        ml, e_ml = gcml_value(c[9])
+        alpha, e_alpha = gcml_value(c[20])
+        if ml is None or alpha is None:
+            continue
+        key = re.sub(r"[^a-z0-9]", "", c[0].lower())
+        match = max((h for h in harris if key.startswith(h) and (len(key) == len(h) or not key[len(h)].isdigit())), key=len, default=None)
+        if match is None:
+            continue
+        feh, ebv = harris[match]
+        name = c[0].replace("ω", "omega").encode("ascii", "replace").decode()
+        clusters.append(dict(name=name, ml=ml, e_ml=e_ml or 0.0, alpha=alpha, feh=feh, ebv=ebv, n_rv=int(core.num(c[5]) or 0), n_pm=int(core.num(c[6]) or 0),
+                             mass=gcml_value(c[7])[0], rsun=gcml_value(c[3])[0]))
+    x = np.array([[1.0, o["feh"], o["alpha"]] for o in clusters])
+    y = np.array([o["ml"] for o in clusters])
+    e = np.array([o["e_ml"] for o in clusters])
+    keep = np.ones(len(y), bool)
+    sig = 0.3
+    for _ in range(20):
+        w = 1.0 / (e[keep] ** 2 + sig ** 2)
+        c, *_ = np.linalg.lstsq(x[keep] * np.sqrt(w)[:, None], y[keep] * np.sqrt(w), rcond=None)
+        r = y - x @ c
+        sig = math.sqrt(max(core.robust_sigma(r[keep]) ** 2 - float(np.median(e[keep] ** 2)), 0.01 ** 2))
+        new = np.abs(r) < 3 * np.sqrt(e ** 2 + sig ** 2)
+        if (new == keep).all():
+            break
+        keep = new
+    for o, d in zip(clusters, r):
+        o["resid"] = float(d)
+        o["width"] = math.sqrt(o["e_ml"] ** 2 + sig ** 2)
+    heavy = [o for o in clusters if o["resid"] > widths * o["width"]]
+    for o in heavy:
+        o["vet"] = ("single-record" if o["n_rv"] < min_rv and o["n_pm"] < min_pm else "interstellar" if (o["ebv"] or 0) > ebv_max else None)
+    left = [o for o in heavy if o["vet"] is None]
+    print("%d clusters with a mass-to-light ratio, a mass-function slope and a Harris metallicity; M/L_V = %.2f %+.2f [Fe/H] %+.2f alpha, scatter %.2f beyond the errors; "
+          "heavier by %g widths: %d, resting on fewer than %d velocities and %d proper motions %d, reddened beyond E(B-V) %g %d; unexplained %d" % (
+              len(clusters), c[0], c[1], c[2], sig, widths, len(heavy), min_rv, min_pm, sum(o["vet"] == "single-record" for o in heavy), ebv_max,
+              sum(o["vet"] == "interstellar" for o in heavy), len(left)))
+    for o in sorted(clusters, key=lambda o: -o["resid"] / o["width"])[:12]:
+        status = (o["vet"] or "unexplained") if o in heavy else "within the fit"
+        print("  %s: M/L_V %.2f +- %.2f, %+.2f above the fit (%.1f widths), [Fe/H] %+.2f, alpha %+.2f, %d velocities and %d proper motions, E(B-V) %s, %.1f kpc; %s" % (
+            o["name"], o["ml"], o["e_ml"], o["resid"], o["resid"] / o["width"], o["feh"], o["alpha"], o["n_rv"], o["n_pm"], o["ebv"], o["rsun"] or 0, status))
+    json.dump(dict(coef=[float(v) for v in c], scatter=sig, clusters=clusters), open(core.results("globular_mass_to_light.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "baumgardt_gc_mass_to_light", "Globular clusters too heavy for their light", "Baumgardt's Galactic Globular Cluster Database v4; Harris (2010) metallicities",
+            "clusters with a V-band mass-to-light ratio, a mass-function slope and a metallicity: %d" % len(clusters), os.path.abspath(__file__), "gcml", len(clusters), "clusters",
+            dict(widths=widths, min_rv=min_rv, min_pm=min_pm, ebv_max=ebv_max), "M/L_V fitted in [Fe/H] and the mass-function slope: %.2f %+.2f [Fe/H] %+.2f alpha, scatter %.2f" % (c[0], c[1], c[2], sig),
+            "a cluster heavier than that fit by %g widths" % widths,
+            "%d heavier by %g widths: %d on few velocities, %d reddened; %d unexplained" % (len(heavy), widths, sum(o["vet"] == "single-record" for o in heavy),
+                                                                                           sum(o["vet"] == "interstellar" for o in heavy), len(left)),
+            [dict(target="gc:%s" % o["name"], stat=round(o["resid"] / o["width"], 2), unit="widths above the M/L fit", vet=o["vet"],
+                  note="M/L_V %.2f +- %.2f, [Fe/H] %+.2f, alpha %+.2f, %d velocities, %d proper motions, E(B-V) %s" % (
+                      o["ml"], o["e_ml"], o["feh"], o["alpha"], o["n_rv"], o["n_pm"], o["ebv"])) for o in heavy])
+        print("recorded")
+
+
+coldsky_DOC = r"""Cold, compact sources at high latitude: the Planck Catalogue of Galactic Cold Clumps (PGCC; Planck 2015 XXVIII) and the Second Planck Catalogue of Compact Sources at 857 GHz (PCCS2; Planck 2015 XXVI) beyond 30 deg of Galactic latitude, where little interstellar dust lies; a PGCC clump is cold when the upper end of the 68 per cent range of its temperature lies below 12 K and compact when its major axis is below 6 arcmin, 1.25 times the beam, and a PCCS2 source the catalogue does not flag extended, measured at 857, 545 and 353 GHz at three sigma in its band-merged apertures, is cold when a modified blackbody of emissivity index 1.8 fitted to the three bands keeps the 68 per cent range of its temperature below 12 K. Matter radiating as close to the microwave background as it can, as a civilisation waiting out the cosmic cooling might (Sandberg et al. 2017) or one computing in the cold outer reaches of its system (Garrett et al. 2026), would show as such a source; each is read for a PGCC clump within 5 arcmin (interstellar dust), a Planck high-redshift candidate (Planck 2016 XXXIX) or a PCCS2 143 GHz source within 5 arcmin (a dusty galaxy far away or an active nucleus) and a 2MASS galaxy brighter than Ks 13 within 1 arcmin, the chance of each match coming from the catalogue's own density beyond 30 deg, for its temperature from 857 and 545 GHz alone, where the microwave background's fluctuations add little to an aperture, and from Planck's 857, 545 and 353 GHz maps (SkyView) measured in a 5 arcmin aperture against a 10-15 arcmin annulus with the 217 GHz map taken out as the microwave background's and errors from the same aperture across the 2 deg cutout, so that a source cold only through a hot spot of the background at 353 GHz is the field's, and for an IRAS or AKARI source within 2 arcmin, a Gaia star within 100 pc within 1 arcmin and the distance to the nearest high-redshift candidate, which shows whether that search covered the field.
+
+    python -I seti.py infrared coldsky [record] [--b-min 30] [--t-max 12] [--beta 1.8] [--snr-min 3] [--compact-arcmin 6] [--match-arcmin 5] [--near-arcmin 1] [--iras-arcmin 2] [--k-max 13]"""
+
+coldsky_H, coldsky_K = 6.62607015e-34, 1.380649e-23
+coldsky_T = np.arange(3.0, 80.0, 0.05)
+
+
+def coldsky_fit(s, e, beta, nus=(857e9, 545e9, 353e9)):
+    """A modified blackbody of emissivity index BETA fitted to fluxes S with errors E at NUS (Hz) by chi-square over a grid: best temperature, its 68 per cent range, chi-square."""
+    nu = np.array(nus)
+    m = nu[None, :] ** (3 + beta) / np.expm1(coldsky_H * nu[None, :] / (coldsky_K * coldsky_T[:, None]))
+    s, w = np.array(s, float), 1.0 / np.array(e, float) ** 2
+    a = (m * s * w).sum(1) / (m * m * w).sum(1)
+    chi = ((s - a[:, None] * m) ** 2 * w).sum(1)
+    i = int(np.argmin(chi))
+    ok = coldsky_T[chi <= chi[i] + 1]
+    return float(coldsky_T[i]), float(ok.min()), float(ok.max()), float(chi[i])
+
+
+# Planck HFI unit conversions, MJy/sr per K_CMB (Planck 2015 VIII)
+coldsky_KCMB = {"857": 2.27, "545": 58.04, "353": 287.45, "217": 483.69}
+
+
+def coldsky_skyview(survey, ra, dec, size=2.0, pixels=120, tries=5):
+    """A SkyView cutout of SURVEY about a position as (data, header), waiting out SkyView's busy answers."""
+    import time
+    import urllib.parse
+    from astropy.io import fits
+    q = urllib.parse.urlencode(dict(Position="%.5f,%.5f" % (ra, dec), Survey=survey, Coordinates="J2000", Projection="Tan", Pixels=pixels, Size=size, Return="FITS"))
+    for _ in range(tries):
+        b = core.get("https://skyview.gsfc.nasa.gov/current/cgi/runquery.pl?" + q, timeout=600, retries=2)
+        if b[:6] == b"SIMPLE" and b"No data found" not in b[:4000]:
+            with fits.open(io.BytesIO(b)) as h:
+                return np.array(h[0].data, float), h[0].header
+        time.sleep(30)
+    raise IOError("SkyView gave no %s image at %.4f %+.4f" % (survey, ra, dec))
+
+
+def coldsky_cmbfree(ra, dec, beta, size=2.0, pixels=120, r_ap=5.0, r_in=10.0, r_out=15.0):
+    """Planck 857, 545 and 353 GHz fluxes (Jy) in a 5 arcmin aperture against a 10-15 arcmin annulus with the CMB taken out by the 217 GHz map, their errors from the same aperture at every point of the cutout, and the modified blackbody's temperature, range and chi-square."""
+    from scipy import ndimage
+    pix = size * 60.0 / pixels
+    pix_sr = (pix / 60.0 * math.pi / 180.0) ** 2
+    yy, xx = np.mgrid[-int(r_out / pix) - 1:int(r_out / pix) + 2, -int(r_out / pix) - 1:int(r_out / pix) + 2] * pix
+    rr = np.hypot(xx, yy)
+    ap, an = (rr < r_ap).astype(float), ((rr > r_in) & (rr < r_out)).astype(float)
+    flux = {}
+    for band in ("857", "545", "353", "217"):
+        d, hd = coldsky_skyview("Planck %s I" % band, ra, dec, size, pixels)
+        if str(hd.get("BUNIT", "")).strip().upper().startswith("K"):
+            d = d * coldsky_KCMB[band]
+        flux[band] = (ndimage.convolve(d, ap, mode="nearest") - ndimage.convolve(d, an, mode="nearest") / an.sum() * ap.sum()) * pix_sr * 1e6
+    dt = flux["217"] / coldsky_KCMB["217"]
+    s = {"857": flux["857"], "545": flux["545"] - dt * coldsky_KCMB["545"], "353": flux["353"] - dt * coldsky_KCMB["353"]}
+    c, m = pixels // 2, int(r_out / pix) + 1
+    val = [float(s[b][c, c]) for b in ("857", "545", "353")]
+    err = [float(core.robust_sigma(s[b][m:-m:2, m:-m:2].ravel())) for b in ("857", "545", "353")]
+    t, lo, hi, chi = coldsky_fit(val, err, beta)
+    return dict(s857=val[0], s545=val[1], s353=val[2], err=err, t=t, lo=lo, hi=hi, chi=chi, s217=float(flux["217"][c, c]))
+
+
+def coldsky_cone(table, cols, ra, dec, arcmin, where=""):
+    """Rows of an IRSA table within ARCMIN of a position."""
+    return core.tap("irsa", "SELECT %s FROM %s WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %g))%s" % (
+        cols, table, ra, dec, arcmin / 60.0, " AND " + where if where else ""))
+
+
+def coldsky_main(record=False, b_min=30.0, t_max=12.0, beta=1.8, snr_min=3.0, compact_arcmin=6.0, match_arcmin=5.0, near_arcmin=1.0, iras_arcmin=2.0, k_max=13.0):
+    lat = "(glat > %g OR glat < -%g)" % (b_min, b_min)
+    area = 4 * math.pi * (1 - math.sin(math.radians(b_min))) * (180 / math.pi) ** 2
+    pgcc = core.tap("irsa", "SELECT name, glon, glat, ra, dec, temp_clump, temp_clump_up1, beta_clump, gau_major_axis, gau_minor_axis, flux_quality, dist_option "
+                            "FROM com_pccs2_gcc WHERE " + lat)
+    # the best temperature and the upper end of its range both below the cut, since a fit pinned at the catalogue's lowest beta can put the range below the value
+    cold_pgcc = [r for r in pgcc if r["flux_quality"] in ("1", "2") and max(num(r["temp_clump"]) or 99, num(r["temp_clump_up1"]) or 99) < t_max]
+    compact_pgcc = [r for r in cold_pgcc if (num(r["gau_major_axis"]) or 99) < compact_arcmin]
+    rows = core.tap("irsa", "SELECT name, glon, glat, ra, dec, aperflux, aperflux_err, aperflux_545, aperflux_err_545, aperflux_353, aperflux_err_353, aperflux_217, "
+                            "aperflux_err_217, gau_fwhm_eff, extended, cirrus_n, sky_brightness, pccs1 FROM com_pccs2_857 WHERE " + lat)
+    measured = []
+    for r in rows:
+        f = [num(r[k]) for k in ("aperflux", "aperflux_545", "aperflux_353")]
+        e = [num(r[k]) for k in ("aperflux_err", "aperflux_err_545", "aperflux_err_353")]
+        if None in f or None in e or min(e) <= 0 or any(x < snr_min * y for x, y in zip(f, e)):
+            continue
+        t, lo, hi, chi = coldsky_fit(f, e, beta)
+        measured.append(dict(name=r["name"], glat=float(r["glat"]), ra=float(r["ra"]), dec=float(r["dec"]), s857=f[0], s545=f[1], s353=f[2], s217=num(r["aperflux_217"]), err=e,
+                             t=t, lo=lo, hi=hi, chi=chi, fwhm=num(r["gau_fwhm_eff"]), extended=r["extended"] == "1", cirrus=num(r["cirrus_n"]),
+                             sky=num(r["sky_brightness"]), pccs1=bool((r["pccs1"] or "").strip())))
+    compact = [o for o in measured if not o["extended"]]
+    cold = [o for o in compact if o["hi"] < t_max]
+    # each catalogue's density beyond the latitude cut sets the chance of a match within its radius
+    density = dict(pgcc=len(pgcc) / area, phz=num(core.tap("irsa", "SELECT COUNT(*) AS n FROM planckphz WHERE " + lat)[0]["n"]) / area,
+                   p143=num(core.tap("irsa", "SELECT COUNT(*) AS n FROM com_pccs2_143 WHERE " + lat)[0]["n"]) / area,
+                   xsc=num(core.tap("irsa", "SELECT COUNT(*) AS n FROM fp_xsc WHERE k_m_k20fe < %g AND %s" % (k_max, lat))[0]["n"]) / area)
+    radius = dict(pgcc=match_arcmin, phz=match_arcmin, p143=match_arcmin, xsc=near_arcmin)
+    chance = {k: density[k] * math.pi * (radius[k] / 60.0) ** 2 for k in density}
+    phz_all = core.tap("irsa", "SELECT name, ra, dec FROM planckphz")
+    for o in cold:
+        # 857 and 545 GHz alone, where the microwave background's fluctuations add little to an aperture
+        o["t2"], o["lo2"], o["hi2"], _ = coldsky_fit([o["s857"], o["s545"]], o["err"][:2], beta, (857e9, 545e9))
+        o["phz_nearest_deg"] = min(core.sep_arcsec(o["ra"], o["dec"], float(x["ra"]), float(x["dec"])) for x in phz_all) / 3600.0
+        o["akari"] = ["AKARI %s" % x["objname"] for x in coldsky_cone("akari_fis", "objname, ra, dec", o["ra"], o["dec"], iras_arcmin)]
+        # the CMB in the aperture raises the 353 GHz flux and makes dust look colder: Planck's maps with the 217 GHz map taken out as the CMB's
+        try:
+            o["cmbfree"] = coldsky_cmbfree(o["ra"], o["dec"], beta)
+        except Exception as e:  # noqa: BLE001
+            print("  %s: no CMB-free photometry (%s)" % (o["name"], e))
+            o["cmbfree"] = None
+        o["pgcc"] = [x["name"] for x in pgcc if core.sep_arcsec(o["ra"], o["dec"], x["ra"], x["dec"]) < match_arcmin * 60]
+        o["phz"] = [x["name"] for x in coldsky_cone("planckphz", "name, ra, dec", o["ra"], o["dec"], match_arcmin)]
+        o["p143"] = [x["name"] for x in coldsky_cone("com_pccs2_143", "name, ra, dec", o["ra"], o["dec"], match_arcmin)]
+        o["xsc"] = ["2MASX J%s (Ks %s)" % (x["designation"], x["k_m_k20fe"]) for x in coldsky_cone("fp_xsc", "designation, ra, dec, k_m_k20fe", o["ra"], o["dec"], near_arcmin,
+                                                                                                      "k_m_k20fe < %g" % k_max)]
+        o["iras"] = ["IRAS %s (60 um %s Jy, 100 um %s Jy)" % (x["fscname"], x["fnu_60"], x["fnu_100"]) for x in coldsky_cone("irasfsc", "fscname, ra, dec, fnu_60, fnu_100",
+                                                                                                                             o["ra"], o["dec"], iras_arcmin)]
+        o["star"] = ["Gaia DR3 %s (%.1f pc, G %.1f)" % (x["source_id"], 1000 / float(x["parallax"]), float(x["phot_g_mean_mag"])) for x in core.tap(
+            "gaia", "SELECT source_id, parallax, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.6f, %.6f, %g)) "
+                    "AND parallax > 10" % (o["ra"], o["dec"], near_arcmin / 60.0))]
+        o["vet"] = ("interstellar" if o["pgcc"] else "background-galaxy" if o["phz"] or o["p143"] or o["xsc"] else
+                    "diffuse-emission" if o["lo2"] >= t_max or (o["cmbfree"] and o["cmbfree"]["hi"] >= t_max) else None)
+    left = [o for o in cold if o["vet"] is None]
+    print("PGCC beyond %g deg: %d clumps, %d cold (68 per cent range below %g K), %d of them compact (major axis below %g arcmin)" % (
+        b_min, len(pgcc), len(cold_pgcc), t_max, len(compact_pgcc), compact_arcmin))
+    for r in sorted(cold_pgcc, key=lambda r: num(r["gau_major_axis"]) or 99):
+        print("  %s: %s K (up to %s), beta %s, %s x %s arcmin, distance option %s" % (r["name"], r["temp_clump"], r["temp_clump_up1"], r["beta_clump"], r["gau_major_axis"],
+                                                                              r["gau_minor_axis"], r["dist_option"]))
+    print("PCCS2 857 GHz beyond %g deg: %d sources, %d measured at 857, 545 and 353 GHz at %g sigma, %d of them compact; temperatures at beta %g, quantiles 5/16/50/84/95: %s; "
+          "cold compact %d (cold with extended ones %d)" % (b_min, len(rows), len(measured), snr_min, len(compact), beta,
+                                                             [round(float(v), 1) for v in np.percentile([o["t"] for o in compact], [5, 16, 50, 84, 95])], len(cold),
+                                                             sum(1 for o in measured if o["hi"] < t_max)))
+    print("chance of a match per source: %s" % ", ".join("%s %.4f" % kv for kv in chance.items()))
+    for o in sorted(cold, key=lambda o: o["hi"]):
+        cf = o["cmbfree"]
+        print("  %s, b %+.1f: %.1f K (%.1f-%.1f), chi2 %.1f, from 857 and 545 GHz alone %.1f K (%.1f-%.1f); %s; 857/545/353/217 GHz %.0f/%.0f/%.0f/%s mJy, "
+              "FWHM %s arcmin, cirrus count %s, sky %s MJy/sr, in PCCS1 %s; PGCC %s; PHz %s (nearest %.1f deg); 143 GHz %s; 2MASS %s; IRAS %s; AKARI %s; nearby star %s; %s" % (
+                  o["name"], o["glat"], o["t"], o["lo"], o["hi"], o["chi"], o["t2"], o["lo2"], o["hi2"],
+                  "CMB-free maps 857/545/353 GHz %.2f/%.2f/%.2f Jy (+- %.2f/%.2f/%.2f), 217 GHz %.2f Jy, %.1f K (%.1f-%.1f)" % (
+                      cf["s857"], cf["s545"], cf["s353"], cf["err"][0], cf["err"][1], cf["err"][2], cf["s217"], cf["t"], cf["lo"], cf["hi"]) if cf else "no CMB-free maps",
+                  o["s857"], o["s545"], o["s353"],
+                  "%.0f" % o["s217"] if o["s217"] is not None else "-", o["fwhm"], o["cirrus"], o["sky"], o["pccs1"], o["pgcc"] or "-", o["phz"] or "-",
+                  o["phz_nearest_deg"], o["p143"] or "-", o["xsc"] or "-", o["iras"] or "-", o["akari"] or "-", o["star"] or "-", o["vet"] or "unexplained"))
+    json.dump(dict(pgcc_cold=cold_pgcc, measured=measured, chance=chance), open(core.results("cold_compact_high_latitude.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "planck_cold_compact_high_latitude", "Cold, compact sources at high latitude", "Planck PGCC and PCCS2 857 GHz (IRSA); PHz, PCCS2 143 GHz, 2MASS XSC, IRAS FSC, Gaia DR3",
+            "PGCC clumps and PCCS2 857 GHz sources beyond %g deg of latitude: %d and %d" % (b_min, len(pgcc), len(rows)), os.path.abspath(__file__), "coldsky",
+            len(pgcc) + len(rows), "sources", dict(b_min=b_min, t_max=t_max, beta=beta, snr_min=snr_min, compact_arcmin=compact_arcmin, match_arcmin=match_arcmin,
+                                                   near_arcmin=near_arcmin, iras_arcmin=iras_arcmin, k_max=k_max),
+            "each counterpart catalogue's density beyond %g deg: a chance match per source of %s" % (b_min, ", ".join("%s %.4f" % kv for kv in chance.items())),
+            "a compact source whose temperature's 68 per cent range lies below %g K at about 1 Jy at 857 GHz" % t_max,
+            "PGCC %d cold, %d compact; PCCS2 %d measured, %d compact, %d cold and compact: %d in a PGCC clump, %d at a galaxy or high-redshift candidate, %d cold only "
+            "through the microwave background in the aperture; %d unexplained" % (
+                len(cold_pgcc), len(compact_pgcc), len(measured), len(compact), len(cold), sum(o["vet"] == "interstellar" for o in cold),
+                sum(o["vet"] == "background-galaxy" for o in cold), sum(o["vet"] == "diffuse-emission" for o in cold), len(left)),
+            [dict(target="planck:%s" % o["name"].replace(" ", "_"), stat=round(o["hi"], 2), unit="K, upper end of the 68 per cent temperature range at beta %g" % beta, vet=o["vet"],
+                  note="%.1f K (%.1f-%.1f), 857 and 545 GHz alone %.1f K (%.1f-%.1f), %s; 857/545/353 GHz %.0f/%.0f/%.0f mJy; PGCC %s; PHz %s, nearest %.1f deg; "
+                       "143 GHz %s; 2MASS %s; IRAS %s; AKARI %s; star %s" % (
+                      o["t"], o["lo"], o["hi"], o["t2"], o["lo2"], o["hi2"],
+                      "CMB-free maps %.2f/%.2f/%.2f Jy, 217 GHz %.2f Jy, %.1f K (%.1f-%.1f)" % (
+                          o["cmbfree"]["s857"], o["cmbfree"]["s545"], o["cmbfree"]["s353"], o["cmbfree"]["s217"], o["cmbfree"]["t"], o["cmbfree"]["lo"],
+                          o["cmbfree"]["hi"]) if o["cmbfree"] else "no CMB-free maps",
+                      o["s857"], o["s545"], o["s353"], o["pgcc"] or "-", o["phz"] or "-", o["phz_nearest_deg"],
+                      o["p143"] or "-", o["xsc"] or "-", o["iras"] or "-", o["akari"] or "-", o["star"] or "-")) for o in cold])
+        print("recorded")
+
+
 APPROACHES = {
+    "coldsky": (lambda: core.run_cli(coldsky_main), coldsky_DOC),
+    "gcml": (lambda: core.run_cli(gcml_main), gcml_DOC),
     "radioquiet": (lambda: core.run_cli(radioquiet_main), radioquiet_DOC),
     "pvedge": (lambda: core.run_cli(pvedge_main), pvedge_DOC),
     "coldcomp": (lambda: core.run_cli(coldcomp_main), coldcomp_DOC),

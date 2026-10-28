@@ -5290,7 +5290,56 @@ def radarfence_main(record=False, dist_pc=10.0, dec_min=0.0, dec_max=33.0, near_
         print("recorded")
 
 
+hydrogenbin_DOC = r"""Pulsars on the hydrogen line's binary fractions: ATNF catalogue pulsars, read from the catalogue's own query form, whose spin frequency, measured to a tenth of the window or better, sits within one part in 100,000 of the hydrogen line's 1420.405751768 MHz divided by a power of two, the line counted down by a chain of flip-flops as a clock built on it would be, against the same windows shifted by half an octave and the count uniform logarithmic fractions give.
+
+    python -I seti.py radio_sky hydrogenbin [record] [--tol-rel 0.00001]"""
+
+
+def hydrogenbin_main(record=False, tol_rel=0.00001):
+    from scipy.stats import poisson
+    line = HYDROGEN_HZ * 1e6
+    rows = atnf_table(["F0"], "", errors=True, timeout=300)
+    out, ctl, n = [], [], 0
+    for r in rows:
+        f, ef = (r["F0"] or (None, None))
+        if f is None or f <= 0 or ef is None or ef / f > tol_rel / 10:
+            continue
+        n += 1
+        k = round(math.log2(line / f))
+        target = line / 2.0 ** k
+        o = dict(psr=r["PSRJ"], f=f, ef=ef, target=target, power=int(k), rel=f / target - 1, vet=None)
+        if abs(o["rel"]) < tol_rel:
+            out.append(o)
+        k2 = round(math.log2(line / f) - 0.5)
+        t2 = line / 2.0 ** (k2 + 0.5)
+        if abs(f / t2 - 1) < tol_rel:
+            ctl.append(dict(o, target=t2))
+    # a window of width 2 tol_rel in ln f covers that share of each octave's ln 2, uniform in log frequency
+    exp = n * 2 * tol_rel / math.log(2)
+    p = float(poisson.sf(len(out) - 1, exp)) if out else 1.0
+    for o in out:
+        o["vet"] = "chance-rate" if p > 0.01 else None
+    print("%d pulsars of %d in the catalogue with spin frequencies measured to %g or better; within %g of the hydrogen line divided by a power of two: %d (%.4f expected, "
+          "Poisson p %.3g); at the half-octave shift: %d" % (n, len(rows), tol_rel / 10, tol_rel, len(out), exp, p, len(ctl)))
+    for o in sorted(out + ctl, key=lambda o: abs(o["f"] / o["target"] - 1)):
+        print("  %s: %.9f +- %.1e Hz against %.9f (2^-%s of the line%s), off by %.2e; %s" % (
+            o["psr"], o["f"], o["ef"], o["target"], o["power"], "" if o in out else ", half-octave control", o["f"] / o["target"] - 1,
+            (o["vet"] or "unexplained") if o in out else "control"))
+    json.dump(dict(n=n, hits=out, control=ctl), open(core.results("pulsars_hydrogen_binary.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "atnf_hydrogen_binary", "Pulsars on the hydrogen line's binary fractions", "ATNF pulsar catalogue (its query form)",
+            "pulsars with spin frequencies measured to %g or better: %d of %d" % (tol_rel / 10, n, len(rows)), os.path.abspath(__file__), "hydrogenbin", n, "pulsars",
+            dict(tol_rel=tol_rel, line_hz=line), "uniform logarithmic fractions give %.4f; the half-octave windows hold %d" % (exp, len(ctl)),
+            "a spin frequency within %g of 1420.405751768 MHz divided by a power of two" % tol_rel,
+            "%d against %.4f expected and %d at the half-octave shift (Poisson p %.3g)" % (len(out), exp, len(ctl), p),
+            [dict(target="psr:%s" % o["psr"], stat=o["rel"], unit="fractional offset from the line over a power of two", vet=o["vet"],
+                  note="%.9f Hz against %.9f (2^-%d of the line)" % (o["f"], o["target"], o["power"])) for o in out])
+        print("recorded")
+
+
 APPROACHES = {
+    "hydrogenbin": (lambda: core.run_cli(hydrogenbin_main), hydrogenbin_DOC),
     "radarfence": (lambda: core.run_cli(radarfence_main), radarfence_DOC),
     "hostlessnir": (lambda: core.run_cli(hostlessnir_main), hostlessnir_DOC),
     "hostlesssed": (lambda: core.run_cli(hostlesssed_main), hostlesssed_DOC),

@@ -6780,7 +6780,280 @@ def vanished_main(record=False, h_max=17.0, last_before="2017-01-01", v_limit=21
         print("recorded")
 
 
+lurkers_DOC = r"""Lurkers at the other planets' Lagrange points: asteroids and comets of JPL's Small-Body Database within 2 per cent of the semi-major axis of Venus, Mars, Saturn, Uranus or Neptune, or within one and a half times the half-width of the planet's 1:1 resonance in semi-major axis, a sqrt(8 mu / 3), where that is wider (Saturn's), with eccentricities below 0.3 and inclinations below 40 deg, placed by their mean longitude at the element epoch against the planet's (Standish's mean elements for 1800-2050), the count within 20 deg of the L4 and L5 points, 60 deg ahead of and behind the planet, set against the ring's other longitudes; a watcher kept at a planet's stable points would sit there, where the 1:1 resonance holds natural Trojans as well, so a match on an arc of 30 days or more inside the resonance's half-width is a co-orbital of the kind the planet's published Trojans are, and one outside it a body passing through on its own orbit.
+
+    python -I seti.py solar_system lurkers [record] [--frac 0.02] [--e-max 0.3] [--i-max-deg 40] [--half-width-deg 20]"""
+
+# mean longitude at J2000 (deg), its rate (deg per Julian century), the semi-major axis (au) and the planet's mass over the Sun's:
+# Standish's approximate elements, 1800-2050
+LURKERS_PLANETS = {"Venus": (181.97909950, 58517.81538729, 0.72333566, 2.4478e-6), "Mars": (-4.55343205, 19140.30268499, 1.52371034, 3.2271e-7),
+                   "Saturn": (49.95424423, 1222.49362201, 9.53667594, 2.8589e-4), "Uranus": (313.23810451, 428.48202785, 19.18916464, 4.3662e-5),
+                   "Neptune": (-55.12002969, 218.45945325, 30.06992276, 5.1514e-5)}
+# the published Trojan populations the co-orbitals belong to
+LURKERS_TROJANS = {"Venus": "temporary Trojans (2013 ND15, de la Fuente Marcos and de la Fuente Marcos 2014)",
+                   "Mars": "the Mars Trojans and co-orbitals, Eureka's family at L5 among them (Christou 2013; Borisov et al. 2017)",
+                   "Saturn": "temporary Trojans (2019 UO14, Hui et al. 2024)",
+                   "Uranus": "temporary Trojans (2011 QF99, Alexandersen et al. 2013; 2014 YX49, de la Fuente Marcos and de la Fuente Marcos 2017)",
+                   "Neptune": "the Neptune Trojans (Sheppard and Trujillo 2006; Lin et al. 2021)"}
+
+
+def lurkers_main(record=False, frac=0.02, e_max=0.3, i_max_deg=40.0, half_width_deg=20.0):
+    from scipy.stats import poisson
+    found, summary = [], {}
+    for planet, (l0, rate, ap, mu) in LURKERS_PLANETS.items():
+        width = ap * math.sqrt(8 * mu / 3)
+        span = max(frac * ap, 1.5 * width)
+        rows = []
+        for kind in ("a", "c"):
+            rows += sbdb_rows(["a|RG|%g|%g" % (ap - span, ap + span), "e|LT|%g" % e_max, "i|LT|%g" % i_max_deg],
+                              "full_name,pdes,a,e,i,om,w,ma,epoch,H,data_arc,n_obs_used,condition_code,class", kind=kind)
+        ring = []
+        for r in rows:
+            om, w, ma, ep = num(r["om"]), num(r["w"]), num(r["ma"]), num(r["epoch"])
+            if None in (om, w, ma, ep):
+                continue
+            lam = (om + w + ma) % 360.0
+            lp = (l0 + rate * (ep - 2451545.0) / 36525.0) % 360.0
+            ring.append(dict(planet=planet, name=" ".join(str(r["full_name"]).split()), pdes=str(r["pdes"]).strip(), a=num(r["a"]), e=num(r["e"]), i=num(r["i"]),
+                             H=num(r["H"]), arc=num(r["data_arc"]) or 0, nobs=num(r["n_obs_used"]), cc=num(r["condition_code"]), cls=str(r["class"]).strip(),
+                             dlon=(lam - lp + 180.0) % 360.0 - 180.0))
+        l4 = [o for o in ring if abs(o["dlon"] - 60) < half_width_deg]
+        l5 = [o for o in ring if abs(o["dlon"] + 60) < half_width_deg]
+        exp = len(ring) * 2 * half_width_deg / 360.0
+        p4, p5 = (float(poisson.sf(len(x) - 1, exp)) if x else 1.0 for x in (l4, l5))
+        hist = [sum(1 for o in ring if lo <= o["dlon"] < lo + 30) for lo in range(-180, 180, 30)]
+        for o in l4 + l5:
+            o["point"] = "L4" if o in l4 else "L5"
+            o["inside"] = abs(o["a"] - ap) < width
+            o["vet"] = ("unconstrained-geometry" if (o["cc"] is not None and o["cc"] >= 6) or o["arc"] < 30 else "co-orbital" if o["inside"] else "chance-rate")
+            o["ref"] = LURKERS_TROJANS[planet] if o["vet"] == "co-orbital" else ""
+        co = [o for o in l4 + l5 if o["vet"] == "co-orbital"]
+        passing = [o for o in l4 + l5 if o["vet"] == "chance-rate"]
+        exp_pass = sum(1 for o in ring if abs(o["a"] - ap) >= width) * 2 * half_width_deg / 360.0
+        summary[planet] = dict(n=len(ring), span=span, width=width, l4=len(l4), l5=len(l5), exp=exp, p4=p4, p5=p5, hist=hist, co=len(co), passing=len(passing), exp_pass=exp_pass)
+        found += l4 + l5
+        print("%s: %d bodies within %.4f au of its semi-major axis (the 1:1 resonance's half-width %.4f au); within %g deg of L4: %d, of L5: %d, against %.1f expected per "
+              "point from the ring (Poisson p %.3g and %.3g); longitudes from the planet in 30 deg bins from -180: %s; on arcs of 30 d or more inside the resonance: %d, "
+              "outside it passing through: %d against %.1f per point" % (planet, len(ring), span, width, half_width_deg, len(l4), len(l5), exp, p4, p5, hist, len(co),
+                                                                          len(passing), exp_pass))
+        for o in sorted(l4 + l5, key=lambda o: abs(abs(o["dlon"]) - 60)):
+            if o["vet"] != "unconstrained-geometry":
+                print("  %s %s (%s): %+.1f deg from %s, a %.4f (%+.4f), e %.3f, i %.1f, H %s, arc %.0f d, condition %s; %s" % (
+                    o["point"], o["name"], o["cls"], o["dlon"], planet, o["a"], o["a"] - ap, o["e"], o["i"], o["H"], o["arc"], o["cc"], o["vet"] or "unexplained"))
+    left = [o for o in found if o["vet"] is None]
+    print("unexplained at any of the five planets' L4 and L5 points: %d" % len(left))
+    json.dump(dict(summary=summary, found=found), open(core.results("planet_lagrange_points.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "sbdb_planet_lagrange", "Lurkers at the other planets' Lagrange points", "JPL Small-Body Database (sbdb_query.api)",
+            "bodies within 2 per cent of the semi-major axis of Venus, Mars, Saturn, Uranus and Neptune, or 1.5 times the 1:1 resonance's half-width, with e below %g and "
+            "i below %g deg: %s" % (e_max, i_max_deg, ", ".join("%s %d" % (k, v["n"]) for k, v in summary.items())), os.path.abspath(__file__), "lurkers",
+            sum(v["n"] for v in summary.values()), "bodies", dict(frac=frac, e_max=e_max, i_max_deg=i_max_deg, half_width_deg=half_width_deg),
+            "each ring's other longitudes: %s expected per point" % ", ".join("%s %.1f" % (k, v["exp"]) for k, v in summary.items()),
+            "a body within %g deg of a planet's L4 or L5 point on an orbit the catalogue holds" % half_width_deg,
+            "; ".join("%s %d at L4 and %d at L5 against %.1f, %d of them co-orbital" % (k, v["l4"], v["l5"], v["exp"], v["co"]) for k, v in summary.items())
+            + "; %d unexplained" % len(left),
+            [dict(target="sbdb:%s" % o["pdes"], stat=round(o["dlon"], 1), unit="deg of mean longitude from %s" % o["planet"], vet=o["vet"],
+                  note="%s at %s's %s, a %.4f au, e %.3f, i %.1f deg, H %s, arc %.0f d, condition %s%s" % (
+                      o["name"], o["planet"], o["point"], o["a"], o["e"], o["i"], o["H"], o["arc"], o["cc"], "; " + o["ref"] if o["ref"] else "")) for o in found])
+        print("recorded")
+
+
+
+hohmann_DOC = r"""Bodies parked on Hohmann transfer orbits: asteroids and comets of JPL's Small-Body Database whose perihelion lies within 0.005 au of one planet's semi-major axis and whose aphelion lies within 0.005 au of the next planet's, Earth to Mars and Venus to Earth, on orbits inclined less than 2 deg, the least-energy route between the two that a craft plying between them would keep, against the counts of the 0.01 by 0.01 au cells of perihelion and aphelion around it, each match read for its arc, condition code and class.
+
+    python -I seti.py solar_system hohmann [record] [--tol-au 0.005] [--i-max-deg 2] [--cells 4]"""
+
+# perihelion and aphelion of the transfer: the inner and outer planet's semi-major axes in au
+HOHMANN_PAIRS = {"Earth to Mars": (1.00000261, 1.52371034), "Venus to Earth": (0.72333566, 1.00000261)}
+
+
+def hohmann_main(record=False, tol_au=0.005, i_max_deg=2.0, cells=4):
+    from scipy.stats import poisson
+    w = 2 * tol_au
+    found, summary = [], {}
+    for pair, (q0, Q0) in HOHMANN_PAIRS.items():
+        span = (cells + 0.5) * w
+        rows = []
+        for kind in ("a", "c"):
+            rows += sbdb_rows(["q|RG|%g|%g" % (q0 - span, q0 + span), "a|RG|%g|%g" % ((q0 + Q0) / 2 - span, (q0 + Q0) / 2 + span), "i|LT|%g" % i_max_deg],
+                              "full_name,pdes,a,e,i,q,H,data_arc,n_obs_used,condition_code,class", kind=kind)
+        grid = np.zeros((2 * cells + 1, 2 * cells + 1), int)
+        hits = []
+        for r in rows:
+            a, q = num(r["a"]), num(r["q"])
+            if a is None or q is None:
+                continue
+            Q = 2 * a - q
+            iq, iQ = int(math.floor((q - q0 + tol_au) / w)), int(math.floor((Q - Q0 + tol_au) / w))
+            if abs(iq) <= cells and abs(iQ) <= cells:
+                grid[iq + cells, iQ + cells] += 1
+                if iq == 0 and iQ == 0:
+                    cc = num(r["condition_code"])
+                    hits.append(dict(pair=pair, name=" ".join(str(r["full_name"]).split()), pdes=str(r["pdes"]).strip(), q=q, Q=Q, e=num(r["e"]), i=num(r["i"]),
+                                     H=num(r["H"]), arc=num(r["data_arc"]) or 0, cc=cc, cls=str(r["class"]).strip()))
+        centre = int(grid[cells, cells])
+        others = np.delete(grid.ravel(), grid.size // 2)
+        exp = float(np.mean(others))
+        p = float(poisson.sf(centre - 1, exp)) if centre else 1.0
+        for h in hits:
+            h["vet"] = ("unconstrained-geometry" if (h["cc"] is not None and h["cc"] >= 6) or h["arc"] < 30 else "chance-rate" if p > 0.01 else None)
+        summary[pair] = dict(n=int(grid.sum()), centre=centre, exp=exp, p=p, cells=[int(x) for x in others])
+        found += hits
+        print("%s: %d bodies inclined below %g deg in the %dx%d cells of %.2f au around perihelion %.4f and aphelion %.4f au; the transfer's cell holds %d against %.2f "
+              "in the mean cell (Poisson p %.3g; cells range %d-%d)" % (pair, int(grid.sum()), i_max_deg, 2 * cells + 1, 2 * cells + 1, w, q0, Q0, centre, exp, p,
+                                                                         min(others), max(others)))
+        for h in sorted(hits, key=lambda h: -h["arc"]):
+            print("  %s (%s): q %.4f, Q %.4f, e %.3f, i %.2f, H %s, arc %.0f d, condition %s; %s" % (
+                h["name"], h["cls"], h["q"], h["Q"], h["e"], h["i"], h["H"], h["arc"], h["cc"], h["vet"] or "unexplained"))
+    left = [h for h in found if h["vet"] is None]
+    json.dump(dict(summary=summary, found=found), open(core.results("hohmann_orbits.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "sbdb_hohmann_orbits", "Bodies parked on Hohmann transfer orbits", "JPL Small-Body Database (sbdb_query.api)",
+            "bodies inclined below %g deg in the cells around the Earth-Mars and Venus-Earth transfers: %s" % (
+                i_max_deg, ", ".join("%s %d" % (k, v["n"]) for k, v in summary.items())), os.path.abspath(__file__), "hohmann", sum(v["n"] for v in summary.values()), "bodies",
+            dict(tol_au=tol_au, i_max_deg=i_max_deg, cells=cells), "the mean of the surrounding %.2f au cells: %s" % (w, ", ".join("%s %.2f" % (k, v["exp"]) for k, v in summary.items())),
+            "a body whose perihelion and aphelion lie within %g au of two planets' semi-major axes on an orbit inclined below %g deg" % (tol_au, i_max_deg),
+            "; ".join("%s %d against %.2f (p %.3g)" % (k, v["centre"], v["exp"], v["p"]) for k, v in summary.items()) + "; %d unexplained" % len(left),
+            [dict(target="sbdb:%s" % h["pdes"], stat=round(h["Q"] - h["q"], 4), unit="au from perihelion to aphelion", vet=h["vet"],
+                  note="%s on the %s transfer, q %.4f, Q %.4f, i %.2f deg, H %s, arc %.0f d, condition %s" % (h["name"], h["pair"], h["q"], h["Q"], h["i"], h["H"], h["arc"], h["cc"]))
+             for h in found])
+        print("recorded")
+
+
+firestrength_DOC = r"""Fireballs stronger than iron: every fireball of the CNEOS database (the JPL fireball API) with the height and speed of its peak brightness, its ram pressure there, the density of the 1976 US Standard Atmosphere at that height times the square of the speed, the load its strongest surviving fragments bore, which bounds the strength of the body that broke up by then from above; a pressure above 50 MPa, the strength Siraj and Loeb (2022) took for iron meteorites, is redrawn 20,000 times within the speed errors CNEOS shows against ground-based networks (Peña-Asensio et al. 2025: about 6 km/s before 2018, 0.55 km/s from 2018), one that stays above it in fewer than half the draws lies within the sensors' errors, and one that stays above it lies within the compressive strengths of meteorite samples in the laboratory while it stays below 411 MPa in most draws, Canyon Diablo's, the strongest Pohl and Britt (2020) compile (L chondrites reach 450 MPa in Popova et al. 2011); each is read for the height error that would bring it below 50 MPa.
+
+    python -I seti.py solar_system firestrength [record] [--mpa 50] [--lab-mpa 411] [--draws 20000] [--p-above 0.5]"""
+
+# the 1976 US Standard Atmosphere below 84.852 km geopotential: base height (km), base temperature (K), lapse rate (K/km) and base pressure (Pa)
+US1976 = [(0.0, 288.15, -6.5, 101325.0), (11.0, 216.65, 0.0, 22632.06), (20.0, 216.65, 1.0, 5474.889), (32.0, 228.65, 2.8, 868.0187),
+          (47.0, 270.65, 0.0, 110.9063), (51.0, 270.65, -2.8, 66.93887), (71.0, 214.65, -2.0, 3.956420)]
+
+
+def us1976_density(h_km):
+    """Air density in kg/m^3 at geometric height H_KM from the 1976 US Standard Atmosphere, extended above 86 km with the top layer's scale height."""
+    hg = 6356.766 * h_km / (6356.766 + h_km)
+    gmr = 34.1632
+    base = [b for b in US1976 if b[0] <= hg][-1] if hg >= 0 else US1976[0]
+    h0, t0, lapse, p0 = base
+    t = t0 + lapse * (hg - h0)
+    p = p0 * (t / t0) ** (-gmr / lapse) if lapse else p0 * math.exp(-gmr * (hg - h0) / t0)
+    return p / (287.053 * t)
+
+
+def firestrength_main(record=False, mpa=50.0, lab_mpa=411.0, draws=20000, p_above=0.5):
+    d = json.loads(core.get("https://ssd-api.jpl.nasa.gov/fireball.api?req-alt=true&req-vel=true", timeout=120))
+    f = d["fields"]
+    rng = np.random.default_rng(31)
+    out = []
+    for row in d["data"]:
+        r = dict(zip(f, row))
+        h, v = num(r.get("alt")), num(r.get("vel"))
+        if h is None or v is None:
+            continue
+        late = r["date"] >= "2018-01-01"
+        sv = 0.55 if late else 6.0
+        pram = us1976_density(h) * (v * 1e3) ** 2 / 1e6
+        o = dict(date=r["date"], alt=h, vel=v, energy_kt=num(r.get("impact-e")), mpa=pram, era="from 2018" if late else "before 2018", sv=sv)
+        if pram > mpa:
+            sp = np.clip(v + sv * rng.standard_normal(draws), 0, None)
+            pd = us1976_density(h) * (sp * 1e3) ** 2 / 1e6
+            o["p_above"] = float(np.mean(pd > mpa))
+            o["p_lab"] = float(np.mean(pd > lab_mpa))
+            lo, hi = h, h + 40.0
+            for _ in range(60):
+                mid = 0.5 * (lo + hi)
+                lo, hi = (mid, hi) if us1976_density(mid) * (v * 1e3) ** 2 / 1e6 > mpa else (lo, mid)
+            o["dh_km"] = hi - h
+            o["vet"] = "sensor-error" if o["p_above"] < p_above else "meteoritic-strength" if o["p_lab"] < p_above else None
+        out.append(o)
+    strong = [o for o in out if o["mpa"] > mpa]
+    left = [o for o in strong if o["vet"] is None]
+    pr = np.array([o["mpa"] for o in out])
+    print("%d fireballs with the height and speed of peak brightness; ram pressure there: median %.2f MPa, 90th percentile %.1f, 99th %.1f; above %g MPa: %d, of them above it in "
+          "fewer than %g of the draws within CNEOS's speed errors: %d, below the %g MPa of meteorite samples in most draws: %d; beyond both: %d" % (
+              len(out), float(np.median(pr)), float(np.percentile(pr, 90)), float(np.percentile(pr, 99)), mpa, len(strong), p_above,
+              sum(o["vet"] == "sensor-error" for o in strong), lab_mpa, sum(o["vet"] == "meteoritic-strength" for o in strong), len(left)))
+    for o in sorted(out, key=lambda o: -o["mpa"])[:15]:
+        print("  %s: %.1f km at %.1f km/s, %.1f MPa%s, %s kt (%s); %s" % (
+            o["date"], o["alt"], o["vel"], o["mpa"], ", above %g MPa in %.3f of the draws and above %g in %.3f, below %g MPa %.1f km higher" % (
+                mpa, o["p_above"], lab_mpa, o["p_lab"], mpa, o["dh_km"]) if "p_above" in o else "",
+            o["energy_kt"], o["era"], o.get("vet") or ("unexplained" if o["mpa"] > mpa else "below %g MPa" % mpa)))
+    json.dump(out, open(core.results("fireball_strength.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "cneos_fireball_strength", "Fireballs stronger than iron", "CNEOS fireball database (JPL fireball API)",
+            "fireballs with the height and speed of peak brightness: %d" % len(out), os.path.abspath(__file__), "firestrength", len(out), "fireballs",
+            dict(mpa=mpa, lab_mpa=lab_mpa, draws=draws, p_above=p_above), "each strong one redrawn within CNEOS's speed errors (Peña-Asensio et al. 2025)",
+            "a ram pressure at peak brightness above %g MPa, and above the %g MPa of meteorite samples, that the sensors' speed errors keep there" % (mpa, lab_mpa),
+            "median %.2f MPa; %d above %g MPa: %d within the speed errors, %d within the strength of meteorite samples; %d beyond" % (
+                float(np.median(pr)), len(strong), mpa, sum(o["vet"] == "sensor-error" for o in strong), sum(o["vet"] == "meteoritic-strength" for o in strong), len(left)),
+            [dict(target="fireball:%s" % o["date"].replace(" ", "T"), stat=round(o["mpa"], 1), unit="MPa at peak brightness", vet=o["vet"],
+                  note="%.1f km at %.1f km/s (%s), above %g MPa in %.3f of the draws and above %g in %.3f; %.1f km higher brings it below %g" % (
+                      o["alt"], o["vel"], o["era"], mpa, o["p_above"], lab_mpa, o["p_lab"], o["dh_km"], mpa)) for o in strong])
+        print("recorded")
+
+
+circularmoons_DOC = r"""Moons parked on distant circular orbits: the satellites of JPL's mean-element table (ssd.jpl.nasa.gov/sats/elem) orbiting a giant planet beyond its outermost large moon (Callisto, Iapetus, Oberon, Triton), the irregular moons the planets captured, whose orbits come out eccentric and steeply inclined or retrograde, those with eccentricity below 0.05 on prograde orbits within 10 deg of their reference plane, a station kept far from the planet where capture leaves nothing round and flat, against the count the distant moons' eccentricities and inclinations give taken apart.
+
+    python -I seti.py solar_system circularmoons [record] [--e-max 0.05] [--i-max-deg 10]"""
+
+# the outermost large regular (or, at Neptune, captured) moon of each giant planet, whose semi-major axis in the table bounds the distant moons
+CIRCULARMOONS_EDGE = {"Jupiter": "Callisto", "Saturn": "Iapetus", "Uranus": "Oberon", "Neptune": "Triton"}
+
+
+def circularmoons_main(record=False, e_max=0.05, i_max_deg=10.0):
+    import html
+    t = core.get("https://ssd.jpl.nasa.gov/sats/elem/", timeout=120).decode("utf-8", "replace")
+    body = t[t.index('id="sat_elem"'):]
+    body = body[:body.index("</table>")]
+    moons = []
+    for tr in re.findall(r"<tr>(.*?)</tr>", body, re.S):
+        c = [html.unescape(re.sub(r"<[^>]+>", " ", x)).split() for x in re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)]
+        c = [" ".join(x) for x in c]
+        if len(c) < 13 or c[1] not in CIRCULARMOONS_EDGE:
+            continue
+        a, e, inc = num(c[7].rstrip(".")), num(c[8]), num(c[11])
+        if None in (a, e, inc):
+            continue
+        moons.append(dict(planet=c[1], name=c[2], code=c[3], frame=c[5], a_km=a, e=e, i=inc, P_d=num(c[13])))
+    edge = {p: max(m["a_km"] for m in moons if m["planet"] == p and m["name"] == name) for p, name in CIRCULARMOONS_EDGE.items()}
+    distant = [m for m in moons if m["a_km"] > edge[m["planet"]]]
+    circ = [m for m in distant if m["e"] < e_max]
+    flat = [m for m in distant if m["i"] < i_max_deg]
+    hits = [m for m in distant if m["e"] < e_max and m["i"] < i_max_deg]
+    exp = len(circ) * len(flat) / len(distant) if distant else 0.0
+    for m in hits:
+        m["vet"] = None
+    print("%d moons of the giant planets in the table, %d beyond each planet's outermost large moon (%s); eccentricity below %g: %d, prograde within %g deg of the reference "
+          "plane: %d, both: %d against %.2f with the two taken apart" % (len(moons), len(distant), ", ".join("%s %d" % (p, sum(m["planet"] == p for m in distant))
+                                                                                                           for p in CIRCULARMOONS_EDGE), e_max, len(circ), i_max_deg, len(flat),
+                                                                         len(hits), exp))
+    for m in sorted(distant, key=lambda m: m["e"])[:10]:
+        print("  %s %s: a %.0f km (%.1f of %s's), e %.4f, i %.1f deg (%s); %s" % (
+            m["planet"], m["name"], m["a_km"], m["a_km"] / edge[m["planet"]], CIRCULARMOONS_EDGE[m["planet"]], m["e"], m["i"], m["frame"],
+            "circular and flat" if m in hits else "circular" if m["e"] < e_max else ""))
+    for m in sorted(distant, key=lambda m: m["i"])[:6]:
+        print("  lowest inclination: %s %s, i %.1f deg, e %.3f" % (m["planet"], m["name"], m["i"], m["e"]))
+    json.dump(dict(moons=moons, hits=hits), open(core.results("circular_distant_moons.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "jpl_circular_distant_moons", "Moons parked on distant circular orbits", "JPL Solar System Dynamics planetary satellite mean elements",
+            "moons of the giant planets beyond each one's outermost large moon: %d" % len(distant), os.path.abspath(__file__), "circularmoons", len(distant), "moons",
+            dict(e_max=e_max, i_max_deg=i_max_deg), "the distant moons' eccentricities and inclinations taken apart: %.2f expected" % exp,
+            "a distant moon on an orbit of eccentricity below %g within %g deg of its reference plane" % (e_max, i_max_deg),
+            "%d against %.2f expected; eccentricity below %g alone: %d, inclination below %g deg alone: %d" % (len(hits), exp, e_max, len(circ), i_max_deg, len(flat)),
+            [dict(target="moon:%s" % m["code"], stat=m["e"], unit="eccentricity", vet=m["vet"], note="%s of %s, a %.0f km, i %.1f deg (%s)" % (
+                m["name"], m["planet"], m["a_km"], m["i"], m["frame"])) for m in hits])
+        print("recorded")
+
+
 APPROACHES = {
+    "circularmoons": (lambda: core.run_cli(circularmoons_main), circularmoons_DOC),
+    "firestrength": (lambda: core.run_cli(firestrength_main), firestrength_DOC),
+    "hohmann": (lambda: core.run_cli(hohmann_main), hohmann_DOC),
+    "lurkers": (lambda: core.run_cli(lurkers_main), lurkers_DOC),
     "vanished": (lambda: core.run_cli(vanished_main), vanished_DOC),
     "fireballgmn": (lambda: core.run_cli(fireballgmn_main), fireballgmn_DOC),
     "fireballglm": (lambda: core.run_cli(fireballglm_main), fireballglm_DOC),

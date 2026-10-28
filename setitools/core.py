@@ -1400,6 +1400,7 @@ VET = {
     "arm-tangent": "a line of sight along a spiral arm's tangent, where a whole arm's young pulsars, nebulae and star-forming regions pile up",
     "cohesive": "a spin that needs less tensile strength than solid rock holds, about 100 kPa, which a coherent fragment or a cohesive rubble pile supplies",
     "sensor-error": "a speed or direction within the published errors of the sensor that measured it",
+    "meteoritic-strength": "a ram pressure within the compressive strengths meteorite samples show in the laboratory, which the strongest surviving fragments of a body bear at peak brightness",
     "radio-hotspot": "a compact radio component away from its source's low-resolution centroid, a knot or hotspot of a larger radio galaxy whose host lies elsewhere",
     "out-of-reach": "a known body now too faint or too far for the surveys that would see it",
     "abiotic-chemistry": "a gas mixture that published abiotic models of the planet make, hydrogen-rich mini-Neptune and magma-ocean chemistry keeping CH4 and CO2 without CO",

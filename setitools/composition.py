@@ -5204,7 +5204,69 @@ def giants_cli():
         giants_search(a.planets, a.species, a.sigma, a.temp, pick(a.sysrem, 0), a.weight, a.inject, not a.no_whiten, not a.no_shadow, a.redo, tuple(a.instruments))
 
 
+ironceiling_DOC = r"""Dwarfs richer in iron than the Galaxy has made: dwarfs (log g above 4) of GALAH DR4 and of APOGEE DR17's ASPCAP whose [Fe/H] lies above +0.7 at three sigma, where the most metal-rich stars the disc holds reach about +0.5 (Castro et al. 1997; Buder et al. 2019), metal a made world could add to its star; each read for the survey's own flags on the fit and on iron, a second set of lines, its temperature at the edge of the survey's grid and the spectrum's S/N, since an outlier the pipeline flags or fits at its grid's edge is the pipeline's.
+
+    python -I seti.py composition ironceiling [record] [--feh-min 0.7] [--sigma 3] [--query-min 0.5] [--snr-min 40]"""
+
+
+def ironceiling_main(record=False, feh_min=0.7, sigma=3.0, query_min=0.5, snr_min=40.0):
+    galah = core.tap("datacentral", "SELECT sobject_id, gaiadr3_source_id, teff, logg, fe_h, e_fe_h, flag_fe_h, flag_sp, snr_px_ccd3, rv_comp_2, e_rv_comp_2, vsini "
+                                    "FROM galah_dr4.mainstartable WHERE logg > 4 AND fe_h > %g" % query_min, timeout=900)
+    n_galah = core.tap("datacentral", "SELECT COUNT(*) AS n FROM galah_dr4.mainstartable WHERE logg > 4 AND flag_sp = 0 AND fe_h IS NOT NULL", timeout=900)
+    apogee = core.sdss_sql("SELECT a.apogee_id, s.gaiaedr3_source_id, a.teff, a.logg, a.fe_h, a.fe_h_err, a.fe_h_flag, a.aspcapflag, s.snr, s.starflag, s.vscatter, s.nvisits "
+                           "FROM aspcapStar a JOIN apogeeStar s ON a.apstar_id = s.apstar_id WHERE a.logg > 4 AND a.fe_h > %g" % query_min)
+    n_apogee = core.sdss_sql("SELECT COUNT(*) AS n FROM aspcapStar WHERE logg > 4 AND fe_h > -9")
+    out = []
+    for r in galah:
+        f, e = core.num(r["fe_h"]), core.num(r["e_fe_h"]) or 0.0
+        if f is None:
+            continue
+        o = dict(survey="GALAH DR4", id=str(r["sobject_id"]), gaia=str(r["gaiadr3_source_id"] or ""), teff=core.num(r["teff"]), logg=core.num(r["logg"]), feh=f, e=e,
+                 snr=core.num(r["snr_px_ccd3"]), flags="flag_sp %s, flag_fe_h %s" % (r["flag_sp"], r["flag_fe_h"]), second=core.num(r["rv_comp_2"]) is not None)
+        o["vet"] = ("fit-boundary" if int(core.num(r["flag_sp"]) or 0) or int(core.num(r["flag_fe_h"]) or 0) else
+                    "binary" if o["second"] else "artefact" if (o["snr"] or 0) < snr_min else None)
+        out.append(o)
+    for r in apogee:
+        f, e = core.num(r["fe_h"]), core.num(r["fe_h_err"]) or 0.0
+        if f is None or f < -9:
+            continue
+        aflag, fflag = int(core.num(r["aspcapflag"]) or 0), int(core.num(r["fe_h_flag"]) or 0)
+        o = dict(survey="APOGEE DR17", id=str(r["apogee_id"]), gaia=str(r["gaiaedr3_source_id"] or ""), teff=core.num(r["teff"]), logg=core.num(r["logg"]), feh=f, e=e,
+                 snr=core.num(r["snr"]), flags="aspcapflag %d, fe_h_flag %d, vscatter %s over %s visits" % (aflag, fflag, r["vscatter"], r["nvisits"]),
+                 second=(core.num(r["vscatter"]) or 0) > 1.0)
+        # ASPCAPFLAG bit 23 is STAR_BAD; a flag on [Fe/H] itself marks the element's fit
+        o["vet"] = ("fit-boundary" if aflag >> 23 & 1 or fflag else "binary" if o["second"] else "artefact" if (o["snr"] or 0) < snr_min else None)
+        out.append(o)
+    high = [o for o in out if o["feh"] - sigma * o["e"] > feh_min]
+    left = [o for o in high if o["vet"] is None]
+    top = {s: max([o["feh"] for o in out if o["survey"] == s and o["vet"] is None] or [float("nan")]) for s in ("GALAH DR4", "APOGEE DR17")}
+    print("dwarfs above [Fe/H] +%g: GALAH DR4 %d of %s clean dwarfs, APOGEE DR17 %d of %s; above +%g at %g sigma: %d (GALAH %d, APOGEE %d), flagged by the pipeline "
+          "or at its grid's edge %d, with a second star %d, low S/N %d; unexplained %d; the highest unflagged single values: %s" % (
+              query_min, sum(o["survey"] == "GALAH DR4" for o in out), n_galah[0]["n"] if n_galah else "-", sum(o["survey"] == "APOGEE DR17" for o in out),
+              n_apogee[0]["n"] if n_apogee else "-", feh_min, sigma, len(high), sum(o["survey"] == "GALAH DR4" for o in high), sum(o["survey"] == "APOGEE DR17" for o in high),
+              sum(o["vet"] == "fit-boundary" for o in high), sum(o["vet"] == "binary" for o in high), sum(o["vet"] == "artefact" for o in high), len(left), top))
+    for o in sorted(high, key=lambda o: -o["feh"])[:30]:
+        print("  %s %s (Gaia %s): [Fe/H] %+.2f +- %.2f, %.0f K, log g %.2f, S/N %s, %s%s; %s" % (
+            o["survey"], o["id"], o["gaia"], o["feh"], o["e"], o["teff"] or 0, o["logg"] or 0, o["snr"], o["flags"], ", a second star" if o["second"] else "",
+            o["vet"] or "unexplained"))
+    json.dump(dict(top=top, high=high), open(core.results("iron_ceiling.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "galah_apogee_iron_ceiling", "Dwarfs richer in iron than the Galaxy has made", "GALAH DR4 (Data Central); APOGEE DR17 ASPCAP (SkyServer)",
+            "dwarfs above [Fe/H] +%g: %d" % (query_min, len(out)), os.path.abspath(__file__), "ironceiling", len(out), "spectra",
+            dict(feh_min=feh_min, sigma=sigma, query_min=query_min, snr_min=snr_min), "the disc's most metal-rich stars near +0.5 (Castro et al. 1997)",
+            "a dwarf above [Fe/H] +%g at %g sigma that its survey neither flags nor fits at its grid's edge" % (feh_min, sigma),
+            "%d above +%g at %g sigma: %d flagged or at the grid's edge, %d with a second star, %d at low S/N; %d unexplained; highest unflagged %s" % (
+                len(high), feh_min, sigma, sum(o["vet"] == "fit-boundary" for o in high), sum(o["vet"] == "binary" for o in high), sum(o["vet"] == "artefact" for o in high),
+                len(left), ", ".join("%s %+.2f" % kv for kv in top.items())),
+            [dict(target="gaia_dr3:%s" % o["gaia"] if o["gaia"] not in ("", "0", "-1", "None") else "%s:%s" % ("galah" if o["survey"] == "GALAH DR4" else "apogee", o["id"]),
+                  stat=round(o["feh"], 3), unit="[Fe/H]", vet=o["vet"], note="%s %s, +- %.2f, %.0f K, log g %.2f, S/N %s, %s" % (
+                      o["survey"], o["id"], o["e"], o["teff"] or 0, o["logg"] or 0, o["snr"], o["flags"])) for o in high])
+        print("recorded")
+
+
 APPROACHES = {
+    "ironceiling": (lambda: core.run_cli(ironceiling_main), ironceiling_DOC),
     "giants": (giants_cli, giants_DOC),
     "companions": (companions_cli, companions_DOC),
     "binaries": (binaries_cli, binaries_DOC),

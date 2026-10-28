@@ -7,6 +7,7 @@ import io
 import json
 import math
 import os
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -2668,7 +2669,319 @@ def irchanged_main(record=False, widths=5.0, min_mag=0.3, g_max=15.0, ks_sat=4.0
         print("recorded")
 
 
+candles_DOC = r"""Standard candles that are not standard: the Cepheids of Gaia DR3's vari_cepheid in the Large and Small Magellanic Clouds, at distance moduli of 18.477 (Pietrzyński et al. 2019) and 18.977 (Graczyk et al. 2020), and with parallaxes at ten sigma in the Galaxy, and the RR Lyrae of vari_rrlyrae with such parallaxes, each on the period-Wesenheit relation W = G - 1.90 (BP - RP) of its class, mode and galaxy fitted with three-sigma clipping, where a star more than five widths of the relation (its scatter and the parallax's error together) brighter than its period allows carries light its pulsation does not give; each such star read for a companion in its astrometry (RUWE above 1.4 or a non-single-star solution), for a neighbour's light (a corrected BP/RP excess above 0.2, or a Gaia source within 2 arcsec at most 3 mag fainter), in the Clouds against OGLE-IV's Cepheids within 1 arcsec (Soszyński et al. 2015), whose class, mode and period show where Gaia's differ, whose I-band Wesenheit relation shows whether the star is bright in OGLE's sharper photometry too and whose remarks name eclipsing companions and blended pairs of Cepheids, in the Galaxy against Gaia's general variability classifier, and everywhere for its pulsation amplitude, since light that does not pulsate dilutes it: a star whose G amplitude lies below the 16th percentile of its peers' (the same class, mode and galaxy within 0.05 in log P) and returns within their 98th percentile when scaled by the light it carries in G beyond its group's G-band relation (a red companion brightens W by more than it brightens G) carries a companion's light, as does one whose G amplitude lies below its peers' median while its ratio of BP to RP amplitude lies outside their central 68 per cent, since a companion redder than the pulsator dilutes the RP amplitude more than the BP and a bluer one the reverse.
+
+    python -I seti.py dimming candles [record] [--widths 5] [--clip 3] [--plx-sigma 10] [--min-group 20] [--cstar-max 0.2] [--blend-arcsec 2] [--blend-dmag 3] [--amp-dlogp 0.05] [--amp-low 0.16] [--amp-high 0.98]"""
+
+# centre, radius (deg) and distance modulus of the Magellanic Clouds
+CANDLES_CLOUDS = {"LMC": (80.894, -69.756, 8.0, 18.477), "SMC": (13.187, -72.829, 4.0, 18.977)}
+# Lindegren et al. (2021)'s global parallax zero point, mas
+CANDLES_PLX_ZP = -0.017
+
+
+def candles_fit(x, y, s, clip):
+    """A line fitted to Y against X by least squares with CLIP-sigma clipping, S each point's own error: coefficients, intrinsic scatter and the kept mask."""
+    keep = np.ones(len(x), bool)
+    for _ in range(10):
+        c = np.polyfit(x[keep], y[keep], 1)
+        r = y - np.polyval(c, x)
+        sig = core.robust_sigma(r[keep])
+        new = np.abs(r) < clip * np.sqrt(sig ** 2 + s ** 2)
+        if (new == keep).all():
+            break
+        keep = new
+    sig_int = math.sqrt(max(core.robust_sigma(r[keep]) ** 2 - float(np.median(s[keep] ** 2)), 0.0))
+    return c, sig_int, keep
+
+
+CANDLES_OGLE = "https://www.astrouw.edu.pl/ogle/ogle4/OCVS/%s/%s/%s"
+
+
+def candles_ogle():
+    """OGLE-IV's Cepheids of the Magellanic Clouds (classical, anomalous and type II): position, class, mode, period, mean I and V and OGLE's remark, by cloud."""
+    out = {}
+    for cloud in ("LMC", "SMC"):
+        stars = {}
+        for kind in ("cep", "acep", "t2cep"):
+            for line in core.get(CANDLES_OGLE % (cloud.lower(), kind, "ident.dat"), timeout=120).decode("latin-1").splitlines():
+                t = line.split()
+                if len(t) < 4:
+                    continue
+                h, m, s = (float(x) for x in t[2].split(":"))
+                d, dm, ds = (abs(float(x)) for x in t[3].split(":"))
+                dec = (d + dm / 60 + ds / 3600) * (-1 if t[3].startswith("-") else 1)
+                stars[t[0]] = dict(id=t[0], kind=kind, mode=t[1], ra=15 * (h + m / 60 + s / 3600), dec=dec)
+            files = {"cep": ("cepF.dat", "cep1O.dat"), "acep": ("acepF.dat", "acep1O.dat"), "t2cep": ("t2cep.dat",)}[kind]
+            for f in files:
+                for line in core.get(CANDLES_OGLE % (cloud.lower(), kind, f), timeout=120).decode("latin-1").splitlines():
+                    t = line.split()
+                    if len(t) >= 4 and t[0] in stars:
+                        stars[t[0]].update(I=num(t[1]) if 0 < (num(t[1]) or 0) < 30 else None, V=num(t[2]) if 0 < (num(t[2]) or 0) < 30 else None, P=num(t[3]))
+            remarks = core.get(CANDLES_OGLE % (cloud.lower(), kind, "remarks.txt"), timeout=120, soft=True) or b""
+            for line in remarks.decode("latin-1").splitlines():
+                t = line.split(None, 1)
+                if len(t) == 2 and t[0] in stars:
+                    stars[t[0]]["remark"] = t[1].strip()
+        out[cloud] = list(stars.values())
+    return out
+
+
+def candles_ogle_read(o, ogle, radius_arcsec=1.0):
+    """A Cloud pulsator read in OGLE-IV: its OGLE class, mode and period against Gaia's, and its place on OGLE's own I-band Wesenheit relation for its mode."""
+    rows = ogle[o["galaxy"]]
+    ra, dec = np.array([r["ra"] for r in rows]), np.array([r["dec"] for r in rows])
+    d = np.hypot((ra - o["ra"]) * math.cos(math.radians(o["dec"])), dec - o["dec"]) * 3600
+    k = int(np.argmin(d))
+    if d[k] > radius_arcsec:
+        return dict(verdict="absent")
+    m = rows[k]
+    gaia_mode = {"FUNDAMENTAL": "F", "FIRST_OVERTONE": "1O"}.get(o["mode"], o["mode"])
+    out = dict(id=m["id"], kind=m["kind"], mode=m["mode"], P=m.get("P"), remark=m.get("remark", ""))
+    if m["kind"] != {"DCEP": "cep", "ACEP": "acep", "T2CEP": "t2cep"}.get(o["cls"], "?"):
+        out["verdict"] = "class"
+    elif m["mode"] != gaia_mode:
+        out["verdict"] = "mode"
+    elif not m.get("P") or abs(o["P"] / m["P"] - 1) > 0.01:
+        out["verdict"] = "period"
+    else:
+        same = [r for r in rows if r["kind"] == m["kind"] and r["mode"] == m["mode"] and r.get("P") and r.get("I") and r.get("V")]
+        x = np.array([math.log10(r["P"]) for r in same])
+        y = np.array([r["I"] - 1.55 * (r["V"] - r["I"]) for r in same])
+        c, sig, keep = candles_fit(x, y, np.zeros(len(x)), 3.0)
+        out["w_resid"] = float(m["I"] - 1.55 * (m["V"] - m["I"]) - np.polyval(c, math.log10(m["P"]))) if m.get("I") and m.get("V") else None
+        out["verdict"] = "normal" if out["w_resid"] is not None and out["w_resid"] > -5 * sig else "bright"
+    return out
+
+
+def candles_main(record=False, widths=5.0, clip=3.0, plx_sigma=10.0, min_group=20, cstar_max=0.2, blend_arcsec=2.0, blend_dmag=3.0, amp_dlogp=0.05, amp_low=0.16,
+                 amp_high=0.98):
+    cols = ("g.ra, g.dec, g.parallax, g.parallax_error, g.ruwe, g.non_single_star, g.phot_bp_rp_excess_factor, g.phot_g_mean_mag, g.bp_rp, v.source_id, v.pf, v.p1_o, "
+            "v.int_average_g, v.int_average_bp, v.int_average_rp, v.peak_to_peak_g, v.peak_to_peak_bp, v.peak_to_peak_rp")
+    ceph = core.tap_async("gaia", "SELECT %s, v.type_best_classification AS cls, v.mode_best_classification AS mode FROM gaiadr3.vari_cepheid AS v JOIN gaiadr3.gaia_source AS g "
+                                  "ON v.source_id = g.source_id" % cols, maxrec=100000)
+    # an RR Lyrae with a parallax at ten sigma lies within a few kpc, brighter than G 14, which keeps the join within the archive's time
+    rrl = core.tap_async("gaia", "SELECT %s, v.best_classification AS cls, v.metallicity FROM gaiadr3.vari_rrlyrae AS v JOIN gaiadr3.gaia_source AS g ON v.source_id = g.source_id "
+                                 "WHERE v.int_average_g < 14 AND g.parallax_over_error > %g" % (cols, plx_sigma), maxrec=100000)
+    stars = []
+    for kind, rows in (("Cepheid", ceph), ("RR Lyrae", rrl)):
+        for r in rows:
+            g, bp, rp = num(r["int_average_g"]), num(r["int_average_bp"]), num(r["int_average_rp"])
+            if None in (g, bp, rp):
+                continue
+            cls = str(r["cls"] or "").strip()
+            if kind == "Cepheid":
+                mode = str(r["mode"] or "").strip()
+                p = num(r["pf"]) if mode == "FUNDAMENTAL" else num(r["p1_o"]) if mode == "FIRST_OVERTONE" else None
+            else:
+                mode = "FUNDAMENTAL" if cls == "RRab" else "FIRST_OVERTONE" if cls == "RRc" else ""
+                p = num(r["pf"]) if mode == "FUNDAMENTAL" else num(r["p1_o"]) if mode == "FIRST_OVERTONE" else None
+            if not p or p <= 0:
+                continue
+            ra, dec = float(r["ra"]), float(r["dec"])
+            gal, mu, s_mu = None, None, 0.0
+            for name, (cra, cdec, rad, dm) in CANDLES_CLOUDS.items():
+                if kind == "Cepheid" and core.sep_arcsec(ra, dec, cra, cdec) < rad * 3600:
+                    gal, mu = name, dm
+            plx, eplx = num(r["parallax"]), num(r["parallax_error"])
+            if gal is None:
+                if not plx or not eplx or plx / eplx < plx_sigma:
+                    continue
+                pc = plx - CANDLES_PLX_ZP
+                gal, mu, s_mu = "Galaxy", 5 * math.log10(100.0 / pc), 5 / math.log(10) * eplx / pc
+            w = g - 1.90 * (bp - rp)
+            stars.append(dict(source_id=str(r["source_id"]), kind=kind, cls=cls, mode=mode, galaxy=gal, logp=math.log10(p), P=p, W=w - mu, MG=g - mu, s=s_mu, G=g, ra=ra, dec=dec,
+                              ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), amp=num(r["peak_to_peak_g"]),
+                              ratio=num(r["peak_to_peak_bp"]) / num(r["peak_to_peak_rp"]) if num(r["peak_to_peak_bp"]) and num(r["peak_to_peak_rp"]) else None,
+                              cstar=core.cstar(r["phot_bp_rp_excess_factor"], r["bp_rp"]) if num(r["phot_bp_rp_excess_factor"]) and num(r["bp_rp"]) is not None else None))
+    groups = {}
+    for o in stars:
+        groups.setdefault((o["galaxy"], o["kind"], o["cls"], o["mode"]), []).append(o)
+    bright, summary = [], []
+    for key, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
+        if len(members) < min_group:
+            continue
+        x, y, s = (np.array([o[k] for o in members]) for k in ("logp", "W", "s"))
+        c, sig_int, keep = candles_fit(x, y, s, clip)
+        for o in members:
+            o["resid"] = o["W"] - float(np.polyval(c, o["logp"]))
+            o["width"] = math.sqrt(sig_int ** 2 + o["s"] ** 2)
+            if o["resid"] < -widths * o["width"]:
+                bright.append(o)
+        # light that does not pulsate dilutes the amplitude: the star's own G amplitude against its peers' at the same period, and that amplitude scaled up by the
+        # light the star carries in G beyond the group's G-band relation, since a red companion brightens W by more than it brightens G
+        cg, _, _ = candles_fit(x, np.array([o["MG"] for o in members]), s, clip)
+        for o in members:
+            if o["resid"] >= -widths * o["width"]:
+                continue
+            o["dG"] = o["MG"] - float(np.polyval(cg, o["logp"]))
+            if not o["amp"]:
+                continue
+            peers = np.array([m["amp"] for m in members if m is not o and m["amp"] and abs(m["logp"] - o["logp"]) < amp_dlogp])
+            if len(peers) >= 10:
+                o["amp_q"] = float(np.mean(peers <= o["amp"]))
+                o["amp_qu"] = float(np.mean(peers <= o["amp"] * 10 ** (-0.4 * min(o["dG"], 0.0))))
+            # a companion redder than the pulsator dilutes the RP amplitude more than the BP amplitude, a bluer one the reverse
+            ratios = np.array([m["ratio"] for m in members if m is not o and m["ratio"] and abs(m["logp"] - o["logp"]) < amp_dlogp])
+            if o["ratio"] and len(ratios) >= 10:
+                o["ratio_q"] = float(np.mean(ratios <= o["ratio"]))
+        summary.append(dict(group=" ".join(key), n=len(members), slope=float(c[0]), zero=float(c[1]), scatter=sig_int,
+                            bright=sum(1 for o in members if o.get("resid", 0) < -widths * o["width"])))
+    ogle = candles_ogle()
+    galactic = [o["source_id"] for o in bright if o["galaxy"] == "Galaxy"]
+    general = {}
+    if galactic:
+        for r in core.tap("gaia", "SELECT source_id, best_class_name, best_class_score FROM gaiadr3.vari_classifier_result WHERE source_id IN (%s)" % ",".join(galactic)):
+            general[str(r["source_id"])] = (str(r["best_class_name"]).strip(), num(r["best_class_score"]))
+    for o in bright:
+        q = "SELECT source_id, phot_g_mean_mag FROM gaiadr3.gaia_source WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', %.7f, %.7f, %g)) AND source_id <> %s" % (
+            o["ra"], o["dec"], blend_arcsec / 3600.0, o["source_id"])
+        near = [num(n["phot_g_mean_mag"]) for n in core.tap("gaia", q)]
+        o["neighbours"] = sum(1 for m in near if m is not None and m < o["G"] + blend_dmag)
+        o["ogle"] = candles_ogle_read(o, ogle) if o["galaxy"] in CANDLES_CLOUDS else None
+        o["general"] = general.get(o["source_id"])
+        o["diluted"] = o.get("amp_q") is not None and o["amp_q"] < amp_low and o["amp_qu"] <= amp_high
+        o["coloured"] = o.get("amp_q") is not None and o["amp_q"] < 0.5 and o.get("ratio_q") is not None and (o["ratio_q"] < amp_low or o["ratio_q"] > 1 - amp_low)
+        remark = ((o["ogle"] or {}).get("remark") or "").lower()
+        want = "RR" if o["kind"] == "RR Lyrae" else "CEP"
+        o["vet"] = ("binary" if (o["ruwe"] or 0) > 1.4 or o["nss"] or "binary" in remark else
+                    "blend" if o["neighbours"] or (o["cstar"] is not None and o["cstar"] > cstar_max) or "double" in remark or "blend" in remark else
+                    "published-solution" if o["ogle"] and o["ogle"]["verdict"] in ("class", "mode", "period") else
+                    "blend" if (o["ogle"] and o["ogle"]["verdict"] == "normal") or o["diluted"] or o["coloured"] else
+                    "published-solution" if o["general"] and o["general"][0] != want else None)
+    left = [o for o in bright if o["vet"] is None]
+    print("%d pulsators on a relation of their class, mode and galaxy (groups of %d or more): %s" % (
+        sum(g["n"] for g in summary), min_group, "; ".join("%s %d, slope %.2f, scatter %.3f, bright by %g widths %d" % (
+            g["group"], g["n"], g["slope"], g["scatter"], widths, g["bright"]) for g in summary)))
+    print("brighter than %g widths: %d; a companion in the astrometry or OGLE's remarks %d, a neighbour's light in Gaia, on OGLE's normal relation or in the "
+          "amplitudes %d (diluted %d, a companion's colour in the BP to RP amplitude ratio %d), a class, mode or period Gaia mistook %d; unexplained %d" % (
+              widths, len(bright), sum(o["vet"] == "binary" for o in bright), sum(o["vet"] == "blend" for o in bright), sum(1 for o in bright if o["diluted"]),
+              sum(1 for o in bright if o["coloured"]), sum(o["vet"] == "published-solution" for o in bright), len(left)))
+    for o in sorted(bright, key=lambda o: o["resid"] / o["width"])[:120]:
+        og = o["ogle"] or {}
+        print("  Gaia DR3 %s %s %s %s in the %s: P %.4f d, %+.2f mag (%.1f widths), %s in G, RUWE %s, NSS %d, C* %s, %d neighbours; G amplitude %s at percentile %s of its "
+              "peers, %s scaled, BP/RP amplitude ratio %s at percentile %s; OGLE %s %s %s P %s (%s%s)%s%s; %s" % (
+                  o["source_id"], o["kind"], o["cls"], o["mode"], o["galaxy"], o["P"], o["resid"], o["resid"] / o["width"],
+                  "%+.2f" % o["dG"] if o.get("dG") is not None else "-", o["ruwe"], o["nss"],
+                  "%.2f" % o["cstar"] if o["cstar"] is not None else "-", o["neighbours"], o["amp"], "%.2f" % o["amp_q"] if o.get("amp_q") is not None else "-",
+                  "%.2f" % o["amp_qu"] if o.get("amp_qu") is not None else "-", "%.3f" % o["ratio"] if o["ratio"] else "-",
+                  "%.2f" % o["ratio_q"] if o.get("ratio_q") is not None else "-", og.get("id", "-"), og.get("kind", ""), og.get("mode", ""), og.get("P"),
+                  og.get("verdict", "-"), ", W_I %+.2f" % og["w_resid"] if og.get("w_resid") is not None else "", "; '%s'" % og["remark"] if og.get("remark") else "",
+                  "; Gaia's classifier %s %.2f" % o["general"] if o["general"] else "", o["vet"] or "unexplained"))
+    json.dump(dict(groups=summary, bright=bright), open(core.results("standard_candles.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gaia_standard_candles", "Standard candles that are not standard", "Gaia DR3 vari_cepheid and vari_rrlyrae with gaia_source",
+            "Cepheids of the Magellanic Clouds and Cepheids and RR Lyrae with parallaxes at %g sigma, on relations of %d or more: %d" % (
+                plx_sigma, min_group, sum(g["n"] for g in summary)), os.path.abspath(__file__), "candles", sum(g["n"] for g in summary), "pulsators",
+            dict(widths=widths, clip=clip, plx_sigma=plx_sigma, min_group=min_group, cstar_max=cstar_max, blend_arcsec=blend_arcsec, blend_dmag=blend_dmag,
+                 amp_dlogp=amp_dlogp, amp_low=amp_low, amp_high=amp_high),
+            "each period-Wesenheit relation's own scatter with the parallax's error", "a pulsator %g widths brighter than its period allows" % widths,
+            "%d brighter than %g widths: %d with a companion in the astrometry or OGLE's remarks, %d with a neighbour's light in Gaia, on OGLE's normal relation or in "
+            "the amplitudes (%d diluted, %d with a companion's colour in the BP to RP amplitude ratio), %d in a class, mode or period Gaia mistook; %d unexplained" % (
+                len(bright), widths, sum(o["vet"] == "binary" for o in bright), sum(o["vet"] == "blend" for o in bright), sum(1 for o in bright if o["diluted"]),
+                sum(1 for o in bright if o["coloured"]), sum(o["vet"] == "published-solution" for o in bright), len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["resid"], 3), unit="mag from the period-Wesenheit relation", vet=o["vet"],
+                  note="%s %s %s in the %s, P %.4f d, %.1f widths, %s mag in G, RUWE %s, NSS %d, C* %s, %d neighbours within %g arcsec; G amplitude %s at percentile %s "
+                       "of its peers, %s scaled, BP/RP amplitude ratio at percentile %s; OGLE %s %s %s P %s (%s)%s%s" % (
+                      o["kind"], o["cls"], o["mode"], o["galaxy"], o["P"], o["resid"] / o["width"], "%+.2f" % o["dG"] if o.get("dG") is not None else "-",
+                      o["ruwe"], o["nss"],
+                      "%.2f" % o["cstar"] if o["cstar"] is not None else "-", o["neighbours"], blend_arcsec, o["amp"],
+                      "%.2f" % o["amp_q"] if o.get("amp_q") is not None else "-", "%.2f" % o["amp_qu"] if o.get("amp_qu") is not None else "-",
+                      "%.2f" % o["ratio_q"] if o.get("ratio_q") is not None else "-",
+                      (o["ogle"] or {}).get("id", "-"), (o["ogle"] or {}).get("kind", ""), (o["ogle"] or {}).get("mode", ""), (o["ogle"] or {}).get("P"),
+                      (o["ogle"] or {}).get("verdict", "-"), "; '%s'" % o["ogle"]["remark"] if (o["ogle"] or {}).get("remark") else "",
+                      "; Gaia's classifier %s %.2f" % o["general"] if o["general"] else "")) for o in bright])
+        print("recorded")
+
+
+overbright_DOC = r"""Stars brighter than themselves: Gaia DR3 stars within 100 pc with parallaxes at twenty sigma whose RVS spectra give GSP-Spec temperatures of 4000-5500 K and dwarf gravities, log g above 4.2, single in Gaia's astrometry (RUWE below 1.4, no non-single-star solution), their absolute G against the main sequence fitted to the same stars in temperature and metallicity; two equal stars unresolved stand 0.753 mag above it, so a star brighter than that by three widths of the sequence carries light no second star of its kind gives, a reflector's or a young star's, and each is read for GSP-Spec's own flags on the fit (any of the thirteen parameter flags at 2 or above), for the MK type Hipparcos gives it through Gaia's best-neighbour table (a luminosity class of I to IV marks a giant or subgiant whose gravity the RVS fit missed), for its activity index (Gaia's Ca II infrared triplet) and for its RV amplitude.
+
+    python -I seti.py dimming overbright [record] [--plx-sigma 20] [--teff 4000 5500] [--logg-min 4.2] [--twin 0.753] [--widths 3] [--activity-max 0.05]"""
+
+
+def overbright_evolved(sp):
+    """Whether an MK type names a giant or subgiant: a luminosity class of I to IV other than IV-V, or Mount Wilson's g and sg prefixes."""
+    s = (sp or "").strip()
+    if s.startswith(("sg", "g")):
+        return True
+    m = re.match(r"(?:sd|d)?[OBAFGKM][0-9.]*(?:/[OBAFGKM]?[0-9.]*)?(III|II|IV|Ia|Ib|I)?([-/](?:IV|V))?", s)
+    return bool(m and m.group(1) and not (m.group(1) == "IV" and m.group(2) and m.group(2)[1:] == "V"))
+
+
+def overbright_main(record=False, plx_sigma=20.0, teff=[4000.0, 5500.0], logg_min=4.2, twin=0.753, widths=3.0, activity_max=0.05):
+    # the Gaia Catalogue of Nearby Stars drives the join, since a selection on gaia_source by parallax runs past the archive's time
+    rows = core.tap_async("gaia", "SELECT g.source_id, g.parallax, g.parallax_error, g.phot_g_mean_mag, g.bp_rp, g.ruwe, g.non_single_star, g.rv_amplitude_robust, "
+                                  "g.rv_nb_transits, a.teff_gspspec, a.logg_gspspec, a.mh_gspspec, a.flags_gspspec, a.activityindex_espcs FROM external.gaiaedr3_gcns_main_1 AS n "
+                                  "JOIN gaiadr3.astrophysical_parameters AS a ON n.source_id = a.source_id JOIN gaiadr3.gaia_source AS g ON g.source_id = n.source_id "
+                                  "WHERE a.teff_gspspec BETWEEN %g AND %g AND a.mh_gspspec IS NOT NULL AND a.logg_gspspec IS NOT NULL" % (teff[0], teff[1]), maxrec=200000)
+    rows = [r for r in rows if (num(r["parallax"]) or 0) > 10 and (num(r["parallax"]) or 0) > plx_sigma * (num(r["parallax_error"]) or 1e9)]
+    out = []
+    for r in rows:
+        t, lg, mh, plx = num(r["teff_gspspec"]), num(r["logg_gspspec"]), num(r["mh_gspspec"]), num(r["parallax"])
+        if None in (t, lg, mh, plx) or num(r["phot_g_mean_mag"]) is None:
+            continue
+        out.append(dict(source_id=str(r["source_id"]), teff=t, logg=lg, mh=mh, MG=float(r["phot_g_mean_mag"]) + 5 * math.log10(plx / 100.0), bp_rp=num(r["bp_rp"]),
+                        ruwe=num(r["ruwe"]), nss=int(num(r["non_single_star"]) or 0), rvamp=num(r["rv_amplitude_robust"]), act=num(r["activityindex_espcs"]),
+                        flags=str(r["flags_gspspec"] or "")))
+    dwarfs = [o for o in out if o["logg"] > logg_min]
+    single = [o for o in dwarfs if (o["ruwe"] or 0) < 1.4 and not o["nss"]]
+    x = np.array([[1.0, (o["teff"] - 4750) / 1000, ((o["teff"] - 4750) / 1000) ** 2, ((o["teff"] - 4750) / 1000) ** 3, o["mh"]] for o in single])
+    y = np.array([o["MG"] for o in single])
+    keep = np.ones(len(y), bool)
+    for _ in range(10):
+        c, *_ = np.linalg.lstsq(x[keep], y[keep], rcond=None)
+        res = y - x @ c
+        sig = core.robust_sigma(res[keep])
+        new = np.abs(res) < 3 * sig
+        if (new == keep).all():
+            break
+        keep = new
+    for o, d in zip(single, res):
+        o["dM"] = float(d)
+    edges = np.arange(-2.0, 1.01, 0.25)
+    hist = [int(np.sum((res >= a) & (res < a + 0.25))) for a in edges[:-1]]
+    over = [o for o in single if o["dM"] < -(twin + widths * sig)]
+    mk = {}
+    if over:
+        for r in core.tap("gaia", "SELECT b.source_id, h.sptype FROM gaiadr3.hipparcos2_best_neighbour AS b JOIN public.hipparcos AS h ON h.hip = b.original_ext_source_id "
+                                  "WHERE b.source_id IN (%s)" % ",".join(o["source_id"] for o in over)):
+            mk[str(r["source_id"])] = str(r["sptype"] or "").strip()
+    for o in over:
+        o["mk"] = mk.get(o["source_id"], "")
+        o["vet"] = ("fit-boundary" if any(ch.isdigit() and int(ch) >= 2 for ch in o["flags"][:13]) else
+                    "evolved" if overbright_evolved(o["mk"]) else
+                    "young-star" if o["act"] is not None and o["act"] > activity_max else
+                    "binary" if o["rvamp"] is not None and o["rvamp"] > 5 else None)
+    left = [o for o in over if o["vet"] is None]
+    print("%d stars within 100 pc with GSP-Spec temperatures of %g-%g K; %d with log g above %g, %d of them single in the astrometry; the main sequence in temperature and "
+          "metallicity leaves a scatter of %.3f mag (metallicity term %+.2f mag/dex); offsets in 0.25 mag bins from -2: %s; brighter than the twin limit by %g widths "
+          "(%.2f mag): %d, flagged fits %d, giants and subgiants by MK type %d, active %d, RV-variable %d; unexplained %d" % (
+              len(out), teff[0], teff[1], len(dwarfs), logg_min, len(single), sig, c[4], hist, widths, twin + widths * sig, len(over),
+              sum(o["vet"] == "fit-boundary" for o in over), sum(o["vet"] == "evolved" for o in over), sum(o["vet"] == "young-star" for o in over),
+              sum(o["vet"] == "binary" for o in over), len(left)))
+    for o in sorted(over, key=lambda o: o["dM"])[:30]:
+        print("  Gaia DR3 %s: %.0f K, log g %.2f, [M/H] %+.2f, M_G %.2f, %+.2f mag from the sequence, RUWE %s, RV amplitude %s, activity %s, flags %s, MK %s; %s" % (
+            o["source_id"], o["teff"], o["logg"], o["mh"], o["MG"], o["dM"], o["ruwe"], o["rvamp"], o["act"], o["flags"][:13], o["mk"] or "-", o["vet"] or "unexplained"))
+    json.dump(dict(scatter=sig, coef=[float(v) for v in c], hist=hist, over=over), open(core.results("overbright_dwarfs.json"), "w"), indent=1)
+    if record:
+        core.record_run(
+            "gaia_overbright_dwarfs", "Stars brighter than themselves", "Gaia DR3 gaia_source with GSP-Spec astrophysical parameters",
+            "single dwarfs of %g-%g K within 100 pc with GSP-Spec parameters and parallaxes at %g sigma: %d" % (teff[0], teff[1], plx_sigma, len(single)), os.path.abspath(__file__),
+            "overbright", len(single), "stars", dict(plx_sigma=plx_sigma, teff=teff, logg_min=logg_min, twin=twin, widths=widths, activity_max=activity_max),
+            "the main sequence's own scatter of %.3f mag in temperature and metallicity; offsets in 0.25 mag bins from -2: %s" % (sig, hist),
+            "a single-looking dwarf brighter than an unresolved equal twin by %g widths" % widths,
+            "%d brighter than %.2f mag: %d with GSP-Spec's fit flagged, %d giants or subgiants by their MK type, %d active, %d RV-variable; %d unexplained" % (
+                len(over), twin + widths * sig, sum(o["vet"] == "fit-boundary" for o in over), sum(o["vet"] == "evolved" for o in over),
+                sum(o["vet"] == "young-star" for o in over), sum(o["vet"] == "binary" for o in over), len(left)),
+            [dict(target="gaia_dr3:%s" % o["source_id"], stat=round(o["dM"], 3), unit="mag from the main sequence", vet=o["vet"],
+                  note="%.0f K, log g %.2f, [M/H] %+.2f, M_G %.2f, RUWE %s, RV amplitude %s, activity %s, GSP-Spec flags %s, Hipparcos MK %s" % (
+                      o["teff"], o["logg"], o["mh"], o["MG"], o["ruwe"], o["rvamp"], o["act"], o["flags"][:13], o["mk"] or "-")) for o in over])
+        print("recorded")
+
+
 APPROACHES = {
+    "overbright": (lambda: core.run_cli(overbright_main), overbright_DOC),
+    "candles": (lambda: core.run_cli(candles_main), candles_DOC),
     "irchanged": (lambda: core.run_cli(irchanged_main), irchanged_DOC),
     "colourchange": (lambda: core.run_cli(colourchange_main), colourchange_DOC),
     "hipdim": (lambda: core.run_cli(hipdim_main), hipdim_DOC),
