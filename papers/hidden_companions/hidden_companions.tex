@@ -30,27 +30,31 @@
 
 \begin{frontmatter}
 
-\title{Companions hidden in public HARPS velocities: new stellar companions and a dark 1.2\,M$_\odot$ companion to the giant HD\,20037}
+\title{Companions hidden in public HARPS velocities: four stellar companions with no published orbit}
 
 \author{Charles C. Norton}
 
 \begin{abstract}
 HARPS-RVBank holds 212\,562 public velocities of 2\,912 stars, and Gaia DR3 measures the same
-stars' motions on the sky. Searched together, they reveal companions that no catalogue holds. A
-census of the velocities for variation beyond the errors, set against the NASA Exoplanet Archive,
-SB9 and Gaia DR3's two-body orbits, followed by Keplerian fits sampled with emcee and inclinations
-bounded by Gaia's astrometry, finds stellar and substellar companions of HD\,107181, HD\,77462,
-HD\,7399 and HD\,134985 with no published orbit. The G8 giant HD\,20037, at 2.90\,\Msun, carries a
-companion whose orbit follows from its HARPS velocities, Gaia DR3's velocity-trend and acceleration
-solutions and its Hipparcos-Gaia proper-motion anomaly fitted together: a period of
-$28.5^{+3.2}_{-2.5}$\,yr, an eccentricity of $0.46 \pm 0.04$, an inclination of $98.8 \pm
-1.2^\circ$ and a mass of $1.18 \pm 0.05$\,\Msun. Its lines do not appear in the giant's spectra
-along its own track, where a main-sequence star of that mass, at 4 per cent of the light, would
-read at $7\sigma$, so the companion is a massive white dwarf or a close pair of M dwarfs.
+stars' motions on the sky. Searched together, they reveal companions that no catalogue holds. Every
+star whose velocities vary as a companion's would is set against SIMBAD, the papers it lists, Gaia
+DR3's two-body orbits and the NASA Exoplanet Archive, and the rest are fitted with one Keplerian
+orbit, weighed where the orbit outlasts the velocities against the Hipparcos-Gaia proper-motion
+anomaly, Gaia's acceleration and trend solutions and the range of its own epoch velocities. Four
+stellar companions follow with no published orbit: a 0.41\,\Msun\ star seen nearly face on in a
+465\,d orbit of the F5 dwarf HD\,7399, whose velocities alone give a brown dwarf's minimum mass; a
+0.21\,\Msun\ star in a 26\,yr orbit of the K7 dwarf GJ\,4001; a companion of at least
+0.30\,\Msun\ in an eccentric 344\,d orbit of the F7 dwarf HD\,77462; and a star of
+$1.15 \pm 0.07$\,\Msun\ in a $27.2^{+2.0}_{-1.5}$\,yr orbit of the 2.92\,\Msun\ G8 giant
+HD\,20037, with an eccentricity of $0.45 \pm 0.02$ and an inclination of $98.4 \pm 1.1^\circ$, from
+the giant's HARPS velocities, Gaia DR3's velocity-trend and acceleration solutions and its
+Hipparcos-Gaia proper-motion anomaly fitted together. The giant's spectra hold G-type lines where
+that companion's track predicts them, at 1.7 per cent of a G0 dwarf's line depth and $5.4\sigma$
+against permuted tracks.
 \end{abstract}
 
 \begin{keyword}
-Techniques: radial velocities \sep Astrometry \sep Binaries: spectroscopic \sep White dwarfs
+Techniques: radial velocities \sep Astrometry \sep Binaries: spectroscopic \sep Stars: individual: HD\,20037
 \end{keyword}
 
 \end{frontmatter}
@@ -68,7 +72,7 @@ a companion's mass and inclination~\cite{GaiaNSS2023}.
 
 This paper reads the two together for companions that no catalogue holds. Section~\ref{sec:data}
 describes the data, Section~\ref{sec:stellar} the stellar and substellar companions and
-Section~\ref{sec:hd20037} the dark companion of HD\,20037.
+Section~\ref{sec:hd20037} the companion of the giant HD\,20037.
 
 \section{Data}\label{sec:data}
 
@@ -78,63 +82,74 @@ H$\alpha$ and Na\,D indices and the pipeline's line width and bisector of each s
 star is matched to Gaia DR3~\cite{GaiaNSS2023} as the brightest source within 30\,arcsec of its
 J2000 position whose $G$ lies within 2.5\,mag of its $V$, which follows stars of high proper
 motion to Gaia's epoch, and to the Hipparcos-Gaia proper-motion anomaly of
-ref.~\cite{Kervella2022} through its Hipparcos number. The public HARPS spectra of the stars
-discussed here come from the ESO Science Archive, and their ultraviolet and X-ray fluxes from
-GALEX~\cite{Bianchi2017}, eROSITA's first survey~\cite{Merloni2024}, ROSAT's 2RXS~\cite{Boller2016}
-and 4XMM.
+ref.~\cite{Kervella2022} through its Hipparcos number, with that catalogue's mass of the star. The
+public HARPS spectra of the stars discussed here come from the ESO Science Archive, and their
+ultraviolet and X-ray fluxes from GALEX~\cite{Bianchi2017}, eROSITA's first
+survey~\cite{Merloni2024}, ROSAT's 2RXS~\cite{Boller2016} and 4XMM. Every analysis is that of
+orbitlight (\url{https://huggingface.co/datasets/phanerozoic/orbitlight}), whose tables give each
+star's decision and each orbit's posterior draws.
 
 \section{Stellar and substellar companions}\label{sec:stellar}
 
-A star enters the census when its velocities vary beyond their errors (a reduced $\chi^2$ above
-25, a scatter above 30\,\ms\ and above five times the errors by the median absolute deviation,
-on four or more nights), when the SERVAL velocities agree with the pipeline's (correlation above
-0.9), and when it is of spectral type F, G, K or M and luminosity class III or fainter. Of the
-2\,912 stars, 240 vary; 100 of them are explained by the NASA Exoplanet Archive, SB9 or a Gaia
-DR3 two-body orbit and 76 more are known binaries, variables or substellar hosts in SIMBAD. The
-32 of the remaining 64 with ten or more nights were fitted with a Keplerian, and the thirteen
-strongest measured with a Keplerian, a linear trend and a jitter added to the errors, sampled with
-emcee~\cite{ForemanMackey2013}, the periodogram's false-alarm level from shuffled velocities. Gaia bounds each orbit's inclination:
-for each of 200 orbits from the chain, 60 inclinations uniform in $\cos i$ and 24 nodes, the
-primary's photocentre, the companion taken dark, is followed through the Hipparcos and Gaia DR3
-windows, its predicted proper-motion anomaly set against the observed one for periods beyond
-300\,d, and its predicted wobble over Gaia's window, at 0.3\,mas a transit, against the RUWE.
-SIMBAD's references and the papers they cite give each star's literature.
+A star enters the search when its nightly velocities vary as a companion's would, with a reduced
+$\chi^2$ above 25 and a scatter above 30\,\ms\ and above five times the median error on four
+nights or more, and when it is of spectral type F, G, K or M and luminosity class III or fainter;
+the signals of the planet search with a minimum mass above 13\,\Mjup\ or a semi-amplitude of
+100\,\ms\ or more join them. Of 341 stars that vary, 273 are known: SIMBAD lists each as a binary
+or as a host of planets or brown dwarfs, a paper on a binary, a companion or an orbit covering at
+most 500 objects names it, Gaia DR3 holds a two-body orbit for it, or the NASA Exoplanet Archive
+lists planets around it. Another 55 have fewer than ten nights. The remaining 13, with 58 stars
+whose planet-search signals are that heavy, are analysed. An eccentric periodogram gives each
+star's best orbit, its false-alarm level from velocities permuted within each series, and the
+orbit is sampled where the velocities cover two cycles. Where they cover fewer, one Keplerian orbit
+of the star about the barycentre, the companion taken dark and no heavier than the star, is fitted
+to the velocities, the Hipparcos-Gaia proper-motion anomaly~\cite{Kervella2022}, Gaia DR3's
+acceleration and velocity-trend solutions and, where Gaia's spectrometer saw the velocity vary,
+the range of its epoch velocities less 2.5\,\kms\ as a lower bound on the orbit's range over
+Gaia's window. A profile over period, the best orbit in each of 120 bands of log
+period found by differential evolution, gives the periods the data allow, those within 2 of the
+best in log posterior, and the posterior is sampled by an ensemble of differential-evolution moves.
+A companion is accepted where a second reduction of the archived spectra, by cross-correlation,
+follows the velocities with a correlation of 0.9 or more, and either the velocities cover two
+cycles with a false-alarm level below $10^{-3}$ and no other period within 10 in $\chi^2$, or the
+astrometry is significant (an anomaly of $5\sigma$, or a Gaia acceleration or trend solution) and
+the allowed periods span less than a factor of two clear of the prior's limits. SIMBAD's references
+and the papers they cite give each star's literature.
 
-Four companions have no published orbit (Table~\ref{tab:stellar}). HD\,107181, a G3 dwarf, has
-a companion of at least 0.196\,\Msun\ on a 13.0\,d orbit, and its velocities scatter by
-1.2\,\kms\ about that orbit while its proper-motion anomaly stands at $39\sigma$, which the
-13-day orbit cannot produce: a third body lies farther out. HD\,77462, an F7 dwarf, has a
-companion of at least 0.172\,\Msun\ on an eccentric 345\,d orbit, and its RUWE of 14.0 shows
-the star's wobble on the sky. HD\,7399, an F5 dwarf, moves on
-a 524\,d orbit at only 0.52\,\kms, a minimum mass of 24\,\Mjup\ in the brown-dwarf desert; Gaia
-DR3 holds no orbit for it but an acceleration solution (Acceleration9, significance 26), and with
-its RUWE of 1.87 and proper-motion anomaly of $15\sigma$ the star moves more on the sky than
-24\,\Mjup\ at 524\,d would move it, either because this companion is seen nearly face on, near
-0.18\,\Msun, or because a further body pulls the star. HD\,134985 (GJ\,579.3), a K0 dwarf, has a companion of at least
-52\,\Mjup\ on an orbit of about 24\,yr, partly covered by its 8.3-year series, with a
-proper-motion anomaly of $96\sigma$.
+Three companions have no published orbit (Table~\ref{tab:stellar}). HD\,7399, an F5 dwarf, moves
+on a 465\,d orbit at only 0.52\,\kms, a minimum mass of 0.023\,\Msun\ in the brown-dwarf desert,
+but its proper-motion anomaly of $15\sigma$, Gaia's acceleration solution (Acceleration9) and its
+RUWE of 1.87 move it far more on the sky than that mass could: the orbit is seen within
+$4^\circ$ of face on and the companion is a 0.41\,\Msun\ star. GJ\,4001 (MCC\,791), a K7 dwarf,
+has a companion of at least 0.041\,\Msun\ on an eccentric 26\,yr orbit that its six-year series
+covers in part, and its anomaly of $64\sigma$ and RUWE of 9.2 put the orbit $13^\circ$ from face
+on and the companion at 0.21\,\Msun, an M dwarf. HD\,77462, an F7 dwarf, has 11 HARPS nights over
+472\,d, and Gaia's epoch velocities span 20.7\,\kms; together they give an orbit of 344\,d with
+an eccentricity of 0.68 and a companion of at least 0.30\,\Msun. Fitted as dark, its anomaly of
+$5.8\sigma$ and RUWE of 14.0 make it 1.23\,\Msun\ at $i = 161^\circ$, which a main-sequence star
+of that mass cannot be: it would give nearly as much light as the primary and move the photocentre
+little, so the companion is compact or the astrometric excess has a further source.
 
 \begin{table}[t]
 \centering
-\caption{Companions with no published orbit: the velocities (nights), the orbit's period,
-semi-amplitude and eccentricity with their 16th to 84th percentiles, the companion's minimum
-mass for the primary's mass $m_1$, and Gaia's RUWE and the Hipparcos-Gaia proper-motion anomaly's
-signal to noise.}\label{tab:stellar}
+\caption{Companions with no published orbit: the nights of velocities, the periods the data allow
+and the orbit's period, semi-amplitude and eccentricity with their 16th to 84th percentiles, the
+primary's mass $m_1$~\cite{Kervella2022}, the companion's minimum mass and its mass from the
+astrometry, and Gaia's RUWE and the Hipparcos-Gaia proper-motion anomaly's signal to noise.}\label{tab:stellar}
 \footnotesize\setlength{\tabcolsep}{3pt}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{llccccccc}
+\begin{tabular}{llcccccccc}
 \toprule
-Star & Type & Velocities (nights) & $P$ (d) & $K$ (\kms) & $e$ & $m_1$ (\Msun) & $m_2\sin i$ (\Msun) & RUWE, PMa S/N\\
+Star & Type & Nights & $P$ (d), allowed & $K$ (\kms) & $e$ & $m_1$ (\Msun) & $m_2\sin i$ (\Msun) & $m_2$ (\Msun) & RUWE, PMa S/N\\
 \midrule
-HD\,107181 & G3\,V & 16 (11) & 13.0 & 15.6 (15.0--16.2) & 0.10 (0.06--0.14) & 1.03 & 0.196 (0.187--0.204) & 1.13, 38.9\\
-HD\,77462 & F7\,V & 11 (11) & 345 (338--355) & 4.57 (4.37--4.85) & 0.47 (0.45--0.49) & 1.30 & 0.172 (0.165--0.183) & 14.0, 5.8\\
-HD\,7399 & F5\,V & 38 (22) & 524 (493--558) & 0.52 (0.51--0.55) & 0.07 (0.04--0.11) & 1.23 & 0.023 (0.022--0.025) & 1.87, 15.1\\
-HD\,134985 & K0\,V & 23 (23) & 8700 (7000--11000) & 0.59 (0.41--0.76) & 0.37 (0.32--0.42) & 0.90 & 0.050 (0.034--0.073) & 1.17, 96.3\\
+HD\,7399 & F5\,V & 22 & 465 (460--473), 441--478 & 0.523 (0.516--0.533) & 0.07 (0.05--0.12) & 1.30 & 0.023 & 0.41 (0.38--0.44) & 1.87, 15.1\\
+GJ\,4001 & K7\,V & 26 & 9380 (8660--10210), 7540--11350 & 0.833 (0.815--0.852) & 0.76 (0.75--0.78) & 0.63 & 0.041 & 0.21 (0.19--0.24) & 9.24, 64.3\\
+HD\,77462 & F7\,V & 11 & 344.0 (343.8--344.2), 330--359 & 8.86 (8.41--9.61) & 0.68 (0.66--0.70) & 1.30 & 0.30 (0.28--0.31) & 1.23 (1.13--1.37) & 14.0, 5.8\\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-\section{The dark companion of HD\,20037}\label{sec:hd20037}
+\section{The companion of the giant HD\,20037}\label{sec:hd20037}
 
 HD\,20037 is a G8 giant of $2.92 \pm 0.15$\,\Msun\ and 10.3\,R$_\odot$~\cite{Kervella2022} at
 172\,pc. Its 13 HARPS velocities fall smoothly by 3.3\,\kms\ from 2006 to 2011 with nights a day
@@ -153,60 +168,69 @@ derivatives are those of a quadratic fitted to the model's velocities at 27 time
 fitted to the photocentre over Gaia's astrometric window; and the long-term mean motion is the
 photocentre's displacement from its Hipparcos position, a line fitted over Hipparcos's window,
 to its Gaia position over the 24.75\,yr between them. The parameters are the period, the time of
-periastron, $\sqrt{e}\cos\omega$, $\sqrt{e}\sin\omega$, the companion's mass, $\cos i$, the
-node, the HARPS zero point, the jitter and the giant's mass with its prior. The posterior was
-located by differential evolution from four starts and sampled with emcee. Every data set is met
-(Table~\ref{tab:hd20037}): the proper-motion anomaly to within 0.03\,mas\,yr$^{-1}$, the
-acceleration to within $1\sigma$, Gaia's velocity slope at $0.0080$\,\kms\ per day, and the HARPS
-velocities to 13\,\ms. The companion weighs $1.18 \pm 0.05$\,\Msun\ on an orbit of 28.5\,yr seen
-nearly edge on; periastron passed in 2013, between the HARPS and Gaia series.
+periastron, $\sqrt{e}\cos\omega$, $\sqrt{e}\sin\omega$, the companion's mass as a fraction of the
+giant's, $\cos i$, the node, the HARPS zero point, the jitter and the giant's mass with a prior of
+10 per cent; Gaia's 27 velocities span 7.7\,\kms, and less 2.5\,\kms\ for their noise that range
+bounds the orbit's over Gaia's window from below. A profile over period located the posterior,
+which allows periods from 8\,830 to 12\,190\,d, and an ensemble of differential-evolution moves
+sampled it (Table~\ref{tab:hd20037}). The companion weighs $1.15 \pm 0.07$\,\Msun\ on an orbit of
+27.2\,yr seen nearly edge on; periastron passed in 2013, between the HARPS and Gaia series.
 
 \begin{table}[t]
 \centering
 \caption{HD\,20037's orbit from its HARPS velocities and Gaia's and Hipparcos's astrometry
-together: medians with 16th to 84th percentiles of 4\,000 samples.}\label{tab:hd20037}
+together: medians with 16th to 84th percentiles of the sampled posterior.}\label{tab:hd20037}
 \small
 \begin{tabular}{lc}
 \toprule
-Period (d) & $10\,423$ ($9\,511$--$11\,609$)\\
-Eccentricity & 0.46 (0.43--0.51)\\
-Giant's semi-amplitude $K_1$ (\kms) & 5.00 (4.95--5.11)\\
-Inclination (deg) & 98.8 (97.6--100.0)\\
-Semi-major axis (AU) & 14.9 (14.0--16.1)\\
-Giant's mass (\Msun) & 2.90 (2.76--3.07)\\
-Companion's mass (\Msun) & 1.18 (1.14--1.23)\\
+Period (d) & $9\,953$ ($9\,384$--$10\,666$)\\
+Eccentricity & 0.45 (0.43--0.47)\\
+Giant's semi-amplitude $K_1$ (\kms) & 4.99 (4.94--5.04)\\
+Inclination (deg) & 98.4 (97.4--99.6)\\
+Semi-major axis (AU) & 14.4 (13.7--15.1)\\
+Companion's mass (\Msun) & 1.15 (1.08--1.21)\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-A main-sequence star of 1.18\,\Msun, an F8 or G0 dwarf, would give about 4 per cent of the
-system's $V$-band light. With the orbit known, the companion's lines can be sought along their
-own track: in each spectrum it moves against the giant at $-(1 + m_1/m_2)$ times the giant's
-velocity about the systemic one, here $+5.0$ to $+16.6$\,\kms. The spectra are placed in the
-giant's frame on a grid uniform in velocity, divided by their median and whitened,
-cross-correlated with the line depths of a G0 dwarf, the rows' common pattern taken out, and read
-along that track. The track reads $z = -0.3$ against 2\,000 shuffles of the rows' velocities
-($p = 0.61$), while the same G0 spectrum laid into the actual spectra along the track at 0.5, 1,
-2 and 4 per cent of the light reads $z = 1.6$, 3.7, 6.2 and 7.3. A single main-sequence companion
-of this mass is therefore excluded. GALEX measures HD\,20037 at FUV $19.76 \pm 0.11$ and NUV
-$14.24 \pm 0.01$, a G8 giant's colours with no hot component. eROSITA records a soft source
-1.8\,arcsec from the star, 17 counts mostly between 0.5 and 1\,keV, $2.0\times10^{29}$\,erg\,s$^{-1}$
-in the 0.2 to 2.3\,keV band, as a giant's corona or an active pair of M dwarfs would give and far
-below a neutron star accreting the giant's wind.
+A main-sequence star of 1.15\,\Msun, an F8 or G0 dwarf, would give 3 to 4 per cent of the
+system's $V$-band light. With the orbit known, the companion's lines can be sought along their own
+track: in each spectrum it moves against the giant at $-(1 + m_1/m_2)$ times the giant's velocity
+about the systemic one, here $+8.1$ to $+20.0$\,\kms. The 13 spectra are placed in the giant's
+frame on a grid uniform in velocity, divided by their median, and cross-correlated with the line
+depths of the G0 dwarf $\zeta$\,Tuc, each wavelength weighted by the spectra's scatter smoothed
+over 501\,\kms, and the sky's pattern is taken out of every row in its own frame. Each row is then
+fitted as a pattern common to every row plus $\alpha$ times the G0 lines' own cross-correlation at
+the companion's velocity, the two by weighted least squares together, so that $\alpha$ is the depth
+of the companion's lines as a fraction of a G0 dwarf's and the part of the trail the median
+spectrum holds is fitted with it. Along the track $\alpha = 0.017$, at $5.4\sigma$ against 400
+permutations of the track among the spectra, and the G0 spectrum laid into the spectra along the
+track at 1, 2 and 4 per cent of the light raises $\alpha$ by 0.010, 0.020 and 0.040. Along the
+track mirrored about the giant's velocity $\alpha$ is 0.002, and along the telluric lines' own track
+0.003. The spectra see the companion only between $+8$ and $+20$\,\kms, so a component at a fixed
+velocity near $+12$\,\kms\ from the giant fits them as well as one on the orbit; Gaia DR3 holds no
+other source within 20\,arcsec and finds no second peak in the star's images, which would leave
+such a component within about 0.2\,arcsec of the giant. GALEX measures HD\,20037 at FUV
+$19.76 \pm 0.11$ and NUV $14.24 \pm 0.01$, a G8 giant's colours with no hot component, and eROSITA
+records a soft source 1.8\,arcsec from the star, 17 counts mostly between 0.5 and 1\,keV,
+$2.0\times10^{29}$\,erg\,s$^{-1}$ in the 0.2 to 2.3\,keV band, as a giant's corona or an active
+dwarf gives.
 
-The companion is therefore dark at 1.18\,\Msun: a white dwarf in the upper few per cent of the
-mass distribution, whose progenitor was more massive than the giant is now, or a close binary of
-two M dwarfs near 0.6\,\Msun\ each, whose combined light, below 0.2 per cent of the giant's, the
-spectra cannot reach. The eROSITA source fits the second, but a G8 giant can supply it alone.
+The companion is therefore most likely a main-sequence star near 1.15\,\Msun, whose lines, at
+1.7 per cent of a G0 dwarf's depth against the 3 to 4 per cent of the light such a star gives, are
+shallower than a slowly rotating G0 dwarf's, as rotation or a slightly earlier type makes them.
+The orbit's fit takes the companion as dark; at 1.7 per cent of the light the photocentre moves
+about 6 per cent less than the giant, which the fit reads as a slightly lighter companion.
 
 \section{Conclusion}\label{sec:conclusion}
 
-Public HARPS velocities read beside Gaia DR3's astrometry and velocities give four stellar and
-substellar companions with no published orbit, among them a 13-day M dwarf in a triple and a
-brown-dwarf-desert minimum mass that the astrometry turns into a low-mass star. They give the
-giant HD\,20037 a dark companion of $1.18 \pm 0.05$\,\Msun\ on a 28.5-year orbit, whose lines are
-absent where a main-sequence star of its mass would stand at $7\sigma$: a massive white dwarf or a
-pair of M dwarfs.
+Public HARPS velocities read beside Gaia DR3's astrometry and velocities give four stellar
+companions with no published orbit: a brown-dwarf-desert minimum mass that the astrometry turns
+into a 0.41\,\Msun\ star seen face on around HD\,7399, an M dwarf on a 26-year orbit of GJ\,4001,
+a companion of HD\,77462 heavier than 0.30\,\Msun\ whose astrometric mass no main-sequence star
+could have, and a companion of $1.15 \pm 0.07$\,\Msun\ on a 27-year orbit of the giant HD\,20037,
+whose lines appear in the giant's spectra along its predicted track at 1.7 per cent of a G0
+dwarf's depth.
 
 \section*{Acknowledgements}
 
@@ -249,10 +273,6 @@ western Galactic hemisphere, \emph{Astron. Astrophys.} \textbf{682}, A34 (2024).
 \bibitem{Boller2016}
 Th.~Boller et al., Second ROSAT all-sky survey (2RXS) source catalogue, \emph{Astron. Astrophys.}
 \textbf{588}, A103 (2016).
-
-\bibitem{ForemanMackey2013}
-D.~Foreman-Mackey, D.~W. Hogg, D.~Lang and J.~Goodman, emcee: the MCMC hammer, \emph{Publ. Astron.
-Soc. Pac.} \textbf{125}, 306 (2013).
 
 \end{thebibliography}
 
